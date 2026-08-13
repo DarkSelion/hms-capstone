@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Room;
@@ -22,6 +23,10 @@ class DashboardController extends Controller
         $todayRevenue = Payment::where('status', 'completed')
             ->whereBetween('created_at', [$todayStart, $todayEnd])
             ->sum('amount');
+
+        $todayRevenue += Invoice::where('status', 'paid')
+            ->whereBetween('paid_at', [$todayStart, $todayEnd])
+            ->sum('total_amount');
 
         $totalRooms = Room::where('is_active', true)->count();
         $occupiedRooms = Room::where('status', 'occupied')->count();
@@ -46,8 +51,6 @@ class DashboardController extends Controller
 
         $pendingReservations = Reservation::where('status', 'pending')->count();
 
-        $overstaying = Reservation::overstay()->count();
-
         return response()->json([
             'today_revenue' => $todayRevenue,
             'occupancy_rate' => $occupancyRate,
@@ -57,7 +60,6 @@ class DashboardController extends Controller
             'check_ins_today' => $checkInsToday,
             'check_outs_today' => $checkOutsToday,
             'pending_reservations' => $pendingReservations,
-            'overstaying' => $overstaying,
             'total_rooms' => $totalRooms,
         ]);
     }
@@ -72,6 +74,16 @@ class DashboardController extends Controller
             ->groupBy('date')
             ->pluck('revenue', 'date')
             ->map(fn ($v) => (float) $v);
+
+        Invoice::where('status', 'paid')
+            ->whereNotNull('paid_at')
+            ->where('paid_at', '>=', now()->subDays($days)->startOfDay())
+            ->select(DB::raw('DATE(paid_at) as date'), DB::raw('SUM(total_amount) as revenue'))
+            ->groupBy('date')
+            ->get()
+            ->each(function ($row) use (&$revenueData) {
+                $revenueData[$row->date] = (float) ($revenueData[$row->date] ?? 0) + (float) $row->revenue;
+            });
 
         $bookingData = Reservation::where('created_at', '>=', now()->subDays($days))
             ->select(DB::raw('DATE(created_at) as date'), DB::raw('COUNT(*) as bookings'))

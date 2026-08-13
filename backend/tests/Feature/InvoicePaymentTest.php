@@ -167,7 +167,7 @@ class InvoicePaymentTest extends TestCase
         $this->assertDatabaseHas('reservations', [
             'id' => $reservation->id,
             'paid_amount' => 0,
-            'payment_status' => 'partial',
+            'payment_status' => 'unpaid',
             'due_amount' => 5000,
         ]);
     }

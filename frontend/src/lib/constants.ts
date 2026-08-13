@@ -10,6 +10,7 @@ export const BOOKING_SOURCES = [
 export const PAYMENT_METHODS = [
   { value: 'cash', label: 'Cash', icon: 'Banknote' },
   { value: 'gcash', label: 'GCash', icon: 'Smartphone' },
+  { value: 'online', label: 'Online', icon: 'CreditCard' },
 ] as const
 
 export const PAYMENT_STATUS = {

@@ -23,10 +23,10 @@ export function useCheckInOutModal(action: 'check-in' | 'check-out') {
   }, [])
 
   const runStatusChange = useCallback(
-    async (paymentRecorded: boolean) => {
+    async (paymentRecorded: boolean, actualCheckOut?: string) => {
       if (!target) return
       try {
-        await performStatusChange(action, target)
+        await performStatusChange(action, target, actualCheckOut)
         setTarget(null)
         setError(null)
       } catch (err) {
@@ -42,25 +42,28 @@ export function useCheckInOutModal(action: 'check-in' | 'check-out') {
     [action, target, performStatusChange, verb, Verb],
   )
 
-  const confirm = useCallback(() => runStatusChange(false), [runStatusChange])
+  const confirm = useCallback((actualCheckOut?: string) => runStatusChange(false, actualCheckOut), [runStatusChange])
 
   const confirmAfterPayment = useCallback(
-    (payment?: Payment) => {
+    (payment?: Payment, actualCheckOut?: string, projectedTotal?: number) => {
       if (!target) return
       if (payment?.status === 'completed') {
         setTarget((prev) => {
           if (!prev) return prev
+          const total = projectedTotal ?? prev.total_amount
           const paidAmount = (prev.paid_amount ?? 0) + payment.amount
-          const dueAmount = Math.max(0, prev.total_amount - paidAmount)
+          const dueAmount = Math.max(0, total - paidAmount)
           return {
             ...prev,
+            total_amount: total,
             paid_amount: paidAmount,
             due_amount: dueAmount,
             payment_status: dueAmount <= 0 ? 'paid' : 'partial',
+            check_out: actualCheckOut ?? prev.check_out,
           }
         })
       }
-      return runStatusChange(true)
+      return runStatusChange(true, actualCheckOut)
     },
     [target, runStatusChange],
   )

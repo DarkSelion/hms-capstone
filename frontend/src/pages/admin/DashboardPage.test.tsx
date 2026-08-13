@@ -40,7 +40,6 @@ function stats(overrides: Partial<DashboardStats> = {}): DashboardStats {
     check_ins_today: 3,
     check_outs_today: 2,
     pending_reservations: 4,
-    overstaying: 1,
     total_rooms: 15,
     dirty_rooms: 2,
     ...overrides,
@@ -188,7 +187,6 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Booked')).toBeInTheDocument()
     expect(screen.getByText('Pending')).toBeInTheDocument()
     expect(screen.getByText('Dirty Rooms')).toBeInTheDocument()
-    expect(screen.getByText('Overstaying')).toBeInTheDocument()
     expect(screen.getByText('Available')).toBeInTheDocument()
   })
 
@@ -267,23 +265,7 @@ describe('DashboardPage', () => {
     expect(screen.getByText(/BK-2026-0001/)).toBeInTheDocument()
   })
 
-  it('latest reservations shows overstaying badge when is_overstay', () => {
-    mockUseReservations.mockReturnValue({
-      data: { data: [reservation({ is_overstay: true })] },
-      isLoading: false,
-      error: null,
-    })
-    mockUseDashboardStats.mockReturnValue({ data: stats(), isLoading: false, error: null, refetch: vi.fn() })
-    mockUseDashboardRevenue.mockReturnValue({ data: revenueData(), isLoading: false, error: null })
-    mockUseBookingSources.mockReturnValue({ data: [source()], isLoading: false, error: null })
-    mockUseRecentActivities.mockReturnValue({ data: [activity()], isLoading: false, error: null })
-
-    render(<DashboardPage />)
-
-    expect(screen.getByText('Overstay')).toBeInTheDocument()
-  })
-
-  it('latest reservations shows status badge when not overstay', () => {
+  it('latest reservations shows status badge', () => {
     renderDashboard()
 
     expect(screen.getByText('Confirmed')).toBeInTheDocument()

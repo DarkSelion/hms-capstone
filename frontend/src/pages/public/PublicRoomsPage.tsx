@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { usePublicRoomTypes } from '@/hooks/usePublicApi'
-import { formatCurrency } from '@/lib/format'
+import { usePublicRoomTypes, usePortalCurrency } from '@/hooks/usePublicApi'
+import { formatCurrencyWith } from '@/lib/format'
 import { Users, Maximize, ArrowRight, Calendar, BedDouble, Building2, Sofa } from 'lucide-react'
 
 const ROOM_IMAGES: Record<string, string[]> = {
@@ -40,6 +40,8 @@ export default function PublicRoomsPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [filter, setFilter] = useState(searchParams.get('type') || 'all')
+  const currency = usePortalCurrency()
+  const fmt = (amount: number) => formatCurrencyWith(amount, currency)
 
   const checkIn = searchParams.get('check_in') || ''
   const checkOut = searchParams.get('check_out') || ''
@@ -100,14 +102,14 @@ export default function PublicRoomsPage() {
           STICKY PILL TABS
           ═══════════════════════════════════════════════════════════════ */}
       <div className="sticky top-20 z-30 bg-cream/90 backdrop-blur-xl border-b border-cream-warm/50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex justify-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 py-3 md:py-4">
+          <div className="grid grid-cols-2 gap-2 md:flex md:justify-center md:gap-3">
             {TABS.map((tab) => {
               return (
                 <button
                   key={tab.value}
                   onClick={() => setFilter(tab.value)}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-[0.15em] transition-all duration-300 ${
+                  className={`flex items-center justify-center gap-2 px-4 md:px-5 py-3 md:py-2.5 rounded-full text-xs font-semibold uppercase tracking-[0.15em] whitespace-nowrap w-full md:w-auto transition-all duration-300 ${
                     filter === tab.value
                       ? 'bg-gold text-dark shadow-md shadow-gold/20'
                       : 'bg-white/50 text-dark/50 hover:bg-white hover:text-dark border border-transparent'
@@ -226,7 +228,7 @@ export default function PublicRoomsPage() {
                           View Details <ArrowRight className="h-3 w-3" />
                         </button>
                         <div className="flex items-center gap-1 py-1">
-                          <span className="text-2xl font-semibold text-gold leading-none">{formatCurrency(rt.base_price)}</span>
+                          <span className="text-2xl font-semibold text-gold leading-none">{fmt(rt.base_price)}</span>
                           <span className="text-dark/30 text-xs leading-none">/ night</span>
                         </div>
                       </div>

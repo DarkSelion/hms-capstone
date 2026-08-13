@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { usePublicMe, usePublicUpdateProfile, usePublicDeleteAccount } from '@/hooks/usePublicApi'
 import { usePublicAuthStore } from '@/stores/publicAuthStore'
 import { publicApi } from '@/lib/publicApi'
+import { toLocalDateStr } from '@/lib/format'
 import { DatePicker } from '@/components/ui/date-picker'
 import { Loader2, User, Trash2, CheckCircle, X } from 'lucide-react'
 
@@ -158,7 +159,7 @@ export default function PublicProfilePage() {
                     <DatePicker
                       value={form.date_of_birth}
                       onChange={(v) => update('date_of_birth', v)}
-                      max={new Date().toISOString().split('T')[0]}
+                      max={toLocalDateStr(new Date())}
                       portal
                     />
                   </div>

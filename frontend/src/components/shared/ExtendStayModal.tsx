@@ -126,13 +126,6 @@ export function ExtendStayModal({
             </div>
           </dl>
 
-          {reservation.is_overstay && (
-            <div className="flex items-start gap-2.5 rounded-lg border border-danger/20 bg-danger/5 px-3 py-2.5 text-sm text-danger">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
-              <span>Guest has overstayed past the scheduled check-out date.</span>
-            </div>
-          )}
-
           <div>
             <DatePicker
               label="New Check Out"

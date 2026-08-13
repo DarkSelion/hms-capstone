@@ -75,12 +75,20 @@ export function DatePicker({ value, onChange, min, max, placeholder = 'Select da
     setView('days')
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect()
+      const popupWidth = Math.min(288, window.innerWidth - 16)
+      const popupHeight = 340
+      const spaceBelow = window.innerHeight - rect.bottom
+      const showAbove = spaceBelow < popupHeight && rect.top > popupHeight
       setPopupStyle({
         position: 'fixed',
-        top: `${rect.bottom + 4}px`,
-        left: `${Math.max(4, rect.left)}px`,
+        ...(showAbove
+          ? { bottom: `${window.innerHeight - rect.top + 4}px` }
+          : { top: `${rect.bottom + 4}px` }
+        ),
+        left: `${Math.max(8, Math.min(rect.left, window.innerWidth - popupWidth - 8))}px`,
         zIndex: 9999,
-        minWidth: '288px',
+        minWidth: `${popupWidth}px`,
+        maxWidth: 'calc(100vw - 16px)',
       })
     }
   }, [open])

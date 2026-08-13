@@ -54,10 +54,10 @@ class InvoiceController extends Controller
             $year = now()->year;
             $lastId = Invoice::whereBetween('created_at', ["$year-01-01 00:00:00", "$year-12-31 23:59:59"])->max('id') ?? 0;
 
-            $amount = $data['subtotal'];
-            $taxAmount = $data['tax'] ?? 0;
-            $discountAmount = $data['discount'] ?? 0;
-            $totalAmount = ($amount + $taxAmount) - $discountAmount;
+            $amount = (float) $data['subtotal'];
+            $taxAmount = (float) ($data['tax'] ?? 0);
+            $discountAmount = min((float) ($data['discount'] ?? 0), $amount + $taxAmount);
+            $totalAmount = max(0, $amount + $taxAmount - $discountAmount);
 
             $invoiceData = [
                 'invoice_number' => 'INV-'.$year.'-'.str_pad($lastId + 1, 4, '0', STR_PAD_LEFT),
@@ -127,28 +127,21 @@ class InvoiceController extends Controller
         }
 
         if (isset($data['subtotal'])) {
-            $amount = $data['subtotal'];
-            $taxAmount = $data['tax'] ?? $invoice->tax_amount ?? 0;
-            $discountAmount = $data['discount'] ?? $invoice->discount_amount ?? 0;
+            $amount = (float) $data['subtotal'];
+            $taxAmount = (float) ($data['tax'] ?? $invoice->tax_amount ?? 0);
+            $discountAmount = min((float) ($data['discount'] ?? $invoice->discount_amount ?? 0), $amount + $taxAmount);
             $data['amount'] = $amount;
             $data['tax_amount'] = $taxAmount;
             $data['discount_amount'] = $discountAmount;
-            $data['total_amount'] = ($amount + $taxAmount) - $discountAmount;
-            $data['due_amount'] = $data['total_amount'] - ($invoice->paid_amount ?? 0);
+            $data['total_amount'] = max(0, $amount + $taxAmount - $discountAmount);
+            $data['due_amount'] = max(0, $data['total_amount'] - (float) ($invoice->paid_amount ?? 0));
         }
 
         $invoice->update($data);
 
         if (isset($data['status'])) {
-            $reservation = $invoice->reservation;
-            $paidByInvoice = $reservation->invoices()
-                ->where('status', 'paid')
-                ->sum('total_amount');
-            $reservation->update([
-                'paid_amount' => $paidByInvoice,
-                'payment_status' => $paidByInvoice >= $reservation->total_amount ? 'paid' : 'partial',
-                'due_amount' => max(0, $reservation->total_amount - $paidByInvoice),
-            ]);
+            $invoice->update(['paid_at' => $data['status'] === 'paid' ? now() : null]);
+            $invoice->reservation->reconcileBalances();
         }
 
         return response()->json($invoice->load(['reservation.guest', 'items']));

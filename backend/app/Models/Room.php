@@ -74,8 +74,14 @@ class Room extends Model
                 ->where('status', 'checked_in')
                 ->exists();
             $this->update(['status' => $occupied ? 'occupied' : 'reserved']);
-        } else {
-            $this->update(['status' => 'available']);
+
+            return;
         }
+
+        $hasOpenMaintenance = MaintenanceRequest::where('room_id', $this->id)
+            ->whereNotIn('status', ['completed', 'cancelled'])
+            ->exists();
+
+        $this->update(['status' => $hasOpenMaintenance ? 'maintenance' : 'available']);
     }
 }

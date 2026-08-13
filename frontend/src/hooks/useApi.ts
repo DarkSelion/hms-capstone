@@ -6,6 +6,7 @@ import type {
   Reservation, PaginatedResponse, Guest, GuestHistory, Room, RoomImage, RoomType,
   Payment, Invoice, HousekeepingTask, MaintenanceRequest, Technician,
   Expense, ExpenseSummary, User, Role, ActivityLog, ApiResponse, StaffSchedule, LeaveRequest, ContactMessage,
+  CheckoutPreview,
 } from '@/types'
 
 function buildQueryString(params?: Record<string, string | number | undefined | null>): string {
@@ -135,12 +136,25 @@ export function useCheckIn() {
 export function useCheckOut() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => api.post(`/reservations/${id}/check-out`),
+    mutationFn: ({ id, actual_check_out }: { id: number; actual_check_out?: string }) =>
+      api.post(`/reservations/${id}/check-out`, actual_check_out ? { actual_check_out } : undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['guests'] })
     },
+  })
+}
+
+export function useCheckoutPreview(id: number, actualCheckOut?: string) {
+  const queryKey = ['reservations', id, 'checkout-preview', actualCheckOut ?? 'today']
+  return useQuery({
+    queryKey,
+    queryFn: () => {
+      const qs = actualCheckOut ? `?actual_check_out=${encodeURIComponent(actualCheckOut)}` : ''
+      return api.get<CheckoutPreview>(`/reservations/${id}/checkout-preview${qs}`)
+    },
+    enabled: !!id,
   })
 }
 
@@ -200,9 +214,10 @@ export function useCheckInOutWithPayment() {
   const performStatusChange = async (
     action: 'check-in' | 'check-out',
     reservation: Reservation,
+    actualCheckOut?: string,
   ) => {
     if (action === 'check-in') await checkIn.mutateAsync(reservation.id)
-    else await checkOut.mutateAsync(reservation.id)
+    else await checkOut.mutateAsync({ id: reservation.id, actual_check_out: actualCheckOut })
   }
 
   return { performStatusChange, isLoading }
@@ -908,6 +923,33 @@ export function useDeleteQrCode() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: () => api.delete('/settings/qr-code'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings'] })
+      queryClient.invalidateQueries({ queryKey: ['public-settings'] })
+    },
+  })
+}
+
+export function useUploadBrandingImage() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ key, image }: { key: string; image: File }) => {
+      const formData = new FormData()
+      formData.append('key', key)
+      formData.append('image', image)
+      return api.upload('/settings/branding-image', formData)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings'] })
+      queryClient.invalidateQueries({ queryKey: ['public-settings'] })
+    },
+  })
+}
+
+export function useDeleteBrandingImage() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (key: string) => api.delete('/settings/branding-image?key=' + encodeURIComponent(key)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] })
       queryClient.invalidateQueries({ queryKey: ['public-settings'] })

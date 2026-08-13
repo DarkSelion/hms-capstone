@@ -18,7 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import {
   DollarSign, LogIn, LogOut,
-  Activity, RefreshCw, Calendar, ArrowRight, AlertTriangle,
+  Activity, RefreshCw, Calendar, ArrowRight,
 } from 'lucide-react'
 import {
   ResponsiveContainer,
@@ -165,7 +165,6 @@ export default function DashboardPage() {
             <StatCard label="Booked" value={stats.booked_rooms} variant="compact" />
             <StatCard label="Pending" value={stats.pending_reservations} variant="compact" />
             <StatCard label="Dirty Rooms" value={totalDirtyRooms} variant="compact" />
-            <StatCard label="Overstaying" value={stats.overstaying} variant="compact" />
             <StatCard label="Available" value={`${stats.available_rooms}/${stats.total_rooms}`} variant="compact" />
           </>
         )}
@@ -356,14 +355,7 @@ export default function DashboardPage() {
                           {reservation.reservation_number} · Room {reservation.room?.room_number ?? '-'}
                         </p>
                       </div>
-                      {reservation.is_overstay ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
-                          <AlertTriangle className="h-3 w-3" />
-                          Overstay
-                        </span>
-                      ) : (
-                        <StatusBadge status={reservation.status} />
-                      )}
+                      <StatusBadge status={reservation.status} />
                     </div>
                   )
                 })}

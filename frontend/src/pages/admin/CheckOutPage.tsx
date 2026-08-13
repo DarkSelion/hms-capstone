@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import {
-  useReservations,
+  useReservations, useExtendStay,
 } from '@/hooks/useApi'
 import { useCheckInOutModal } from '@/hooks/useCheckInOutModal'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
@@ -11,6 +11,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ReservationDetailModal } from '@/components/shared/ReservationDetailModal'
 import { ReservationFormModal } from '@/components/shared/ReservationFormModal'
 import { ReservationCheckInOutModal } from '@/components/shared/ReservationCheckInOutModal'
+import { ExtendStayModal } from '@/components/shared/ExtendStayModal'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import type { Reservation } from '@/types'
@@ -25,11 +26,13 @@ export default function CheckOutPage() {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showFormModal, setShowFormModal] = useState(false)
   const [editingReservation, setEditingReservation] = useState<Reservation | null>(null)
+  const [extendTarget, setExtendTarget] = useState<Reservation | null>(null)
 
   const checkOutModal = useCheckInOutModal('check-out')
   const {
     open: openCheckOut, close: closeCheckOut, confirm: confirmCheckOut, confirmAfterPayment: confirmAfterCheckOut,
   } = checkOutModal
+  const extendStay = useExtendStay()
 
   const queryParams = useMemo(() => {
     const params: Record<string, string | number | undefined> = {
@@ -78,6 +81,21 @@ export default function CheckOutPage() {
   function closeFormModal() {
     setShowFormModal(false)
     setEditingReservation(null)
+  }
+
+  function openExtendStay(reservation: Reservation) {
+    setShowDetailModal(false)
+    setExtendTarget(reservation)
+  }
+
+  async function handleExtendStayConfirm(newCheckOut: string) {
+    if (!extendTarget) return
+    try {
+      await extendStay.mutateAsync({ id: extendTarget.id, new_check_out: newCheckOut })
+      setExtendTarget(null)
+    } catch {
+      // handled by react-query
+    }
   }
 
   const columns: Column<Reservation>[] = useMemo(() => [
@@ -144,6 +162,7 @@ export default function CheckOutPage() {
           onView={() => openDetailModal(r)}
           onEdit={() => openEditForm(r)}
           onCheckOut={() => openCheckOut(r)}
+          onExtendStay={() => openExtendStay(r)}
         />
       ),
     },
@@ -194,6 +213,7 @@ export default function CheckOutPage() {
         onClose={() => setShowDetailModal(false)}
         reservation={selectedReservation}
         onEdit={openEditForm}
+        onExtendStay={openExtendStay}
       />
 
       <ReservationFormModal
@@ -211,6 +231,14 @@ export default function CheckOutPage() {
         onClose={closeCheckOut}
         onConfirm={confirmCheckOut}
         onConfirmAfterPayment={confirmAfterCheckOut}
+      />
+
+      <ExtendStayModal
+        isOpen={!!extendTarget}
+        onClose={() => setExtendTarget(null)}
+        reservation={extendTarget}
+        isLoading={extendStay.isPending}
+        onConfirm={handleExtendStayConfirm}
       />
     </div>
   )

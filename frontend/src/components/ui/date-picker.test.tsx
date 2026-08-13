@@ -119,3 +119,29 @@ describe('DatePicker grid navigation', () => {
     expect((futureYear as HTMLButtonElement).disabled).toBe(true)
   })
 })
+
+describe('DatePicker mobile popup positioning', () => {
+  it('clamps the popup within a narrow viewport so it never overflows', () => {
+    const originalWidth = window.innerWidth
+    Object.defineProperty(window, 'innerWidth', { value: 320, configurable: true })
+
+    try {
+      render(<DatePicker value="2026-10-10" onChange={vi.fn()} />)
+      fireEvent.click(screen.getByRole('button', { name: /Oct 10, 2026/ }))
+
+      let root = screen.getByText('October 2026') as HTMLElement
+      while (root && root.style?.position !== 'fixed') {
+        root = root.parentElement as HTMLElement
+      }
+      expect(root).toBeTruthy()
+
+      const left = Number.parseInt(root.style.left, 10)
+      const width = Number.parseInt(root.style.minWidth, 10)
+      expect(left).toBeGreaterThanOrEqual(0)
+      expect(width).toBeLessThanOrEqual(320)
+      expect(left + width).toBeLessThanOrEqual(320)
+    } finally {
+      Object.defineProperty(window, 'innerWidth', { value: originalWidth, configurable: true })
+    }
+  })
+})

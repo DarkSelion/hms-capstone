@@ -84,17 +84,17 @@ export function GuestsPicker({ value, onChange, className, error }: GuestsPicker
             type="button"
             disabled={value.rooms <= 1}
             onClick={() => adjust('rooms', -1)}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted hover:bg-cream hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted hover:bg-cream hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <Minus className="h-3 w-3" />
+            <Minus className="h-4 w-4" />
           </button>
-          <span className="w-6 text-center text-sm font-medium text-foreground">{value.rooms}</span>
+          <span className="w-8 text-center text-sm font-medium text-foreground">{value.rooms}</span>
           <button
             type="button"
             onClick={() => adjust('rooms', 1)}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted hover:bg-cream hover:text-primary transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted hover:bg-cream hover:text-primary transition-colors"
           >
-            <Plus className="h-3 w-3" />
+            <Plus className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -109,17 +109,17 @@ export function GuestsPicker({ value, onChange, className, error }: GuestsPicker
             type="button"
             disabled={value.adults <= 1}
             onClick={() => adjust('adults', -1)}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted hover:bg-cream hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted hover:bg-cream hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <Minus className="h-3 w-3" />
+            <Minus className="h-4 w-4" />
           </button>
-          <span className="w-6 text-center text-sm font-medium text-foreground">{value.adults}</span>
+          <span className="w-8 text-center text-sm font-medium text-foreground">{value.adults}</span>
           <button
             type="button"
             onClick={() => adjust('adults', 1)}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted hover:bg-cream hover:text-primary transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted hover:bg-cream hover:text-primary transition-colors"
           >
-            <Plus className="h-3 w-3" />
+            <Plus className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -135,17 +135,17 @@ export function GuestsPicker({ value, onChange, className, error }: GuestsPicker
             type="button"
             disabled={value.children <= 0}
             onClick={() => adjust('children', -1)}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted hover:bg-cream hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted hover:bg-cream hover:text-primary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <Minus className="h-3 w-3" />
+            <Minus className="h-4 w-4" />
           </button>
-          <span className="w-6 text-center text-sm font-medium text-foreground">{value.children}</span>
+          <span className="w-8 text-center text-sm font-medium text-foreground">{value.children}</span>
           <button
             type="button"
             onClick={() => adjust('children', 1)}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted hover:bg-cream hover:text-primary transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted hover:bg-cream hover:text-primary transition-colors"
           >
-            <Plus className="h-3 w-3" />
+            <Plus className="h-4 w-4" />
           </button>
         </div>
       </div>

@@ -65,15 +65,7 @@ class PaymentController extends Controller
                 'paid_at' => now(),
             ]);
 
-            $paidAmount = $reservation->payments()
-                ->where('status', 'completed')
-                ->sum('amount');
-
-            $reservation->update([
-                'paid_amount' => $paidAmount,
-                'payment_status' => $paidAmount >= $reservation->total_amount ? 'paid' : 'partial',
-                'due_amount' => max(0, $reservation->total_amount - $paidAmount),
-            ]);
+            $reservation->reconcileBalances();
 
             return $payment;
         });

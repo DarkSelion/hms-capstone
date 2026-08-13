@@ -140,7 +140,7 @@ class ReservationController extends Controller
             return response()->json(['message' => 'Not found.'], 404);
         }
 
-        if (in_array($reservation->status, ['checked_in', 'checked_out', 'cancelled'])) {
+        if (in_array($reservation->status, ['checked_in', 'checked_out', 'cancelled', 'no_show'])) {
             return response()->json(['message' => 'Reservation cannot be cancelled.'], 422);
         }
 

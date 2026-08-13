@@ -89,12 +89,6 @@ describe('ExtendStayModal', () => {
     expect(screen.getByText(formatCurrency(2300))).toBeInTheDocument()
   })
 
-  it('shows the overstaying banner when the reservation is overstaying', () => {
-    renderModal({ reservation: reservation({ is_overstay: true }) })
-
-    expect(screen.getByText('Guest has overstayed past the scheduled check-out date.')).toBeInTheDocument()
-  })
-
   it('displays backend errors', () => {
     renderModal({ error: 'The room is already reserved for another guest.' })
 

@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\Public\AuthController as PublicAuthController;
 use App\Http\Controllers\Api\Public\ContactController as PublicContactController;
 use App\Http\Controllers\Api\Public\PaymentController as PublicPaymentController;
+use App\Http\Controllers\Api\Public\OnlinePaymentGatewayController as PublicOnlinePaymentGatewayController;
 use App\Http\Controllers\Api\Public\ReservationController as PublicReservationController;
 use App\Http\Controllers\Api\Public\RoomController as PublicRoomController;
 use App\Http\Controllers\Api\ReportController;
@@ -28,6 +29,9 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
+
+// Payment gateway webhook (server-to-server, no Sanctum — verified via shared secret header)
+Route::post('/webhooks/payment', [PublicOnlinePaymentGatewayController::class, 'webhook']);
 
 // Protected routes (admin/staff)
 Route::middleware(['auth:sanctum', 'role:admin,staff'])->group(function () {
@@ -49,6 +53,7 @@ Route::middleware(['auth:sanctum', 'role:admin,staff'])->group(function () {
     Route::apiResource('reservations', ReservationController::class);
     Route::post('/reservations/{reservation}/check-in', [ReservationController::class, 'checkIn']);
     Route::post('/reservations/{reservation}/check-out', [ReservationController::class, 'checkOut']);
+    Route::get('/reservations/{reservation}/checkout-preview', [ReservationController::class, 'checkoutPreview']);
     Route::post('/reservations/{reservation}/cancel', [ReservationController::class, 'cancel']);
     Route::post('/reservations/{reservation}/no-show', [ReservationController::class, 'markNoShow']);
     Route::post('/reservations/{reservation}/extend-stay', [ReservationController::class, 'extendStay']);
@@ -154,6 +159,8 @@ Route::middleware(['auth:sanctum', 'role:admin,staff'])->group(function () {
         Route::delete('/settings/logo', [SettingController::class, 'deleteLogo']);
         Route::post('/settings/qr-code', [SettingController::class, 'uploadQrCode']);
         Route::delete('/settings/qr-code', [SettingController::class, 'deleteQrCode']);
+        Route::post('/settings/branding-image', [SettingController::class, 'uploadBrandingImage']);
+        Route::delete('/settings/branding-image', [SettingController::class, 'deleteBrandingImage']);
 
         // Activity Logs
         Route::get('/activity-logs', [ActivityLogController::class, 'index']);
@@ -186,5 +193,6 @@ Route::prefix('public')->group(function () {
         Route::get('/reservations/{reservation}', [PublicReservationController::class, 'show']);
         Route::post('/reservations/{reservation}/cancel', [PublicReservationController::class, 'cancel']);
         Route::post('/payments', [PublicPaymentController::class, 'store']);
+        Route::post('/payments/initiate-online', [PublicOnlinePaymentGatewayController::class, 'initiate']);
     });
 });

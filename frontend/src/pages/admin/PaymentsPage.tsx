@@ -16,7 +16,7 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { useToast } from '@/components/ui/toast'
 import { PAYMENT_METHODS } from '@/lib/constants'
 import {
-  Plus, Eye, Banknote, Smartphone,
+  Plus, Eye, Banknote, Smartphone, CreditCard,
   AlertCircle, Loader2,
 } from 'lucide-react'
 
@@ -35,6 +35,7 @@ const PAYMENT_STATUS_OPTIONS = [
 const METHOD_ICONS: Record<string, React.ReactNode> = {
   cash: <Banknote className="h-4 w-4" />,
   gcash: <Smartphone className="h-4 w-4" />,
+  online: <CreditCard className="h-4 w-4" />,
 }
 
 function formatDate(dateStr: string) {

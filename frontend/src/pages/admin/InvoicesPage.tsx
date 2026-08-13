@@ -719,6 +719,7 @@ export default function InvoicesPage() {
           <Select label="Payment Method" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
             <option value="cash">Cash</option>
 <option value="gcash">GCash</option>
+<option value="online">Online</option>
           </Select>
           <Input
             label="Reference / Transaction ID"

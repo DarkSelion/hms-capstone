@@ -180,6 +180,28 @@ describe('PaymentModal', () => {
     )
   })
 
+  it('sends the actual departure date to the payments API when provided', () => {
+    render(
+      <PaymentModal
+        isOpen
+        onClose={vi.fn()}
+        reservation={reservation({ due_amount: 500 })}
+        actualCheckOut="2026-10-14"
+      />,
+    )
+
+    mockMutate.mockResolvedValue({ id: 53, amount: 500, status: 'completed' })
+    fireEvent.click(screen.getByRole('button', { name: 'Record Payment' }))
+
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reservation_id: 1,
+        amount: 500,
+        actual_check_out: '2026-10-14',
+      }),
+    )
+  })
+
   it('surfaces server errors instead of closing', async () => {
     const { onClose } = renderModal()
     mockMutate.mockRejectedValue(new Error('The amount field is required.'))

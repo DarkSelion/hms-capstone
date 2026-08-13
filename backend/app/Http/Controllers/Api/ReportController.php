@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Room;
@@ -31,6 +32,17 @@ class ReportController extends Controller
             ->get(['created_at', 'amount'])
             ->groupBy(fn ($p) => $p->created_at->format('Y-m-d'))
             ->map(fn ($group) => round($group->sum('amount'), 2));
+
+        $invoiceRevenueByDate = Invoice::where('status', 'paid')
+            ->whereNotNull('paid_at')
+            ->whereBetween('paid_at', [$data['from'] . ' 00:00:00', $data['to'] . ' 23:59:59'])
+            ->get(['paid_at', 'total_amount'])
+            ->groupBy(fn ($i) => $i->paid_at->format('Y-m-d'))
+            ->map(fn ($group) => round($group->sum('total_amount'), 2));
+
+        foreach ($invoiceRevenueByDate as $date => $amount) {
+            $revenueByDate[$date] = round((float) ($revenueByDate[$date] ?? 0) + (float) $amount, 2);
+        }
 
         $bookingsByDate = Reservation::whereBetween('created_at', [$data['from'] . ' 00:00:00', $data['to'] . ' 23:59:59'])
             ->get(['created_at'])
@@ -214,6 +226,24 @@ class ReportController extends Controller
                         ];
                     })
                     ->toArray();
+
+                $invoiceRows = Invoice::with('reservation')
+                    ->where('status', 'paid')
+                    ->whereNotNull('paid_at')
+                    ->whereBetween('paid_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
+                    ->orderBy('paid_at')
+                    ->get()
+                    ->map(function ($i) {
+                        return [
+                            $i->paid_at->format('Y-m-d'),
+                            number_format((float) $i->total_amount, 2),
+                            'Invoice',
+                            $i->reservation?->reservation_number,
+                        ];
+                    })
+                    ->toArray();
+
+                $rows = array_merge($rows, $invoiceRows);
                 break;
 
             case 'occupancy':

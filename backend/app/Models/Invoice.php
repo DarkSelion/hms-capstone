@@ -24,6 +24,7 @@ class Invoice extends Model
         'status',
         'issued_date',
         'due_date',
+        'paid_at',
         'notes',
         'created_by',
     ];
@@ -33,6 +34,7 @@ class Invoice extends Model
         return [
             'issued_date' => 'date:Y-m-d',
             'due_date' => 'date:Y-m-d',
+            'paid_at' => 'datetime',
             'amount' => 'decimal:2',
             'tax_amount' => 'decimal:2',
             'discount_amount' => 'decimal:2',

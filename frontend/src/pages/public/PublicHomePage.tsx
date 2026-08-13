@@ -1,15 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { usePublicRoomTypes, useHotelName, usePublicSettings } from '@/hooks/usePublicApi'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { usePublicRoomTypes, useHotelName, usePublicSettings, useBrandingSettings } from '@/hooks/usePublicApi'
+import { buildHeroImages, buildGalleryPhotos, stringSetting, replaceHotelName } from '@/lib/branding'
+import { toLocalDateStr } from '@/lib/format'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { GuestsPicker } from '@/components/ui/guests-picker'
-import { ArrowRight, Users, Maximize, Search, Waves, UtensilsCrossed, Camera, Wifi, Car, Star, Building2 } from 'lucide-react'
-
-const HERO_IMAGES = [
-  'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1920&h=1080&fit=crop',
-  'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=1920&h=1080&fit=crop',
-  'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1920&h=1080&fit=crop',
-]
+import { ArrowRight, Users, Maximize, Search, Waves, UtensilsCrossed, Camera, Wifi, Car, Star, Building2, CheckCircle, AlertTriangle, Clock, X } from 'lucide-react'
 
 const ROOM_IMAGES: Record<string, string[]> = {
   rooms: [
@@ -66,10 +62,33 @@ function getRoomImage(name: string, index: number): string {
 export default function PublicHomePage() {
   const navigate = useNavigate()
   const hotelName = useHotelName()
+  const branding = useBrandingSettings()
+  const heroImages = useMemo(() => buildHeroImages(branding), [branding])
+  const galleryPhotos = useMemo(() => buildGalleryPhotos(branding, hotelName), [branding, hotelName])
+  const heroBadge = replaceHotelName(stringSetting(branding, 'hero_badge', `Welcome to ${hotelName}`), hotelName)
+  const heroTitle = stringSetting(branding, 'hero_title', 'Comfortable Stays, Warm Smiles')
+  const heroSubtitle = stringSetting(
+    branding,
+    'hero_subtitle',
+    'Experience warm Filipino hospitality right here in Pampanga. Every stay feels like coming home.'
+  )
+  const heroCtaLabel = stringSetting(branding, 'hero_cta_label', 'Explore Stays')
+  const sectionDiscoverTitle = stringSetting(branding, 'section_discover_title', 'Discover Our World')
+  const sectionWhyTitle = stringSetting(branding, 'section_why_title', 'Why Stay With Us')
+  const sectionAmenitiesTitle = stringSetting(branding, 'section_amenities_title', 'Comforts of Home')
+  const sectionGalleryTitle = replaceHotelName(
+    stringSetting(branding, 'section_gallery_title', `A Glimpse of ${hotelName}`),
+    hotelName
+  )
   const [activeTab, setActiveTab] = useState(0)
   const [dateRange, setDateRange] = useState({ from: '', to: '' })
   const [guests, setGuests] = useState({ rooms: 1, adults: 1, children: 0 })
   const [heroSlide, setHeroSlide] = useState(0)
+  const [searchParams] = useSearchParams()
+  const [paymentNoticeDismissed, setPaymentNoticeDismissed] = useState(false)
+  const bookingRef = searchParams.get('booking_ref')
+  const payStatus = searchParams.get('status')
+  const showPaymentNotice = !!bookingRef && !!payStatus && !paymentNoticeDismissed
   const { data: roomTypes } = usePublicRoomTypes()
   const { data: bookingSettings } = usePublicSettings('booking')
 
@@ -82,7 +101,7 @@ export default function PublicHomePage() {
     if (maxAdvanceDays <= 0) return undefined
     const d = new Date()
     d.setDate(d.getDate() + maxAdvanceDays)
-    return d.toISOString().split('T')[0]
+    return toLocalDateStr(d)
   }, [maxAdvanceDays])
 
   const currentTab = TAB_DATA[activeTab]
@@ -93,19 +112,53 @@ export default function PublicHomePage() {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setHeroSlide((prev) => (prev + 1) % HERO_IMAGES.length)
+      setHeroSlide((prev) => (prev + 1) % heroImages.length)
     }, 5000)
     return () => clearInterval(timer)
-  }, [])
+  }, [heroImages.length])
 
   return (
     <div>
+      {/* Payment redirect-back notice (from online payment partner) */}
+      {showPaymentNotice && (
+        <div className="fixed top-0 inset-x-0 z-[60] px-4 py-3 flex items-center gap-3 bg-black/95 border-b border-white/10">
+          {payStatus === 'success' ? (
+            <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
+          ) : payStatus === 'failed' || payStatus === 'cancelled' ? (
+            <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0" />
+          ) : (
+            <Clock className="h-5 w-5 text-sky-400 shrink-0" />
+          )}
+          <p className="text-sm text-white/80 flex-1">
+            {payStatus === 'success'
+              ? `Payment received for ${bookingRef}. Thank you!`
+              : payStatus === 'failed' || payStatus === 'cancelled'
+                ? `Payment for ${bookingRef} was not completed.`
+                : `Payment for ${bookingRef} is being processed.`}
+          </p>
+          {payStatus === 'success' && (
+            <Link
+              to="/public/my-reservations"
+              className="shrink-0 text-xs font-semibold uppercase tracking-wider text-gold hover:text-gold/80 transition-colors"
+            >
+              View booking
+            </Link>
+          )}
+          <button
+            onClick={() => setPaymentNoticeDismissed(true)}
+            className="shrink-0 rounded-lg p-1 text-white/30 hover:text-white hover:bg-white/5 transition-colors"
+            aria-label="Dismiss notice"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 1: HERO
           ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative h-screen w-full overflow-hidden">
+      <section className="relative min-h-screen md:h-screen w-full overflow-hidden">
         {/* Slideshow background */}
-        {HERO_IMAGES.map((src, i) => (
+        {heroImages.map((src, i) => (
           <div
             key={i}
             className="absolute inset-0 z-0 transition-opacity duration-1000"
@@ -123,34 +176,33 @@ export default function PublicHomePage() {
         <div className="relative z-10 flex flex-col items-center justify-start h-full pt-32 md:pt-40">
           <div className="w-full max-w-4xl mx-auto px-4 text-center">
             <p className="section-subtitle mb-5 animate-reveal-up" style={{ animationDelay: '0.2s' }}>
-              Welcome to {hotelName}
+              {heroBadge}
             </p>
             <h1
               className="font-serif text-white text-5xl sm:text-6xl lg:text-7xl font-light leading-[1.15] mb-6 animate-reveal-up"
               style={{ animationDelay: '0.4s' }}
             >
-              Comfortable Stays,<br />Warm Smiles
+              {heroTitle}
             </h1>
             <div className="gold-line mx-auto mb-8 animate-reveal-up" style={{ animationDelay: '0.6s' }} />
             <p
               className="text-white/40 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed mb-10 animate-reveal-up"
               style={{ animationDelay: '0.7s' }}
             >
-              Experience warm Filipino hospitality right here in Pampanga.
-              Every stay feels like coming home.
+              {heroSubtitle}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-reveal-up" style={{ animationDelay: '0.9s' }}>
               <button
                 onClick={() => navigate('/public/rooms')}
                 className="btn-gold inline-flex items-center gap-2"
               >
-                Explore Stays <ArrowRight className="h-4 w-4" />
+                {heroCtaLabel} <ArrowRight className="h-4 w-4" />
               </button>
             </div>
 
             {/* Slide dots */}
             <div className="flex items-center justify-center gap-2 mt-10 animate-reveal-up" style={{ animationDelay: '1.1s' }}>
-              {HERO_IMAGES.map((_, i) => (
+              {heroImages.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setHeroSlide(i)}
@@ -164,7 +216,7 @@ export default function PublicHomePage() {
         </div>
 
         {/* Booking Widget */}
-        <div className="absolute left-0 right-0 z-30" style={{ bottom: '15%' }}>
+        <div className="relative mt-10 md:mt-0 md:absolute md:inset-x-0 md:bottom-[15%] md:z-30">
           <div className="max-w-4xl mx-auto px-4">
             <div className="bg-dark/80 backdrop-blur-xl border border-gold/20 rounded-2xl p-5 flex flex-col md:flex-row gap-3 items-end shadow-2xl shadow-black/40">
               <div className="flex-[2] w-full">
@@ -214,13 +266,13 @@ export default function PublicHomePage() {
           <div className="text-center mb-14">
             <p className="section-subtitle mb-4">Accommodations</p>
             <h2 className="font-serif text-dark text-4xl sm:text-5xl lg:text-6xl font-light leading-tight">
-              Discover Our World
+              {sectionDiscoverTitle}
             </h2>
             <div className="w-12 h-px bg-gold mx-auto mt-6" />
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex justify-center gap-6 mb-16">
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-6 mb-16">
             {TAB_DATA.map((tab, idx) => (
               <button
                 key={tab.key}
@@ -303,7 +355,7 @@ export default function PublicHomePage() {
         <div className="relative z-10 max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <p className="section-subtitle mb-4">Why Choose Us</p>
-            <h2 className="section-heading">Why Stay With Us</h2>
+            <h2 className="section-heading">{sectionWhyTitle}</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
@@ -338,7 +390,7 @@ export default function PublicHomePage() {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-14">
             <div>
               <p className="section-subtitle mb-4">Gallery</p>
-              <h2 className="section-heading">A Glimpse of {hotelName}</h2>
+              <h2 className="section-heading">{sectionGalleryTitle}</h2>
             </div>
             <button
               onClick={() => navigate('/public/gallery')}
@@ -348,18 +400,11 @@ export default function PublicHomePage() {
             </button>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {[
-              { src: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=600&h=400&fit=crop', label: 'Deluxe Room' },
-              { src: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=600&h=400&fit=crop', label: 'Cozy Lounge' },
-              { src: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&h=400&fit=crop', label: 'Our Restaurant' },
-              { src: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=600&h=400&fit=crop', label: 'Swimming Pool' },
-              { src: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&h=400&fit=crop', label: 'Family Room' },
-              { src: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600&h=400&fit=crop', label: 'Event Hall' },
-            ].map((photo, i) => (
-              <div key={i} className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-white/5 cursor-pointer" onClick={() => navigate('/public/gallery')}>
+            {galleryPhotos.slice(0, 6).map((photo) => (
+              <div key={photo.id} className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-white/5 cursor-pointer" onClick={() => navigate('/public/gallery')}>
                 <img
                   src={photo.src}
-                  alt={photo.label}
+                  alt={photo.title}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   loading="lazy"
                 />
@@ -367,7 +412,7 @@ export default function PublicHomePage() {
                 <div className="absolute bottom-0 left-0 right-0 p-5 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                   <div className="flex items-center gap-2.5">
                     <Camera className="h-4 w-4 text-gold" />
-                    <span className="text-white text-sm font-medium">{photo.label}</span>
+                    <span className="text-white text-sm font-medium">{photo.title}</span>
                   </div>
                 </div>
               </div>
@@ -377,77 +422,13 @@ export default function PublicHomePage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════
-          SECTION 5: ABOUT THE HOTEL
-          ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative bg-cream py-24 md:py-32 px-4 overflow-hidden">
-        <div className="w-16 h-px bg-gold/60 mx-auto mb-16" />
-
-        <div className="relative z-10 max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
-            {/* Image */}
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-              <img
-                src="https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&h=600&fit=crop"
-                alt={hotelName}
-                className="w-full h-[450px] lg:h-[550px] object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-dark/20 to-transparent" />
-              <div className="absolute bottom-6 left-6 bg-dark/80 backdrop-blur-md rounded-xl px-6 py-4 border border-gold/20">
-                <p className="text-gold font-serif text-3xl font-light">15+</p>
-                <p className="text-white/50 text-xs uppercase tracking-[0.15em]">Years of Excellence</p>
-              </div>
-            </div>
-
-            {/* Text Content */}
-            <div>
-              <p className="section-subtitle mb-5">Our Story</p>
-              <h2 className="font-serif text-dark text-3xl sm:text-4xl lg:text-5xl font-light leading-[1.2] mb-6">
-                A Home Away from Home
-              </h2>
-              <div className="w-12 h-px bg-gold mb-8" />
-              <div className="space-y-5 text-dark/50 text-sm leading-relaxed">
-                <p>
-                  Tucked away in the quiet charm of Pampanga, {hotelName} has been
-                  welcoming guests with warm Filipino hospitality. Our story began with a simple
-                  vision — to create a place where comfort meets genuine care.
-                </p>
-                <p>
-                  From our cozy rooms to our friendly staff, every part of your stay is designed
-                  to make you feel at ease. Whether you are here for a quick stopover or a few
-                  days of relaxation, we are here to make it memorable.
-                </p>
-                <p>
-                  With comfortable rooms, an on-site restaurant, and a refreshing pool, we invite
-                  you to discover why travelers keep coming back to {hotelName}.
-                </p>
-              </div>
-              <div className="grid grid-cols-3 gap-8 mt-10">
-                {[
-                  { number: '15', label: 'Cozy Rooms' },
-                  { number: '1', label: 'Restaurant' },
-                  { number: '4.8', label: 'Guest Rating' },
-                ].map((stat) => (
-                  <div key={stat.label} className="text-center">
-                    <p className="font-serif text-dark text-3xl font-light">{stat.number}</p>
-                    <p className="text-dark/30 text-[11px] uppercase tracking-[0.1em] mt-1">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="w-16 h-px bg-gold/60 mx-auto mt-24" />
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          SECTION 6: AMENITIES
+          SECTION 5: AMENITIES
           ═══════════════════════════════════════════════════════════════ */}
       <section className="relative bg-dark py-24 md:py-32 px-4 overflow-hidden">
         <div className="relative z-10 max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <p className="section-subtitle mb-4">Amenities</p>
-            <h2 className="section-heading">Comforts of Home</h2>
+            <h2 className="section-heading">{sectionAmenitiesTitle}</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-8">
             {[

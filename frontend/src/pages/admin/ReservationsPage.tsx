@@ -230,12 +230,6 @@ export default function ReservationsPage() {
               Overdue
             </Badge>
           )}
-          {r.is_overstay && (
-            <Badge variant="danger">
-              <AlertTriangle className="h-3 w-3" />
-              Overstaying
-            </Badge>
-          )}
         </div>
       ),
     },

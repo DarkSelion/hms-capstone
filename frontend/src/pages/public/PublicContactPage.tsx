@@ -24,17 +24,16 @@ const DEFAULT_FAQ = [
     q: 'Is breakfast included in the room rate?',
     a: 'Breakfast is included with select room types. Please check your booking details or contact us for more information.',
   },
-  {
-    q: 'What is your cancellation policy?',
-    a: 'Free cancellation is available up to 24 hours before your scheduled check-in. Cancellations within 24 hours may be subject to a one-night charge.',
-  },
 ]
 
 export default function PublicContactPage() {
   const { data: s } = usePublicSettings('contact')
+  const { data: bookingData } = usePublicSettings('booking')
   const hotelName = useHotelName()
   const hotel = useHotelSettings()
   const settings = (s ?? {}) as Record<string, any>
+  const bookingSettings = (bookingData ?? {}) as Record<string, any>
+  const cancellationPolicy = bookingSettings.cancellation_policy || ''
 
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '', website: '' })
   const [submitted, setSubmitted] = useState(false)
@@ -68,15 +67,25 @@ export default function PublicContactPage() {
   const tiktok = settings.contact_tiktok || '#'
 
   const faqItems = useMemo(() => {
+    let items: { q: string; a: string }[]
     const raw = settings.contact_faq
-    if (!raw) return DEFAULT_FAQ
-    try {
-      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_FAQ
-    } catch {
-      return DEFAULT_FAQ
+    if (!raw) {
+      items = [...DEFAULT_FAQ]
+    } else {
+      try {
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+        items = Array.isArray(parsed) && parsed.length > 0 ? [...parsed] : [...DEFAULT_FAQ]
+      } catch {
+        items = [...DEFAULT_FAQ]
+      }
     }
-  }, [settings.contact_faq])
+    if (cancellationPolicy) {
+      const withoutCancellation = items.filter((i) => !/cancellation/i.test(i.q))
+      withoutCancellation.push({ q: 'What is your cancellation policy?', a: cancellationPolicy })
+      return withoutCancellation
+    }
+    return items
+  }, [settings.contact_faq, cancellationPolicy])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

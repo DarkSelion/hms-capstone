@@ -130,7 +130,9 @@ class ReservationsPageTest extends TestCase
 
         $reservation->update([
             'paid_amount' => $paidAmount,
-            'payment_status' => $paidAmount >= $reservation->total_amount ? 'paid' : 'partial',
+            'payment_status' => $paidAmount <= 0
+                ? 'unpaid'
+                : ($paidAmount >= $reservation->total_amount ? 'paid' : 'partial'),
             'due_amount' => max(0, $reservation->total_amount - $paidAmount),
         ]);
 
@@ -1238,5 +1240,80 @@ class ReservationsPageTest extends TestCase
         $this->assertEquals(3300, (float) $response->json('total_amount'));
         // Old room reconciled (no other active reservations)
         $this->assertDatabaseHas('rooms', ['id' => $oldRoom->id, 'status' => 'available']);
+    }
+
+    public function test_update_clears_overdue_flag_when_check_in_moved_to_today(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $reservation = $this->reservation([
+            'check_in' => now()->subDay()->toDateString(),
+            'check_out' => now()->addDay()->toDateString(),
+            'is_overdue' => true,
+            'overdue_at' => now()->startOfDay(),
+            'price_per_night' => 1000,
+            'total_amount' => 2200,
+        ]);
+
+        $response = $this->putJson("/api/reservations/{$reservation->id}", [
+            'check_in' => now()->toDateString(),
+            'check_out' => now()->addDay()->toDateString(),
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertFalse($response->json('is_overdue'));
+        $this->assertNull($response->json('overdue_at'));
+        $this->assertFalse($reservation->fresh()->is_overdue);
+        $this->assertNull($reservation->fresh()->overdue_at);
+    }
+
+    public function test_update_keeps_overdue_flag_when_check_in_still_in_past(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $reservation = $this->reservation([
+            'check_in' => now()->subDays(3)->toDateString(),
+            'check_out' => now()->addDay()->toDateString(),
+            'is_overdue' => true,
+            'overdue_at' => now()->subDays(3)->startOfDay(),
+            'price_per_night' => 1000,
+            'total_amount' => 2200,
+        ]);
+
+        $response = $this->putJson("/api/reservations/{$reservation->id}", [
+            'check_in' => now()->subDay()->toDateString(),
+            'check_out' => now()->addDay()->toDateString(),
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertTrue($response->json('is_overdue'));
+        $this->assertTrue($reservation->fresh()->is_overdue);
+    }
+
+    public function test_update_keeps_unpaid_status_when_no_payment_recorded(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $reservation = $this->reservation([
+            'check_in' => '2026-09-10',
+            'check_out' => '2026-09-12',
+            'payment_status' => 'unpaid',
+            'paid_amount' => 0,
+            'due_amount' => 2200,
+        ]);
+
+        $response = $this->putJson("/api/reservations/{$reservation->id}", [
+            'check_in' => '2026-09-12',
+            'check_out' => '2026-09-13',
+        ]);
+
+        $response->assertStatus(200);
+        // No payments recorded, so status must stay unpaid (not partial).
+        $this->assertEquals('unpaid', $response->json('payment_status'));
+        $this->assertEquals('unpaid', $reservation->fresh()->payment_status);
+        $this->assertEquals(0, (float) $reservation->fresh()->paid_amount);
     }
 }

@@ -62,19 +62,31 @@ class PaymentController extends Controller
         $data = $request->validate([
             'reservation_id' => 'required|exists:reservations,id',
             'amount' => 'required|numeric|min:0.01',
-            'payment_method' => 'required|in:cash,gcash',
+            'payment_method' => 'required|in:cash,gcash,online',
             'payment_type' => 'required|in:full,partial,deposit',
             'status' => 'sometimes|in:pending,completed,failed,refunded',
             'reference_number' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
+            'actual_check_out' => 'nullable|date',
         ]);
 
         $payment = DB::transaction(function () use ($data, $request) {
             $reservation = Reservation::whereKey($data['reservation_id'])->lockForUpdate()->firstOrFail();
 
-            if ($data['amount'] > (float) $reservation->due_amount) {
+            // The check-out collect flow collects the PROJECTED balance (extra
+            // nights from a changed departure and/or the same-day late fee),
+            // which has not been persisted to the reservation yet. When the
+            // caller supplies the actual departure date, cap the amount at the
+            // projected balance due; otherwise keep the stored balance cap.
+            $maxAmount = (float) $reservation->due_amount;
+            if (! empty($data['actual_check_out'])) {
+                $projected = $reservation->projectedCheckoutTotal($data['actual_check_out']);
+                $maxAmount = max($maxAmount, (float) $projected['due_amount']);
+            }
+
+            if ($data['amount'] > $maxAmount) {
                 throw ValidationException::withMessages([
-                    'amount' => ['The amount cannot exceed the outstanding balance of '.number_format((float) $reservation->due_amount, 2).'.'],
+                    'amount' => ['The amount cannot exceed the outstanding balance of '.number_format($maxAmount, 2).'.'],
                 ]);
             }
 
@@ -89,21 +101,15 @@ class PaymentController extends Controller
                 $data['reference_number'] = 'PAY-' . now()->format('Ymd') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
             }
 
+            unset($data['actual_check_out']);
+
             $payment = Payment::create($data);
 
             if ($data['status'] === 'completed' && $reservation->status === 'pending') {
                 $reservation->update(['status' => 'confirmed']);
             }
 
-            $paidAmount = $reservation->payments()
-                ->where('status', 'completed')
-                ->sum('amount');
-
-            $reservation->update([
-                'paid_amount' => $paidAmount,
-                'payment_status' => $paidAmount >= $reservation->total_amount ? 'paid' : 'partial',
-                'due_amount' => max(0, $reservation->total_amount - $paidAmount),
-            ]);
+            $reservation->reconcileBalances();
 
             return $payment;
         });
@@ -128,7 +134,7 @@ class PaymentController extends Controller
     public function update(Request $request, Payment $payment)
     {
         $data = $request->validate([
-            'payment_method' => 'sometimes|in:cash,gcash',
+            'payment_method' => 'sometimes|in:cash,gcash,online',
             'status' => 'sometimes|in:pending,completed,failed,refunded',
             'reference_number' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
@@ -137,22 +143,14 @@ class PaymentController extends Controller
         $payment->update($data);
 
         if (in_array('status', array_keys($data))) {
-            $reservation = DB::transaction(function () use ($payment, $data) {
+            DB::transaction(function () use ($payment, $data) {
                 $reservation = Reservation::whereKey($payment->reservation_id)->lockForUpdate()->firstOrFail();
 
                 if ($data['status'] === 'completed' && $reservation->status === 'pending') {
                     $reservation->update(['status' => 'confirmed']);
                 }
 
-                $paidAmount = $reservation->payments()
-                    ->where('status', 'completed')
-                    ->sum('amount');
-
-                $reservation->update([
-                    'paid_amount' => $paidAmount,
-                    'payment_status' => $paidAmount >= $reservation->total_amount ? 'paid' : 'partial',
-                    'due_amount' => max(0, $reservation->total_amount - $paidAmount),
-                ]);
+                $reservation->reconcileBalances();
 
                 return $reservation;
             });

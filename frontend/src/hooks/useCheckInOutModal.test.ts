@@ -68,7 +68,7 @@ describe('useCheckInOutModal', () => {
     await act(async () => {
       await result.current.confirm()
     })
-    expect(mockStatusChange).toHaveBeenCalledWith('check-in', res)
+    expect(mockStatusChange).toHaveBeenCalledWith('check-in', res, undefined)
     expect(result.current.isOpen).toBe(false)
     expect(result.current.error).toBeNull()
   })
@@ -97,7 +97,7 @@ describe('useCheckInOutModal', () => {
     await act(async () => {
       await result.current.confirmAfterPayment(payment({ amount: 165 }))
     })
-    expect(mockStatusChange).toHaveBeenCalledWith('check-in', res)
+    expect(mockStatusChange).toHaveBeenCalledWith('check-in', res, undefined)
     expect(result.current.error?.paymentRecorded).toBe(true)
     expect(result.current.error?.message).toMatch(/Payment was recorded, but check-in failed/)
     expect(result.current.target?.paid_amount).toBe(165)

@@ -17,6 +17,7 @@ interface PaymentModalProps {
   confirmLabel?: string
   hideHalf?: boolean
   showCheckInOption?: boolean
+  actualCheckOut?: string
   onSuccess?: (payment: Payment) => void
 }
 
@@ -36,6 +37,7 @@ export function PaymentModal({
   confirmLabel = 'Record Payment',
   hideHalf = false,
   showCheckInOption = false,
+  actualCheckOut,
   onSuccess,
 }: PaymentModalProps) {
   const createPayment = useCreatePayment()
@@ -108,6 +110,7 @@ export function PaymentModal({
         payment_type: amount >= due ? 'full' : 'partial',
         reference_number: reference.trim() || undefined,
         status: method === 'gcash' ? 'pending' : 'completed',
+        ...(actualCheckOut ? { actual_check_out: actualCheckOut } : {}),
       })) as unknown as Payment
       if (checkInAfter && activeReservation.status === 'confirmed') {
         await checkIn.mutateAsync(activeReservation.id)

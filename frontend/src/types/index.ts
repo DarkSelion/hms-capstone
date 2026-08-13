@@ -109,7 +109,6 @@ export interface Reservation {
   due_amount: number;
   payment_status: 'unpaid' | 'partial' | 'paid' | 'refunded';
   is_overdue?: boolean;
-  is_overstay?: boolean;
   price_per_night?: number;
   discount_percent?: number;
   tax_percent?: number;
@@ -117,6 +116,21 @@ export interface Reservation {
   source?: string;
   payments?: Payment[];
   created_at: string;
+}
+
+export interface CheckoutPreview {
+  actual_check_out: string
+  total_nights: number
+  subtotal: number
+  discount_amount: number
+  tax_percent: number
+  tax_amount: number
+  total_amount: number
+  paid_amount: number
+  due_amount: number
+  overlap: boolean
+  late_checkout_fee: number
+  late_checkout_applies: boolean
 }
 
 export interface GuestHistory {
@@ -238,7 +252,6 @@ export interface DashboardStats {
   check_ins_today: number;
   check_outs_today: number;
   pending_reservations: number;
-  overstaying: number;
   total_rooms: number;
   dirty_rooms: number;
 }

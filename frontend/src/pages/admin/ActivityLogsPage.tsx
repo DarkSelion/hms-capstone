@@ -71,6 +71,7 @@ const ACTIONS = [
   'flagged_overdue',
   'cleared_overdue',
   'notified_overdue',
+  'late_checkout',
 ]
 
 const ACTION_LABELS: Record<string, string> = {
@@ -87,6 +88,7 @@ const ACTION_LABELS: Record<string, string> = {
   flagged_overdue: 'Flagged Overdue',
   cleared_overdue: 'Cleared Overdue',
   notified_overdue: 'Overdue Notified',
+  late_checkout: 'Late Check-Out',
 }
 
 const ACTION_COLORS: Record<string, 'info' | 'success' | 'warning' | 'danger' | 'default'> = {
@@ -103,6 +105,7 @@ const ACTION_COLORS: Record<string, 'info' | 'success' | 'warning' | 'danger' | 
   flagged_overdue: 'danger',
   cleared_overdue: 'success',
   notified_overdue: 'warning',
+  late_checkout: 'warning',
 }
 
 function formatDateTime(dateStr: string) {

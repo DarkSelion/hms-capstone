@@ -1,7 +1,7 @@
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { usePublicRoomType } from '@/hooks/usePublicApi'
+import { usePublicRoomType, usePortalCurrency } from '@/hooks/usePublicApi'
 import { usePublicAuthStore } from '@/stores/publicAuthStore'
-import { formatCurrency } from '@/lib/format'
+import { formatCurrencyWith } from '@/lib/format'
 import { Users, Maximize, BedDouble, Home, Check, ArrowRight } from 'lucide-react'
 
 const ROOM_IMAGES: Record<string, string> = {
@@ -30,6 +30,8 @@ export default function PublicRoomDetailPage() {
   const [searchParams] = useSearchParams()
   const { token } = usePublicAuthStore()
   const { data: roomType, isLoading } = usePublicRoomType(slug)
+  const currency = usePortalCurrency()
+  const fmt = (amount: number) => formatCurrencyWith(amount, currency)
 
   const checkIn = searchParams.get('check_in') ?? ''
   const checkOut = searchParams.get('check_out') ?? ''
@@ -116,7 +118,7 @@ export default function PublicRoomDetailPage() {
             <div>
               <h3 className="font-serif text-2xl text-white font-light mb-2">Ready to Check In?</h3>
               <p className="text-white/40 text-sm">
-                Starting from <span className="text-gold font-semibold">{formatCurrency(roomType.base_price)}</span> per night
+                Starting from <span className="text-gold font-semibold">{fmt(roomType.base_price)}</span> per night
               </p>
             </div>
             <button onClick={handleBook} className="btn-gold flex items-center gap-2 shrink-0">

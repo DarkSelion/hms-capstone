@@ -145,7 +145,6 @@ class DashboardTest extends TestCase
             'check_ins_today',
             'check_outs_today',
             'pending_reservations',
-            'overstaying',
             'total_rooms',
         ]);
     }
@@ -165,7 +164,6 @@ class DashboardTest extends TestCase
             'check_ins_today' => 0,
             'check_outs_today' => 0,
             'pending_reservations' => 0,
-            'overstaying' => 0,
             'total_rooms' => 0,
         ]);
     }
@@ -309,26 +307,6 @@ class DashboardTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJsonPath('pending_reservations', 1);
-    }
-
-    public function test_stats_overstaying_count(): void
-    {
-        Sanctum::actingAs($this->admin());
-        $room1 = $this->room();
-        $room2 = $this->room();
-        $this->reservation($room1, [
-            'status' => 'checked_in',
-            'check_out' => now()->subDay()->format('Y-m-d'),
-        ]);
-        $this->reservation($room2, [
-            'status' => 'checked_in',
-            'check_out' => now()->addDays(2)->format('Y-m-d'),
-        ]);
-
-        $response = $this->getJson('/api/dashboard/stats');
-
-        $response->assertStatus(200);
-        $response->assertJsonPath('overstaying', 1);
     }
 
     // =========================================================================

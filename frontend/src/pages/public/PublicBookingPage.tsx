@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate, useSearchParams, Navigate } from 'react-router-dom'
-import { usePublicAvailableRooms, usePublicCreateReservation, usePublicSettings } from '@/hooks/usePublicApi'
+import { usePublicAvailableRooms, usePublicCreateReservation, usePublicSettings, usePortalCurrency } from '@/hooks/usePublicApi'
 import { usePublicAuthStore } from '@/stores/publicAuthStore'
 import { useToast } from '@/components/ui/toast'
-import { formatCurrency } from '@/lib/format'
+import { formatCurrencyWith, formatCheckoutTime } from '@/lib/format'
 import { DatePicker } from '@/components/ui/date-picker'
 import type { PublicRoom, PublicRoomType } from '@/types'
 import { Loader2, Check, Users, Maximize, BedDouble, ArrowLeft, CreditCard, Calendar, ChevronRight } from 'lucide-react'
@@ -97,6 +97,14 @@ export default function PublicBookingPage() {
   const createReservation = usePublicCreateReservation()
   const { data: taxSettings } = usePublicSettings('tax')
   const { data: bookingSettings } = usePublicSettings('booking')
+  const currency = usePortalCurrency()
+  const fmt = (amount: number) => formatCurrencyWith(amount, currency)
+  const taxName = (taxSettings as Record<string, unknown> | undefined)?.tax_name
+  const taxLabel = typeof taxName === 'string' && taxName.trim() ? taxName.trim() : 'Tax'
+  const cancellationPolicy = (bookingSettings as Record<string, unknown> | undefined)?.cancellation_policy
+  const cancellationLabel = typeof cancellationPolicy === 'string' && cancellationPolicy.trim() ? cancellationPolicy.trim() : ''
+  const checkoutTimeSetting = (bookingSettings as Record<string, unknown> | undefined)?.check_out_time
+  const checkoutTimeLabel = formatCheckoutTime(typeof checkoutTimeSetting === 'string' ? checkoutTimeSetting : '12:00')
   const { addToast } = useToast()
 
   useEffect(() => {
@@ -304,7 +312,7 @@ export default function PublicBookingPage() {
                 <div className="animate-spin rounded-full h-8 w-8 border-2 border-gold border-t-transparent" />
               </div>
             ) : roomGroups.length === 0 ? (
-              <div className="bg-dark/50 border border-white/5 rounded-2xl p-16 text-center max-w-xl mx-auto">
+              <div className="bg-dark/50 border border-white/5 rounded-2xl p-8 sm:p-16 text-center max-w-xl mx-auto">
                 <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-5">
                   <BedDouble className="h-7 w-7 text-white/20" />
                 </div>
@@ -354,12 +362,12 @@ export default function PublicBookingPage() {
                             </div>
                             <div className="text-right shrink-0">
                               <p className="text-gold font-semibold text-xl">
-                                {formatCurrency(group.roomType.base_price)}
+                                {fmt(group.roomType.base_price)}
                               </p>
                               <p className="text-white/20 text-[10px] uppercase tracking-wider">per night</p>
                               {nights > 0 && (
                                 <p className="text-white/30 text-xs mt-1.5">
-                                  {formatCurrency(group.roomType.base_price * nights)} total
+                                  {fmt(group.roomType.base_price * nights)} total
                                 </p>
                               )}
                             </div>
@@ -453,6 +461,7 @@ export default function PublicBookingPage() {
                       { label: 'Guest', value: `${user?.first_name ?? ''} ${user?.last_name ?? ''}`.trim() || 'Guest' },
                       { label: 'Check In', value: formatDate(checkIn) },
                       { label: 'Check Out', value: formatDate(checkOut) },
+                      { label: 'Check-out Time', value: checkoutTimeLabel },
                       { label: 'Nights', value: String(nights) },
                       { label: 'Guests', value: `${adults} adult${adults > 1 ? 's' : ''}${childrenCount > 0 ? `, ${childrenCount} child${childrenCount > 1 ? 'ren' : ''}` : ''}` },
                     ].map((row) => (
@@ -491,19 +500,26 @@ export default function PublicBookingPage() {
                     return (
                       <div className="space-y-3 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-white/30">{formatCurrency(rate)} × {nights} night{nights > 1 ? 's' : ''}</span>
-                          <span className="text-white/60">{formatCurrency(subtotal)}</span>
+                          <span className="text-white/30">{fmt(rate)} × {nights} night{nights > 1 ? 's' : ''}</span>
+                          <span className="text-white/60">{fmt(subtotal)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-white/30">Tax ({taxPercent}%)</span>
-                          <span className="text-white/60">{formatCurrency(tax)}</span>
+                          <span className="text-white/30">{taxLabel} ({taxPercent}%)</span>
+                          <span className="text-white/60">{fmt(tax)}</span>
                         </div>
                         <div className="border-t border-white/10 pt-3 mt-3">
                           <div className="flex justify-between items-center">
                             <span className="text-white font-medium">Total</span>
-                            <span className="text-gold font-bold text-xl">{formatCurrency(total)}</span>
+                            <span className="text-gold font-bold text-xl">{fmt(total)}</span>
                           </div>
                         </div>
+                        {cancellationLabel && (
+                          <div className="mt-4 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                            <p className="text-white/40 text-[11px] leading-relaxed">
+                              <span className="text-gold/70 font-medium">Cancellation: </span>{cancellationLabel}
+                            </p>
+                          </div>
+                        )}
                         <button
                           onClick={handleConfirm}
                           disabled={createReservation.isPending}

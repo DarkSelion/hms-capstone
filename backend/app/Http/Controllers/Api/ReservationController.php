@@ -71,7 +71,7 @@ class ReservationController extends Controller
             'guest_email' => 'nullable|email|max:255',
             'guest_phone' => 'required|string|max:50',
             'room_id' => 'required|exists:rooms,id',
-            'check_in' => 'required|date',
+            'check_in' => 'required|date|after_or_equal:today',
             'check_out' => 'required|date|after:check_in',
             'adults' => 'required|integer|min:1',
             'children' => 'nullable|integer|min:0',
@@ -205,7 +205,7 @@ class ReservationController extends Controller
             }
 
             if ($newStatus === 'checked_in') {
-                if ($reservation->due_amount > 0 && ! $reservation->payments()->whereIn('status', ['completed', 'pending'])->exists()) {
+                if ($reservation->due_amount > 0 && ! $reservation->hasRecordedPayment()) {
                     return response()->json(['message' => 'Collect a payment before checking in.'], 422);
                 }
                 $data['checked_in_by'] = $request->user()->id;
@@ -258,6 +258,11 @@ class ReservationController extends Controller
 
         if ($roomChanged || $datesChanged) {
             $this->recalculatePricing($reservation);
+        }
+
+        if ($datesChanged && $reservation->is_overdue
+            && !$reservation->check_in->startOfDay()->lt(now()->startOfDay())) {
+            $reservation->update(['is_overdue' => false, 'overdue_at' => null]);
         }
 
         if (isset($data['room_id']) && (int) $data['room_id'] !== $oldRoomId) {
@@ -313,7 +318,7 @@ class ReservationController extends Controller
             return response()->json(['message' => 'Only confirmed or pending reservations can be checked in.'], 422);
         }
 
-        if ($reservation->due_amount > 0 && ! $reservation->payments()->whereIn('status', ['completed', 'pending'])->exists()) {
+        if ($reservation->due_amount > 0 && ! $reservation->hasRecordedPayment()) {
             return response()->json(['message' => 'Collect a payment before checking in.'], 422);
         }
 
@@ -343,17 +348,78 @@ class ReservationController extends Controller
             return response()->json(['message' => 'Reservation must be checked in to check out.'], 422);
         }
 
-        if ((float) $reservation->due_amount > 0) {
+        $data = $request->validate([
+            'actual_check_out' => ['nullable', 'date', function ($attribute, $value, $fail) use ($reservation) {
+                if (now()->parse($value)->lt(now()->parse($reservation->check_out))) {
+                    $fail('Departure date cannot be earlier than the booked check-out.');
+                }
+            }],
+        ]);
+
+        $actualCheckOut = $data['actual_check_out']
+            ?? ($reservation->check_out->lt(now()->startOfDay())
+                ? now()->toDateString()
+                : $reservation->check_out->toDateString());
+
+        $datesChanged = $actualCheckOut !== $reservation->check_out->toDateString();
+
+        // Same-day late check-out fee applies only when departing on the booked
+        // check-out date (no date change). Departures after the booked date bill
+        // the actual extra nights instead (datesChanged path), so the flat fee
+        // never stacks with them.
+        $lateFee = $datesChanged ? 0.0 : $reservation->lateCheckoutFee();
+
+        // Compute the projected balance BEFORE persisting anything, so a blocked
+        // check-out leaves the reservation dates/totals untouched (AC-002).
+        $paid = $reservation->recordedPaid();
+        $currentTotal = $datesChanged
+            ? (float) $reservation->computePricing($actualCheckOut)['total_amount']
+            : (float) $reservation->total_amount;
+        $currentTotal += $lateFee;
+        $projectedDue = max(0, $currentTotal - $paid);
+
+        if ($projectedDue > 0) {
             return response()->json(['message' => 'Settle the outstanding balance before checking out.'], 422);
         }
 
-        $reservation->update([
-            'status' => 'checked_out',
-            'checked_out_by' => $request->user()->id,
-            'checked_out_at' => now(),
-        ]);
+        // Fee folding, date recalc, status change, and room cleanup all happen in
+        // ONE transaction, so a failure rolls everything back — a retry recomputes
+        // from a clean state and can never double-charge the late fee.
+        $userId = $request->user()->id;
 
-        $reservation->room->update(['status' => 'dirty', 'cleaning_status' => 'dirty']);
+        DB::transaction(function () use ($reservation, $actualCheckOut, $datesChanged, $lateFee, $userId) {
+            if ($datesChanged) {
+                $reservation->update(['check_out' => $actualCheckOut]);
+                $this->recalculatePricing($reservation);
+            }
+
+            if ($lateFee > 0) {
+                $base = $datesChanged
+                    ? (float) $reservation->total_amount
+                    : (float) $reservation->computePricing($reservation->check_out->toDateString())['total_amount'];
+                $reservation->update(['total_amount' => round($base + $lateFee, 2)]);
+                $reservation->reconcileBalances();
+            }
+
+            $reservation->update([
+                'status' => 'checked_out',
+                'checked_out_by' => $userId,
+                'checked_out_at' => now(),
+            ]);
+
+            $reservation->room->update(['status' => 'dirty', 'cleaning_status' => 'dirty']);
+        });
+
+        if ($lateFee > 0) {
+            ActivityLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'late_checkout',
+                'module' => 'reservations',
+                'model_type' => 'Reservation',
+                'model_id' => $reservation->id,
+                'description' => "Charged late check-out fee of " . number_format($lateFee, 2) . " for reservation #{$reservation->reservation_number}",
+            ]);
+        }
 
         ActivityLog::create([
             'user_id' => $request->user()->id,
@@ -367,9 +433,52 @@ class ReservationController extends Controller
         return response()->json($reservation->load(['guest', 'room.roomType']));
     }
 
+    public function checkoutPreview(Request $request, Reservation $reservation)
+    {
+        if ($reservation->status !== 'checked_in') {
+            return response()->json(['message' => 'Reservation must be checked in.'], 422);
+        }
+
+        $data = $request->validate([
+            'actual_check_out' => ['nullable', 'date', function ($attribute, $value, $fail) use ($reservation) {
+                if (now()->parse($value)->lt(now()->parse($reservation->check_out))) {
+                    $fail('Departure date cannot be earlier than the booked check-out.');
+                }
+            }],
+        ]);
+
+        $actualCheckOut = $data['actual_check_out']
+            ?? ($reservation->check_out->lt(now()->startOfDay())
+                ? now()->toDateString()
+                : $reservation->check_out->toDateString());
+
+        $projected = $reservation->projectedCheckoutTotal($actualCheckOut);
+        $overlap = $this->roomHasOverlap(
+            $reservation->room_id,
+            $reservation->check_in->toDateString(),
+            $actualCheckOut,
+            $reservation->id
+        );
+
+        return response()->json([
+            'actual_check_out' => $projected['actual_check_out'],
+            'total_nights' => $projected['total_nights'],
+            'subtotal' => $projected['subtotal'],
+            'discount_amount' => $projected['discount_amount'],
+            'tax_percent' => $projected['tax_percent'],
+            'tax_amount' => $projected['tax_amount'],
+            'total_amount' => $projected['total_amount'],
+            'paid_amount' => $projected['paid_amount'],
+            'due_amount' => $projected['due_amount'],
+            'overlap' => $overlap,
+            'late_checkout_fee' => $projected['late_checkout_fee'],
+            'late_checkout_applies' => $projected['late_checkout_applies'],
+        ]);
+    }
+
     public function cancel(Request $request, Reservation $reservation)
     {
-        if (in_array($reservation->status, ['checked_in', 'checked_out', 'cancelled'])) {
+        if (in_array($reservation->status, ['checked_in', 'checked_out', 'cancelled', 'no_show'])) {
             return response()->json(['message' => 'Reservation cannot be cancelled.'], 422);
         }
 
@@ -475,24 +584,18 @@ class ReservationController extends Controller
 
     private function recalculatePricing(Reservation $reservation): void
     {
-        $rate = (float) $reservation->price_per_night;
-        $nights = now()->parse($reservation->check_in)->diffInDays(now()->parse($reservation->check_out));
-        $subtotal = $rate * $nights;
-        $discount = $subtotal * (($reservation->discount_percent ?? 0) / 100);
-        $taxSetting = Setting::where('key', 'tax_rate')->first();
-        $taxRate = ((float) ($taxSetting ? $taxSetting->getRawOriginal('value') : '10')) / 100;
-        $tax = ($subtotal - $discount) * $taxRate;
-        $total = round($subtotal - $discount + $tax, 2);
+        $pricing = $reservation->computePricing($reservation->check_out->toDateString());
 
         $reservation->update([
-            'total_nights' => $nights,
-            'subtotal' => $subtotal,
-            'discount_amount' => $discount,
-            'tax_percent' => $taxRate * 100,
-            'tax_amount' => $tax,
-            'total_amount' => $total,
-            'due_amount' => $total - ($reservation->paid_amount ?? 0),
+            'total_nights' => $pricing['nights'],
+            'subtotal' => $pricing['subtotal'],
+            'discount_amount' => $pricing['discount_amount'],
+            'tax_percent' => $pricing['tax_percent'],
+            'tax_amount' => $pricing['tax_amount'],
+            'total_amount' => $pricing['total_amount'],
         ]);
+
+        $reservation->reconcileBalances();
     }
 
     private function roomHasOverlap(int $roomId, string $checkIn, string $checkOut, ?int $excludeId = null): bool

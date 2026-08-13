@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useSettings, useUpdateSettings, useUpdateLogo, useDeleteLogo, useUploadQrCode, useDeleteQrCode } from '@/hooks/useApi'
+import { ImageSlotUpload } from '@/components/admin/ImageSlotUpload'
+import { DEFAULT_BRANDING_TEXT, DEFAULT_GALLERY_PHOTOS, DEFAULT_HERO_IMAGES, stringSetting } from '@/lib/branding'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,9 +10,10 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
+import { CHECKOUT_HOUR_OPTIONS, CHECKOUT_MINUTE_OPTIONS, parseCheckoutTime, buildCheckoutTime } from '@/lib/format'
 import { Save, Loader2, AlertCircle, RotateCcw, Plus, Trash2, Upload } from 'lucide-react'
 
-const SETTINGS_TABS = ['Hotel', 'Booking', 'Taxes', 'Security', 'Contact', 'Payments'] as const
+const SETTINGS_TABS = ['Hotel', 'Booking', 'Taxes', 'Security', 'Contact', 'Payments', 'Website'] as const
 
 const TAB_GROUP: Record<string, string> = {
   Hotel: 'hotel',
@@ -19,7 +22,17 @@ const TAB_GROUP: Record<string, string> = {
   Security: 'security',
   Contact: 'contact',
   Payments: 'payment',
+  Website: 'branding',
 }
+
+const THEME_PRESETS = [
+  { value: 'gold', label: 'Gold (current)' },
+  { value: 'emerald', label: 'Emerald & Sage' },
+  { value: 'navy', label: 'Navy & Gold' },
+  { value: 'neutral', label: 'Warm Neutral' },
+]
+
+const GALLERY_CATEGORIES = ['Rooms & Suites', 'Amenities', 'Others']
 
 const CURRENCIES = [
   { value: 'PHP', label: 'PHP - Philippine Peso' },
@@ -68,7 +81,7 @@ export default function SettingsPage() {
     hotel_name: '', default_currency: 'PHP', timezone: 'Asia/Manila',
   })
   const [bookingForm, setBookingForm] = useState({
-    default_discount: 0, cancellation_policy: '', early_checkin_fee: 0, late_checkout_fee: 0, max_advance_days: 30,
+    default_discount: 0, cancellation_policy: '', early_checkin_fee: 0, late_checkout_fee: 0, check_out_time: '12:00', max_advance_days: 30,
   })
   const [taxForm, setTaxForm] = useState({ tax_name: '', tax_rate: 0 })
   const [securityForm, setSecurityForm] = useState({
@@ -84,9 +97,23 @@ export default function SettingsPage() {
   const [paymentForm, setPaymentForm] = useState({
     online_payment_enabled: true,
     gcash_account: '',
+    online_gateway_enabled: false,
+    online_gateway_base_url: 'https://hardreset.onrender.com',
+    online_gateway_api_key: '',
+    online_gateway_webhook_secret: '',
   })
   const [qrPreview, setQrPreview] = useState('')
   const qrUrl = (settings as any)?.gcash_qr_image || ''
+
+  const [websiteForm, setWebsiteForm] = useState({
+    theme_preset: 'gold',
+    hero_badge: '', hero_title: '', hero_subtitle: '', hero_cta_label: '',
+    section_discover_title: '', section_why_title: '', section_amenities_title: '', section_gallery_title: '',
+    footer_tagline: '',
+  })
+  const [galleryItems, setGalleryItems] = useState<Array<{ title: string; category: string }>>(
+    Array.from({ length: 12 }, () => ({ title: '', category: 'Amenities' }))
+  )
 
   useEffect(() => {
     if (settings) {
@@ -101,6 +128,7 @@ export default function SettingsPage() {
         cancellation_policy: s.cancellation_policy ?? '',
         early_checkin_fee: s.early_checkin_fee ?? 0,
         late_checkout_fee: s.late_checkout_fee ?? 0,
+        check_out_time: s.check_out_time ?? '12:00',
         max_advance_days: s.max_advance_days ?? 30,
       })
       setTaxForm({
@@ -132,7 +160,29 @@ export default function SettingsPage() {
       setPaymentForm({
         online_payment_enabled: s.online_payment_enabled === '1' || s.online_payment_enabled === true,
         gcash_account: s.gcash_account ?? '',
+        online_gateway_enabled: s.online_gateway_enabled === '1' || s.online_gateway_enabled === true,
+        online_gateway_base_url: s.online_gateway_base_url ?? 'https://hardreset.onrender.com',
+        online_gateway_api_key: s.online_gateway_api_key ?? '',
+        online_gateway_webhook_secret: s.online_gateway_webhook_secret ?? '',
       })
+      setWebsiteForm({
+        theme_preset: stringSetting(s, 'theme_preset', DEFAULT_BRANDING_TEXT.theme_preset),
+        hero_badge: stringSetting(s, 'hero_badge', DEFAULT_BRANDING_TEXT.hero_badge),
+        hero_title: stringSetting(s, 'hero_title', DEFAULT_BRANDING_TEXT.hero_title),
+        hero_subtitle: stringSetting(s, 'hero_subtitle', DEFAULT_BRANDING_TEXT.hero_subtitle),
+        hero_cta_label: stringSetting(s, 'hero_cta_label', DEFAULT_BRANDING_TEXT.hero_cta_label),
+        section_discover_title: stringSetting(s, 'section_discover_title', DEFAULT_BRANDING_TEXT.section_discover_title),
+        section_why_title: stringSetting(s, 'section_why_title', DEFAULT_BRANDING_TEXT.section_why_title),
+        section_amenities_title: stringSetting(s, 'section_amenities_title', DEFAULT_BRANDING_TEXT.section_amenities_title),
+        section_gallery_title: stringSetting(s, 'section_gallery_title', DEFAULT_BRANDING_TEXT.section_gallery_title),
+        footer_tagline: stringSetting(s, 'footer_tagline', DEFAULT_BRANDING_TEXT.footer_tagline),
+      })
+      setGalleryItems(
+        Array.from({ length: 12 }, (_, i) => ({
+          title: stringSetting(s, `gallery_${i + 1}_title`, DEFAULT_GALLERY_PHOTOS[i].title),
+          category: stringSetting(s, `gallery_${i + 1}_category`, DEFAULT_GALLERY_PHOTOS[i].category),
+        }))
+      )
     }
   }, [settings])
 
@@ -152,6 +202,16 @@ export default function SettingsPage() {
       Object.assign(payload, {
         online_payment_enabled: paymentForm.online_payment_enabled ? '1' : '0',
         gcash_account: paymentForm.gcash_account,
+        online_gateway_enabled: paymentForm.online_gateway_enabled ? '1' : '0',
+        online_gateway_base_url: paymentForm.online_gateway_base_url,
+        online_gateway_api_key: paymentForm.online_gateway_api_key,
+        online_gateway_webhook_secret: paymentForm.online_gateway_webhook_secret,
+      })
+    } else if (activeTab === 'Website') {
+      Object.assign(payload, websiteForm)
+      galleryItems.forEach((item, i) => {
+        payload[`gallery_${i + 1}_title`] = item.title
+        payload[`gallery_${i + 1}_category`] = item.category
       })
     }
     updateSettings.mutate(
@@ -353,7 +413,61 @@ export default function SettingsPage() {
                     value={bookingForm.late_checkout_fee}
                     onChange={(e) => setBookingForm((p) => ({ ...p, late_checkout_fee: Number(e.target.value) }))}
                   />
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-foreground">Check-out Time</label>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        aria-label="Check-out hour"
+                        value={parseCheckoutTime(bookingForm.check_out_time).hour12}
+                        onChange={(e) => setBookingForm((p) => ({
+                          ...p,
+                          check_out_time: buildCheckoutTime(
+                            e.target.value,
+                            parseCheckoutTime(p.check_out_time).minute,
+                            parseCheckoutTime(p.check_out_time).meridiem,
+                          ),
+                        }))}
+                      >
+                        {CHECKOUT_HOUR_OPTIONS.map((h) => (
+                          <option key={h} value={h}>{h}</option>
+                        ))}
+                      </Select>
+                      <span className="text-sm text-muted">:</span>
+                      <Select
+                        aria-label="Check-out minute"
+                        value={parseCheckoutTime(bookingForm.check_out_time).minute}
+                        onChange={(e) => setBookingForm((p) => ({
+                          ...p,
+                          check_out_time: buildCheckoutTime(
+                            parseCheckoutTime(p.check_out_time).hour12,
+                            e.target.value,
+                            parseCheckoutTime(p.check_out_time).meridiem,
+                          ),
+                        }))}
+                      >
+                        {CHECKOUT_MINUTE_OPTIONS.map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </Select>
+                      <Select
+                        aria-label="Check-out meridiem"
+                        value={parseCheckoutTime(bookingForm.check_out_time).meridiem}
+                        onChange={(e) => setBookingForm((p) => ({
+                          ...p,
+                          check_out_time: buildCheckoutTime(
+                            parseCheckoutTime(p.check_out_time).hour12,
+                            parseCheckoutTime(p.check_out_time).minute,
+                            e.target.value as 'AM' | 'PM',
+                          ),
+                        }))}
+                      >
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
+                <p className="mt-1 text-xs text-muted">Flat fee for same-day departures after the check-out time. Staying past the check-out date bills extra nights.</p>
                 <div>
                   <Input
                     label="Maximum Advance Booking Days"
@@ -678,13 +792,212 @@ export default function SettingsPage() {
                   </div>
                   <p className="mt-2 text-xs text-muted">JPEG, PNG or WebP, up to 2MB. Shown to guests in the payment modal.</p>
                 </div>
+
+                <div className="border-t border-border pt-6">
+                  <h3 className="text-sm font-semibold text-foreground">Online Payment Gateway</h3>
+                  <p className="text-xs text-muted mb-4">Partner processor used when guests choose "Pay Online" on the portal.</p>
+
+                  <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Enable Online Gateway</p>
+                      <p className="text-xs text-muted mt-0.5">Let guests pay through the partner processor</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentForm((p) => ({ ...p, online_gateway_enabled: !p.online_gateway_enabled }))}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 ${
+                        paymentForm.online_gateway_enabled ? 'bg-primary' : 'bg-border'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-card shadow ring-0 transition duration-200 ease-in-out ${
+                          paymentForm.online_gateway_enabled ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="mt-4 space-y-4">
+                    <Input
+                      label="Gateway Base URL"
+                      value={paymentForm.online_gateway_base_url}
+                      onChange={(e) => setPaymentForm((p) => ({ ...p, online_gateway_base_url: e.target.value }))}
+                      placeholder="https://hardreset.onrender.com"
+                    />
+                    <Input
+                      label="API Key"
+                      type="password"
+                      value={paymentForm.online_gateway_api_key}
+                      onChange={(e) => setPaymentForm((p) => ({ ...p, online_gateway_api_key: e.target.value }))}
+                      placeholder="Gateway API key"
+                    />
+                    <Input
+                      label="Webhook Secret"
+                      type="password"
+                      value={paymentForm.online_gateway_webhook_secret}
+                      onChange={(e) => setPaymentForm((p) => ({ ...p, online_gateway_webhook_secret: e.target.value }))}
+                      placeholder="Shared secret for webhook verification"
+                    />
+                    <p className="text-xs text-muted">
+                      These values are stored server-side and are never exposed on the public portal. The gateway sends
+                      payment callbacks to <code className="text-foreground">POST /api/webhooks/payment</code>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'Website' && (
+              <div className="space-y-8">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Portal Theme</h3>
+                  <Select
+                    label="Color Theme"
+                    value={websiteForm.theme_preset}
+                    onChange={(e) => setWebsiteForm((p) => ({ ...p, theme_preset: e.target.value }))}
+                  >
+                    {THEME_PRESETS.map((t) => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </Select>
+                  <p className="mt-1 text-xs text-muted">The selected palette restyles the whole guest portal.</p>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Branding Images</h3>
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <div>
+                      <p className="mb-2 text-xs font-medium text-muted uppercase tracking-wide">Hero Image 1</p>
+                      <ImageSlotUpload label="Hero Image 1" imageKey="hero_image_1" value={(settings as any)?.hero_image_1 || DEFAULT_HERO_IMAGES[0]} />
+                    </div>
+                    <div>
+                      <p className="mb-2 text-xs font-medium text-muted uppercase tracking-wide">Hero Image 2</p>
+                      <ImageSlotUpload label="Hero Image 2" imageKey="hero_image_2" value={(settings as any)?.hero_image_2 || DEFAULT_HERO_IMAGES[1]} />
+                    </div>
+                    <div>
+                      <p className="mb-2 text-xs font-medium text-muted uppercase tracking-wide">Hero Image 3</p>
+                      <ImageSlotUpload label="Hero Image 3" imageKey="hero_image_3" value={(settings as any)?.hero_image_3 || DEFAULT_HERO_IMAGES[2]} />
+                    </div>
+                    <div>
+                      <p className="mb-2 text-xs font-medium text-muted uppercase tracking-wide">Favicon</p>
+                      <ImageSlotUpload label="Favicon" imageKey="hotel_favicon" value={(settings as any)?.hotel_favicon || ''} />
+                      <p className="mt-1 text-xs text-muted">Shown in the browser tab for the guest portal.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Hero Section</h3>
+                  <div className="space-y-4">
+                    <Input
+                      label="Badge"
+                      value={websiteForm.hero_badge}
+                      onChange={(e) => setWebsiteForm((p) => ({ ...p, hero_badge: e.target.value }))}
+                    />
+                    <Input
+                      label="Headline"
+                      value={websiteForm.hero_title}
+                      onChange={(e) => setWebsiteForm((p) => ({ ...p, hero_title: e.target.value }))}
+                    />
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-foreground">Subtitle</label>
+                      <textarea
+                        className="flex min-h-[60px] w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary"
+                        value={websiteForm.hero_subtitle}
+                        onChange={(e) => setWebsiteForm((p) => ({ ...p, hero_subtitle: e.target.value }))}
+                      />
+                    </div>
+                    <Input
+                      label="CTA Button Label"
+                      value={websiteForm.hero_cta_label}
+                      onChange={(e) => setWebsiteForm((p) => ({ ...p, hero_cta_label: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Section Titles</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Input
+                      label="Accommodations Title"
+                      value={websiteForm.section_discover_title}
+                      onChange={(e) => setWebsiteForm((p) => ({ ...p, section_discover_title: e.target.value }))}
+                    />
+                    <Input
+                      label="Why Stay Title"
+                      value={websiteForm.section_why_title}
+                      onChange={(e) => setWebsiteForm((p) => ({ ...p, section_why_title: e.target.value }))}
+                    />
+                    <Input
+                      label="Amenities Title"
+                      value={websiteForm.section_amenities_title}
+                      onChange={(e) => setWebsiteForm((p) => ({ ...p, section_amenities_title: e.target.value }))}
+                    />
+                    <Input
+                      label="Gallery Title"
+                      value={websiteForm.section_gallery_title}
+                      onChange={(e) => setWebsiteForm((p) => ({ ...p, section_gallery_title: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Footer</h3>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-foreground">Tagline</label>
+                    <textarea
+                      className="flex min-h-[60px] w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary"
+                      value={websiteForm.footer_tagline}
+                      onChange={(e) => setWebsiteForm((p) => ({ ...p, footer_tagline: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-foreground">Gallery</h3>
+                    <p className="text-xs text-muted">The first 6 photos also appear on the homepage. Leave an image empty to hide the slot.</p>
+                  </div>
+                  <div className="space-y-5">
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <div key={i} className="rounded-lg border border-border p-4">
+                        <p className="mb-3 text-xs font-semibold text-muted uppercase tracking-wide">Photo {i + 1}</p>
+                        <div className="flex flex-col md:flex-row md:items-end gap-4">
+                          <div className="md:w-80 shrink-0">
+                            <ImageSlotUpload
+                              label={`Gallery ${i + 1}`}
+                              imageKey={`gallery_${i + 1}_image`}
+                              value={(settings as any)?.[`gallery_${i + 1}_image`] || DEFAULT_GALLERY_PHOTOS[i].src}
+                            />
+                          </div>
+                          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <Input
+                              label="Title"
+                              value={galleryItems[i].title}
+                              onChange={(e) => setGalleryItems((p) => p.map((x, j) => j === i ? { ...x, title: e.target.value } : x))}
+                            />
+                            <Select
+                              label="Category"
+                              value={galleryItems[i].category}
+                              onChange={(e) => setGalleryItems((p) => p.map((x, j) => j === i ? { ...x, category: e.target.value } : x))}
+                            >
+                              {GALLERY_CATEGORIES.map((c) => (
+                                <option key={c} value={c}>{c}</option>
+                              ))}
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
         </Card>
       )}
 
-      <div className="mt-6 flex justify-end">
+      <div className="sticky bottom-0 z-10 mt-6 flex justify-end border-t border-border bg-bg/95 py-3 backdrop-blur">
         <Button variant="primary" onClick={handleSave} disabled={updateSettings.isPending}>
           {updateSettings.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
           <Save className="h-4 w-4" />

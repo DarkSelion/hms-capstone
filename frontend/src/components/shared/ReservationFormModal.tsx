@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useAvailableRooms, useCreateReservation, useUpdateReservation, useSettings } from '@/hooks/useApi'
-import { formatCurrency, formatDateDisplay } from '@/lib/format'
+import { formatCurrency, formatDateDisplay, toLocalDateStr } from '@/lib/format'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -36,15 +36,13 @@ interface ReservationFormData {
   status: 'pending' | 'confirmed'
 }
 
-const today = new Date().toISOString().split('T')[0]
-
-const emptyForm: ReservationFormData = {
+const emptyForm = (): ReservationFormData => ({
   guest_first_name: '',
   guest_last_name: '',
   guest_email: '',
   guest_phone: '',
   room_id: '',
-  check_in: today,
+  check_in: toLocalDateStr(new Date()),
   check_out: '',
   adults: 1,
   children: 0,
@@ -53,10 +51,10 @@ const emptyForm: ReservationFormData = {
   special_requests: '',
   source: '',
   status: 'confirmed',
-}
+})
 
 function buildInitialForm(reservation: Reservation | null): ReservationFormData {
-  if (!reservation) return emptyForm
+  if (!reservation) return emptyForm()
 
   const checkIn = reservation.check_in?.split(/[\sT]/)[0] ?? ''
   const checkOut = reservation.check_out?.split(/[\sT]/)[0] ?? ''
@@ -112,8 +110,9 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
   const updateReservation = useUpdateReservation()
   const { data: settingsData } = useSettings()
   const settings = (settingsData ?? {}) as Record<string, string>
-  const taxRate = Number(settings['tax_rate'] ?? 0.1)
-  const taxLabel = `${Math.round(taxRate * 100)}%`
+  const taxRatePercent = Number(settings['tax_rate'] ?? 10)
+  const taxRate = taxRatePercent / 100
+  const taxLabel = `${taxRatePercent}%`
 
   function validateStep(step: number): boolean {
     const errors: Partial<Record<keyof ReservationFormData, string>> = {}
@@ -316,7 +315,7 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
                   <DatePicker
                     value={form.check_in}
                     onChange={(v) => handleFormChange('check_in', v)}
-                    min={editingReservation ? undefined : new Date().toISOString().split('T')[0]}
+                    min={editingReservation ? undefined : toLocalDateStr(new Date())}
                     error={formErrors.check_in}
                   />
                 </div>
@@ -325,7 +324,7 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
                   <DatePicker
                     value={form.check_out}
                     onChange={(v) => handleFormChange('check_out', v)}
-                    min={form.check_in || (!editingReservation ? new Date().toISOString().split('T')[0] : undefined)}
+                    min={form.check_in || (!editingReservation ? toLocalDateStr(new Date()) : undefined)}
                     error={formErrors.check_out}
                   />
                 </div>

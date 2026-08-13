@@ -94,6 +94,43 @@
   --color-cream-warm: #F2F0ED;
 }
 
+/* Theme presets (applied via .theme-{preset} on the portal layout) */
+.theme-gold {
+  --color-dark: #2C2C2C;
+  --color-gold: #C4A88A;
+  --color-gold-light: #D8C0A8;
+  --color-gold-dark: #A88C70;
+  --color-cream: #FAFAF8;
+  --color-cream-warm: #F2F0ED;
+}
+
+.theme-emerald {
+  --color-dark: #22301F;
+  --color-gold: #7C9A6E;
+  --color-gold-light: #9BB88C;
+  --color-gold-dark: #5F7A52;
+  --color-cream: #F4F7F1;
+  --color-cream-warm: #E6EDE0;
+}
+
+.theme-navy {
+  --color-dark: #12233A;
+  --color-gold: #C0A062;
+  --color-gold-light: #D4B87F;
+  --color-gold-dark: #A0824D;
+  --color-cream: #F6F3EC;
+  --color-cream-warm: #EAE4D8;
+}
+
+.theme-neutral {
+  --color-dark: #2E2A26;
+  --color-gold: #B09A82;
+  --color-gold-light: #C9B59E;
+  --color-gold-dark: #937F68;
+  --color-cream: #FAF8F5;
+  --color-cream-warm: #F0EBE4;
+}
+
 @layer components {
   .gold-line {
     @apply w-16 h-px bg-gold mx-auto;

@@ -141,6 +141,17 @@ export function useHotelName(): string {
   return typeof name === 'string' && name.trim() ? name.trim() : DEFAULT_HOTEL_NAME
 }
 
+export function usePortalCurrency(): string {
+  const settings = useHotelSettings()
+  const code = settings['default_currency']
+  return typeof code === 'string' && code.trim() ? code.trim().toUpperCase() : 'PHP'
+}
+
+export function useBrandingSettings(): Record<string, unknown> {
+  const { data } = usePublicSettings('branding')
+  return (data ?? {}) as Record<string, unknown>
+}
+
 export function usePaymentSettings(): Record<string, unknown> {
   const { data } = usePublicSettings('payment')
   return (data ?? {}) as Record<string, unknown>
@@ -157,6 +168,13 @@ export function usePublicCreatePayment() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['public-reservations'] })
     },
+  })
+}
+
+export function usePublicInitiateOnlinePayment() {
+  return useMutation({
+    mutationFn: (reservationId: number) =>
+      publicApi.post<{ redirect_url: string }>('/public/payments/initiate-online', { reservation_id: reservationId }),
   })
 }
 
