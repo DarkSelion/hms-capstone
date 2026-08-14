@@ -70,8 +70,6 @@ class OnlinePaymentGatewayController extends Controller
             'customer_email' => $reservation->guest->email,
             'total_amount' => number_format((float) $reservation->due_amount, 2, '.', ''),
             'reservation_id' => $reservation->id,
-            'room_name' => $reservation->room?->roomType?->name,
-            'room_number' => $reservation->room?->room_number,
         ];
 
         try {

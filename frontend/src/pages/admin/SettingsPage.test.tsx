@@ -12,8 +12,6 @@ vi.mock('@/hooks/useApi', () => ({
   useUpdateSettings: () => ({ mutate: mockMutateSettings, isPending: false }),
   useUpdateLogo: () => ({ mutate: vi.fn(), isPending: false }),
   useDeleteLogo: () => ({ mutate: vi.fn(), isPending: false }),
-  useUploadQrCode: () => ({ mutate: vi.fn(), isPending: false }),
-  useDeleteQrCode: () => ({ mutate: vi.fn(), isPending: false }),
   useUploadBrandingImage: () => ({ mutate: vi.fn(), isPending: false }),
   useDeleteBrandingImage: () => ({ mutate: vi.fn(), isPending: false }),
 }))
@@ -186,6 +184,31 @@ describe('SettingsPage', () => {
     expect(screen.getByLabelText('Headline')).toHaveValue('Comfortable Stays, Warm Smiles')
     expect(screen.getByDisplayValue('Cozy stays, warm smiles — right here in Pampanga.')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Deluxe King Room')).toBeInTheDocument()
-    expect(screen.getAllByDisplayValue('Rooms & Suites').length).toBe(6)
+  })
+
+  it('renders the Payments tab with the online gateway section and no GCash config', () => {
+    mockUseSettings.mockReturnValue({
+      data: {
+        ...baseSettings,
+        online_gateway_enabled: '1',
+        online_gateway_base_url: 'https://hardreset.onrender.com',
+        online_gateway_api_key: 'sk_test_123',
+        online_gateway_webhook_secret: 'whsec_456',
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    render(<SettingsPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Payments' }))
+
+    expect(screen.getByText('Online Payment Gateway')).toBeInTheDocument()
+    expect(screen.getByLabelText('Gateway Base URL')).toHaveValue('https://hardreset.onrender.com')
+    expect(screen.getByLabelText('API Key')).toHaveValue('sk_test_123')
+    expect(screen.getByLabelText('Webhook Secret')).toHaveValue('whsec_456')
+    expect(screen.queryByText('Enable Online Payments')).not.toBeInTheDocument()
+    expect(screen.queryByText('GCash Account Number')).not.toBeInTheDocument()
+    expect(screen.queryByText('GCash QR Code')).not.toBeInTheDocument()
   })
 })

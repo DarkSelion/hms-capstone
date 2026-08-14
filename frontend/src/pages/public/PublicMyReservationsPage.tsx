@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { usePublicReservations, usePublicCancelReservation, usePublicCreatePayment, usePublicInitiateOnlinePayment, usePublicSettings, useHotelName, usePaymentSettings, usePortalCurrency } from '@/hooks/usePublicApi'
+import { usePublicReservations, usePublicCancelReservation, usePublicInitiateOnlinePayment, usePublicSettings, usePaymentSettings, usePortalCurrency } from '@/hooks/usePublicApi'
 import { usePublicAuthStore } from '@/stores/publicAuthStore'
 import { formatCurrencyWith, formatDateDisplay, formatCheckoutTime } from '@/lib/format'
 import type { PublicReservation } from '@/types'
 import {
   Calendar, MapPin, XCircle, Loader2, AlertTriangle, X,
   Clock, CheckCircle, RotateCcw, BedDouble, Users,
-  LogIn, LogOut, CalendarX, Wallet, QrCode, Copy, CreditCard,
+  LogIn, LogOut, CalendarX, Wallet, CreditCard,
 } from 'lucide-react'
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; icon: any }> = {
@@ -40,10 +40,8 @@ function getThumbUrl(name: string): string {
 
 export default function PublicMyReservationsPage() {
   const { token } = usePublicAuthStore()
-  const hotelName = useHotelName()
   const { data, isLoading } = usePublicReservations()
   const cancelReservation = usePublicCancelReservation()
-  const createPayment = usePublicCreatePayment()
   const initiateOnline = usePublicInitiateOnlinePayment()
   const currency = usePortalCurrency()
   const fmt = (amount: number) => formatCurrencyWith(amount, currency)
@@ -51,15 +49,9 @@ export default function PublicMyReservationsPage() {
   const booking = (bookingSettings ?? {}) as Record<string, unknown>
   const checkoutTimeLabel = formatCheckoutTime(typeof booking['check_out_time'] === 'string' ? booking['check_out_time'] : '12:00')
   const paymentSettings = usePaymentSettings()
-  const onlineEnabled = paymentSettings['online_payment_enabled'] === '1' || paymentSettings['online_payment_enabled'] === true
-  const gcashAccount = (paymentSettings['gcash_account'] as string) || ''
-  const gcashQrImage = (paymentSettings['gcash_qr_image'] as string) || ''
   const onlineGatewayEnabled = paymentSettings['online_gateway_enabled'] === '1' || paymentSettings['online_gateway_enabled'] === true
   const [cancelId, setCancelId] = useState<number | null>(null)
   const [paymentModal, setPaymentModal] = useState<PublicReservation | null>(null)
-  const [payMode, setPayMode] = useState<'gcash' | 'online'>('gcash')
-  const [gcashRefNumber, setGcashRefNumber] = useState('')
-  const [copied, setCopied] = useState(false)
 
   const handleStartOnlinePayment = () => {
     if (!paymentModal) return
@@ -70,16 +62,6 @@ export default function PublicMyReservationsPage() {
         }
       },
     })
-  }
-
-  const handleCopyAccount = async () => {
-    try {
-      await navigator.clipboard.writeText(gcashAccount.replace(/-/g, ''))
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // Clipboard not available
-    }
   }
 
   if (!token) {
@@ -207,14 +189,9 @@ export default function PublicMyReservationsPage() {
                     </div>
                     <div className="flex items-center gap-2">
 {(r.payment_status === 'unpaid' || r.payment_status === 'partial') && (
-  (onlineEnabled || onlineGatewayEnabled) ? (
+  onlineGatewayEnabled ? (
     <button
-      onClick={() => {
-        setGcashRefNumber('')
-        setCopied(false)
-        setPayMode(onlineEnabled === false ? 'online' : 'gcash')
-        setPaymentModal(r)
-      }}
+      onClick={() => setPaymentModal(r)}
       className="btn-gold-sm flex items-center gap-1.5"
     >
       Pay Now
@@ -285,7 +262,7 @@ export default function PublicMyReservationsPage() {
       {/* Payment Modal */}
       {paymentModal !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={() => { if (!createPayment.isPending && !initiateOnline.isPending) { setPaymentModal(null) } }} />
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={() => { if (!initiateOnline.isPending) { setPaymentModal(null) } }} />
           <div className="relative z-50 w-full max-w-sm bg-dark border border-zinc-800 rounded-2xl shadow-2xl shadow-black/40">
             <div className="flex items-center justify-between border-b border-white/5 px-6 py-4">
               <h3 className="text-white font-semibold flex items-center gap-2">
@@ -293,7 +270,7 @@ export default function PublicMyReservationsPage() {
               </h3>
               <button
                 onClick={() => setPaymentModal(null)}
-                disabled={createPayment.isPending || initiateOnline.isPending}
+                disabled={initiateOnline.isPending}
                 className="rounded-lg p-1 text-white/30 hover:text-white hover:bg-white/5 transition-colors disabled:opacity-30"
               >
                 <X className="h-5 w-5" />
@@ -309,76 +286,7 @@ export default function PublicMyReservationsPage() {
                 <span className="text-xl font-semibold text-gold">{fmt(paymentModal.total_amount)}</span>
               </div>
 
-              {onlineEnabled && onlineGatewayEnabled && (
-                <div className="flex gap-2 bg-white/[0.03] border border-white/5 rounded-lg p-1">
-                  <button
-                    type="button"
-                    onClick={() => setPayMode('gcash')}
-                    className={`flex-1 py-2 rounded-md text-xs font-semibold uppercase tracking-wider transition-colors ${payMode === 'gcash' ? 'bg-gold text-dark' : 'text-white/50 hover:text-white'}`}
-                  >
-                    GCash
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPayMode('online')}
-                    className={`flex-1 py-2 rounded-md text-xs font-semibold uppercase tracking-wider transition-colors ${payMode === 'online' ? 'bg-gold text-dark' : 'text-white/50 hover:text-white'}`}
-                  >
-                    Pay Online
-                  </button>
-                </div>
-              )}
-
-              {payMode === 'gcash' && (
-                <div className="border-t border-white/5 pt-4">
-                  <div className="space-y-4">
-                    <div className="bg-white/[0.03] border border-dashed border-white/10 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-3">
-                      <div className="w-48 h-48 rounded-lg overflow-hidden flex items-center justify-center bg-white p-2 mx-auto">
-                        {gcashQrImage ? (
-                          <img src={gcashQrImage} alt="GCash QR Code" className="w-full h-full object-contain" />
-                        ) : (
-                          <QrCode className="h-12 w-12 text-zinc-400" />
-                        )}
-                      </div>
-                      <p className="text-sm text-white/60">Scan the QR code to pay via GCash</p>
-                      <p className="text-[11px] text-white/30">Send the exact amount and enter the reference number below</p>
-                    </div>
-                    <div className="flex items-center justify-between bg-white/[0.03] border border-white/5 rounded-lg px-4 py-3">
-                      <div>
-                        <p className="text-[11px] text-white/30 uppercase tracking-wider">GCash Account</p>
-                        <p className="text-sm text-white">{hotelName}</p>
-                        <p className="text-sm text-gold font-mono tracking-wider mt-0.5">{gcashAccount || 'Not configured'}</p>
-                      </div>
-                      {gcashAccount && (
-                        <button
-                          onClick={handleCopyAccount}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-xs text-white/50 hover:text-white hover:border-white/20 hover:bg-white/[0.03] transition-all shrink-0"
-                        >
-                          {copied ? (
-                            <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
-                          ) : (
-                            <Copy className="h-3.5 w-3.5" />
-                          )}
-                          {copied ? 'Copied!' : 'Copy'}
-                        </button>
-                      )}
-                    </div>
-                    <div>
-                      <label className="text-xs text-white/30 uppercase tracking-wider block mb-2">GCash Reference Number</label>
-                      <p className="text-[11px] text-white/20 mb-2">Check your GCash SMS receipt for the reference number</p>
-                      <input
-                        type="text"
-                        value={gcashRefNumber}
-                        onChange={(e) => setGcashRefNumber(e.target.value)}
-                        placeholder="e.g. 1234 5678 9012 3456"
-                        className="w-full px-4 py-3 bg-zinc-900 border border-zinc-700 rounded text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/20 transition-colors"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {payMode === 'online' && (
-                <div className="border-t border-white/5 pt-4 space-y-4">
+              <div className="border-t border-white/5 pt-4 space-y-4">
                   <div className="bg-white/[0.03] border border-dashed border-white/10 rounded-xl p-5">
                     <p className="text-sm text-white/70 text-center leading-relaxed">
                       You will be redirected to our secure payment partner to complete your payment of{' '}
@@ -403,41 +311,15 @@ export default function PublicMyReservationsPage() {
                     {initiateOnline.isPending ? 'Redirecting...' : 'Continue to Payment'}
                   </button>
                 </div>
-              )}
             </div>
             <div className="flex items-center justify-end gap-3 border-t border-white/5 px-6 py-4">
               <button
                 onClick={() => setPaymentModal(null)}
-                disabled={createPayment.isPending || initiateOnline.isPending}
+                disabled={initiateOnline.isPending}
                 className="px-4 py-2 text-sm text-white/50 hover:text-white transition-colors disabled:opacity-30"
               >
                 Cancel
               </button>
-              {payMode === 'gcash' && (
-                <button
-                  onClick={() => {
-                    createPayment.mutate(
-                      {
-                        reservation_id: paymentModal.id,
-                        amount: paymentModal.total_amount,
-                        payment_method: 'gcash',
-                        payment_type: 'full',
-                        ...(gcashRefNumber.trim() ? { reference_number: gcashRefNumber.trim() } : {}),
-                      },
-                      { onSuccess: () => setPaymentModal(null) },
-                    )
-                  }}
-                  disabled={createPayment.isPending}
-                  className="btn-gold-sm flex items-center gap-2 disabled:opacity-50"
-                >
-                  {createPayment.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Wallet className="h-4 w-4" />
-                  )}
-                  {createPayment.isPending ? 'Processing...' : `Pay ${fmt(paymentModal.total_amount)}`}
-                </button>
-              )}
             </div>
           </div>
         </div>

@@ -904,32 +904,6 @@ export function useDeleteLogo() {
   })
 }
 
-export function useUploadQrCode() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (file: File) => {
-      const formData = new FormData()
-      formData.append('qr_code', file)
-      return api.upload('/settings/qr-code', formData)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings'] })
-      queryClient.invalidateQueries({ queryKey: ['public-settings'] })
-    },
-  })
-}
-
-export function useDeleteQrCode() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: () => api.delete('/settings/qr-code'),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings'] })
-      queryClient.invalidateQueries({ queryKey: ['public-settings'] })
-    },
-  })
-}
-
 export function useUploadBrandingImage() {
   const queryClient = useQueryClient()
   return useMutation({

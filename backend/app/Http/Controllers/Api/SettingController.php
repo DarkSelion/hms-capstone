@@ -35,9 +35,6 @@ class SettingController extends Controller
         'contact_tiktok',
         'contact_map_embed_url',
         'contact_faq',
-        'online_payment_enabled',
-        'gcash_account',
-        'gcash_qr_image',
         'online_gateway_enabled',
         'online_gateway_base_url',
         'online_gateway_api_key',
@@ -169,7 +166,7 @@ class SettingController extends Controller
         if (in_array($key, ['default_discount', 'cancellation_policy', 'max_advance_days', 'early_checkin_fee', 'late_checkout_fee', 'check_out_time'])) {
             return 'booking';
         }
-        if (str_starts_with($key, 'gcash_') || str_starts_with($key, 'online_') || $key === 'online_payment_enabled') {
+        if (str_starts_with($key, 'online_')) {
             return 'payment';
         }
         if (in_array($key, ['theme_preset', 'hotel_favicon']) ||
@@ -239,42 +236,6 @@ class SettingController extends Controller
         Setting::where('key', 'hotel_logo')->delete();
 
         return response()->json(['message' => 'Logo removed successfully.']);
-    }
-
-    public function uploadQrCode(Request $request)
-    {
-        $request->validate([
-            'qr_code' => 'required|image|mimes:jpeg,png,webp|max:2048',
-        ]);
-
-        $current = Setting::where('key', 'gcash_qr_image')->first();
-        if ($current && $current->value) {
-            Storage::disk('public')->delete($current->value);
-        }
-
-        $path = $request->file('qr_code')->store('branding', 'public');
-
-        Setting::updateOrCreate(
-            ['key' => 'gcash_qr_image'],
-            ['value' => $path, 'group' => 'payment']
-        );
-
-        return response()->json([
-            'message' => 'QR code uploaded successfully.',
-            'qr_code_url' => url('storage/' . ltrim($path, '/')),
-        ]);
-    }
-
-    public function deleteQrCode()
-    {
-        $current = Setting::where('key', 'gcash_qr_image')->first();
-        if ($current && $current->value) {
-            Storage::disk('public')->delete($current->value);
-        }
-
-        Setting::where('key', 'gcash_qr_image')->delete();
-
-        return response()->json(['message' => 'QR code removed successfully.']);
     }
 
     public function uploadBrandingImage(Request $request)
@@ -349,10 +310,6 @@ class SettingController extends Controller
     {
         if (!empty($settings['hotel_logo'])) {
             $settings['hotel_logo'] = self::toStorageUrl($settings['hotel_logo']);
-        }
-
-        if (!empty($settings['gcash_qr_image'])) {
-            $settings['gcash_qr_image'] = self::toStorageUrl($settings['gcash_qr_image']);
         }
 
         foreach (self::BRANDING_IMAGE_KEYS as $key) {

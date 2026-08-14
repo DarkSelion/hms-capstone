@@ -157,8 +157,6 @@ Route::middleware(['auth:sanctum', 'role:admin,staff'])->group(function () {
         Route::get('/settings/{group}', [SettingController::class, 'byGroup']);
         Route::post('/settings/logo', [SettingController::class, 'uploadLogo']);
         Route::delete('/settings/logo', [SettingController::class, 'deleteLogo']);
-        Route::post('/settings/qr-code', [SettingController::class, 'uploadQrCode']);
-        Route::delete('/settings/qr-code', [SettingController::class, 'deleteQrCode']);
         Route::post('/settings/branding-image', [SettingController::class, 'uploadBrandingImage']);
         Route::delete('/settings/branding-image', [SettingController::class, 'deleteBrandingImage']);
 
