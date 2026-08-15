@@ -13,6 +13,7 @@ use App\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -29,7 +30,7 @@ class OnlinePaymentGatewayTest extends TestCase
         $defaults = [
             'online_gateway_enabled' => '1',
             'online_gateway_base_url' => 'https://hardreset.onrender.com',
-            'online_gateway_api_key' => 'hardreset',
+            'online_gateway_api_key' => 'REDACTED_GATEWAY_KEY',
             'online_gateway_webhook_secret' => 'webhook-secret-abc',
         ];
 
@@ -144,14 +145,15 @@ class OnlinePaymentGatewayTest extends TestCase
 
         Http::assertSent(function ($request) use ($reservation) {
             return $request->url() === 'https://hardreset.onrender.com/api/initiate-payment'
-                && $request->hasHeader('X-API-KEY', 'hardreset')
+                && $request->hasHeader('X-API-KEY', 'REDACTED_GATEWAY_KEY')
+                && in_array('application/json', $request->header('Content-Type'), true)
                 && $request['booking_ref'] === $reservation->reservation_number
                 && $request['customer_name'] === 'Juan Dela Cruz'
                 && $request['customer_email'] === $reservation->guest->email
                 && $request['total_amount'] === '2000.00'
                 && $request['reservation_id'] === $reservation->id
-                && ! isset($request['room_name'])
-                && ! isset($request['room_number']);
+                && $request['room_number'] === $reservation->room->room_number
+                && $request['room_name'] === $reservation->room->roomType->name;
         });
     }
 
@@ -225,11 +227,21 @@ class OnlinePaymentGatewayTest extends TestCase
         $reservation = $this->reservation();
         Sanctum::actingAs($reservation->guest);
 
+        Log::spy();
+
         Http::fake(['*' => Http::response('', 500)]);
 
         $this->postJson('/api/public/payments/initiate-online', ['reservation_id' => $reservation->id])
             ->assertStatus(502)
             ->assertJsonPath('message', 'The payment gateway is temporarily unavailable. Please try again later.');
+
+        Log::shouldHaveReceived('warning')
+            ->once()
+            ->withArgs(fn ($message, array $context) =>
+                $message === 'Online gateway upstream error'
+                && ($context['status'] ?? null) === 500
+                && ($context['booking_ref'] ?? null) === $reservation->reservation_number
+            );
     }
 
     public function test_initiate_requires_configured_key(): void
@@ -455,7 +467,7 @@ class OnlinePaymentGatewayTest extends TestCase
 
         $this->getJson('/api/settings/payment')
             ->assertOk()
-            ->assertJsonPath('online_gateway_api_key', 'hardreset')
+            ->assertJsonPath('online_gateway_api_key', 'REDACTED_GATEWAY_KEY')
             ->assertJsonPath('online_gateway_webhook_secret', 'webhook-secret-abc');
     }
 }

@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class OnlinePaymentGatewayController extends Controller
@@ -70,14 +71,23 @@ class OnlinePaymentGatewayController extends Controller
             'customer_email' => $reservation->guest->email,
             'total_amount' => number_format((float) $reservation->due_amount, 2, '.', ''),
             'reservation_id' => $reservation->id,
+            'room_number' => $reservation->room?->room_number,
+            'room_name' => $reservation->room?->roomType?->name,
         ];
 
         try {
             $response = Http::withHeaders(['X-API-KEY' => $apiKey])
                 ->acceptJson()
+                ->asJson()
                 ->timeout(30)
                 ->post($baseUrl.'/api/initiate-payment', $payload);
-        } catch (ConnectionException) {
+        } catch (ConnectionException $e) {
+            Log::warning('Online gateway unreachable', [
+                'base_url' => $baseUrl,
+                'booking_ref' => $reservation->reservation_number,
+                'error' => $e->getMessage(),
+            ]);
+
             return response()->json(['message' => 'The payment gateway is temporarily unavailable. Please try again later.'], 502);
         }
 
@@ -104,6 +114,13 @@ class OnlinePaymentGatewayController extends Controller
                     : 'The payment request was rejected by the payment provider.',
             ], 422);
         }
+
+        Log::warning('Online gateway upstream error', [
+            'base_url' => $baseUrl,
+            'booking_ref' => $reservation->reservation_number,
+            'status' => $response->status(),
+            'body' => mb_substr((string) $response->body(), 0, 500),
+        ]);
 
         return response()->json(['message' => 'The payment gateway is temporarily unavailable. Please try again later.'], 502);
     }

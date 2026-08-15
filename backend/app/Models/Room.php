@@ -16,6 +16,7 @@ class Room extends Model
         'room_number',
         'room_type_id',
         'floor',
+        'bed_type',
         'status',
         'cleaning_status',
         'price_override',
