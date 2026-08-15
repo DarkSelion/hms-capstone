@@ -67,14 +67,12 @@ describe('PaymentModal', () => {
     mockCheckIn.mockReset()
   })
 
-  it('defaults to the cash tab and shows the reservation summary', () => {
+  it('shows the reservation summary with the balance due', () => {
     renderModal()
 
-    expect(screen.getByRole('button', { name: 'Cash' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'GCash' })).toBeInTheDocument()
+    expect(screen.getByText('Balance Due')).toBeInTheDocument()
     expect(amountInput()).toBeInTheDocument()
     expect(tenderedInput()).toBeInTheDocument()
-    expect(screen.getByText('Balance due')).toBeInTheDocument()
     expect(amountInput()).toHaveValue(330)
   })
 
@@ -139,7 +137,7 @@ describe('PaymentModal', () => {
     expect(amountInput()).toHaveValue(330)
   })
 
-  it('hides the Half quick button when hideHalf is set, on both tabs', () => {
+  it('hides the Half quick button when hideHalf is set', () => {
     render(
       <PaymentModal
         isOpen
@@ -151,31 +149,22 @@ describe('PaymentModal', () => {
 
     expect(screen.queryByRole('button', { name: 'Half' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Full' })).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'GCash' }))
-    expect(screen.queryByRole('button', { name: 'Half' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Full' })).toBeInTheDocument()
   })
 
-  it('records a pending GCash payment with the reference', () => {
+  it('records a cash payment with a reference', () => {
     renderModal()
 
-    fireEvent.click(screen.getByRole('button', { name: 'GCash' }))
-    expect(screen.getByText('pending')).toBeInTheDocument()
-    expect(screen.getByText(/Recorded as/)).toBeInTheDocument()
-    expect(screen.getByText(/verify on the Payments page/i)).toBeInTheDocument()
-
-    fireEvent.change(screen.getByLabelText('Reference / Transaction ID'), { target: { value: 'GC-12345' } })
-    mockMutate.mockResolvedValue({ id: 52, amount: 330, status: 'pending' })
+    fireEvent.change(screen.getByLabelText('Reference / Transaction ID'), { target: { value: 'RCT-12345' } })
+    mockMutate.mockResolvedValue({ id: 52, amount: 330, status: 'completed' })
     fireEvent.click(screen.getByRole('button', { name: 'Record Payment' }))
 
     expect(mockMutate).toHaveBeenCalledWith(
       expect.objectContaining({
         amount: 330,
-        payment_method: 'gcash',
+        payment_method: 'cash',
         payment_type: 'full',
-        status: 'pending',
-        reference_number: 'GC-12345',
+        status: 'completed',
+        reference_number: 'RCT-12345',
       }),
     )
   })
@@ -267,7 +256,7 @@ describe('PaymentModal', () => {
     expect(submit).toBeDisabled()
 
     fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } })
-    expect(screen.getByText('Balance due')).toBeInTheDocument()
+    expect(screen.getByText('Balance Due')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Record Payment' })).toBeEnabled()
   })
 

@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useCreatePayment, useCheckIn } from '@/hooks/useApi'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
-import { cn } from '@/lib/utils'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import { Banknote, Smartphone, Loader2, AlertCircle, LogIn } from 'lucide-react'
+import { Banknote, Loader2, AlertCircle, LogIn, UserRound, BedDouble, CalendarDays, ReceiptText, Wallet } from 'lucide-react'
 import type { Payment, Reservation } from '@/types'
 
 interface PaymentModalProps {
@@ -43,7 +42,6 @@ export function PaymentModal({
   const createPayment = useCreatePayment()
   const checkIn = useCheckIn()
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null)
-  const [method, setMethod] = useState<'cash' | 'gcash'>('cash')
   const [amount, setAmount] = useState(0)
   const [tendered, setTendered] = useState(0)
   const [reference, setReference] = useState('')
@@ -56,7 +54,6 @@ export function PaymentModal({
 
   useEffect(() => {
     if (!isOpen) return
-    setMethod('cash')
     setReference('')
     setError(null)
     setCheckInAfter(false)
@@ -106,10 +103,10 @@ export function PaymentModal({
       const payment = (await createPayment.mutateAsync({
         reservation_id: activeReservation.id,
         amount,
-        payment_method: method,
+        payment_method: 'cash',
         payment_type: amount >= due ? 'full' : 'partial',
         reference_number: reference.trim() || undefined,
-        status: method === 'gcash' ? 'pending' : 'completed',
+        status: 'completed',
         ...(actualCheckOut ? { actual_check_out: actualCheckOut } : {}),
       })) as unknown as Payment
       if (checkInAfter && activeReservation.status === 'confirmed') {
@@ -123,63 +120,85 @@ export function PaymentModal({
     }
   }
 
-  const methodTabClass = (active: boolean) =>
-    cn(
-      'flex flex-1 items-center justify-center gap-1.5 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors',
-      active
-        ? 'border-foreground bg-foreground text-card shadow-sm'
-        : 'border-border bg-card text-foreground hover:bg-bg',
-    )
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Record Payment" size="lg">
       <div className="space-y-4">
-        {!reservation && (
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-foreground">Reservation</label>
-            <Select
-              value={selectedReservation ? String(selectedReservation.id) : ''}
-              onChange={(e) => handleReservationSelect(Number(e.target.value))}
-            >
-              <option value="" disabled>Select a reservation</option>
-              {(reservations ?? []).map((r) => (
-                <option key={r.id} value={r.id}>
-                  #{r.reservation_number} - {r.guest?.first_name} {r.guest?.last_name} (Due: {formatCurrency(dueOf(r))})
-                </option>
-              ))}
-            </Select>
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/15 text-gold-dark">
+            <Banknote className="h-5 w-5" />
           </div>
+          <div>
+            <h4 className="text-sm font-semibold text-foreground">Collect Cash Payment</h4>
+            <p className="text-xs text-muted">Record the amount received from the guest.</p>
+          </div>
+        </div>
+
+        {!reservation && (
+          <Select
+            label="Reservation"
+            value={selectedReservation ? String(selectedReservation.id) : ''}
+            onChange={(e) => handleReservationSelect(Number(e.target.value))}
+          >
+            <option value="" disabled>Select a reservation</option>
+            {(reservations ?? []).map((r) => (
+              <option key={r.id} value={r.id}>
+                #{r.reservation_number} - {r.guest?.first_name} {r.guest?.last_name} (Due: {formatCurrency(dueOf(r))})
+              </option>
+            ))}
+          </Select>
         )}
 
         {activeReservation && (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1 rounded-lg border border-border bg-bg px-3 py-2.5 text-sm">
-            <span className="text-muted text-left">Guest</span>
-            <span className="font-medium text-foreground text-right">
-              {activeReservation.guest?.first_name} {activeReservation.guest?.last_name}
-            </span>
-            <span className="text-muted text-left">Room</span>
-            <span className="font-medium text-foreground text-right">Room {activeReservation.room?.room_number ?? '-'}</span>
-            <span className="text-muted text-left">Stay</span>
-            <span className="font-medium text-foreground text-right">
-              {formatDateDisplay(activeReservation.check_in)} – {formatDateDisplay(activeReservation.check_out)}
-            </span>
-            <span className="text-muted text-left">Balance due</span>
-            <span className="font-semibold text-foreground text-right">{formatCurrency(due)}</span>
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl bg-bg p-3">
+                <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                  <UserRound className="h-3.5 w-3.5" />
+                  Guest
+                </p>
+                <p className="text-sm font-semibold text-foreground">
+                  {activeReservation.guest?.first_name} {activeReservation.guest?.last_name}
+                </p>
+              </div>
+              <div className="rounded-xl bg-bg p-3">
+                <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                  <BedDouble className="h-3.5 w-3.5" />
+                  Room
+                </p>
+                <p className="text-sm font-semibold text-foreground">
+                  {activeReservation.room?.room_number ?? '-'}
+                </p>
+                <p className="mt-0.5 text-xs text-muted">
+                  {activeReservation.room?.room_type?.name}
+                </p>
+              </div>
+              <div className="rounded-xl bg-bg p-3">
+                <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  Stay
+                </p>
+                <p className="text-sm font-semibold text-foreground">
+                  {formatDateDisplay(activeReservation.check_in)} → {formatDateDisplay(activeReservation.check_out)}
+                </p>
+              </div>
+              <div className="rounded-xl bg-bg p-3">
+                <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                  <Wallet className="h-3.5 w-3.5" />
+                  Balance Due
+                </p>
+                <p className="text-lg font-bold text-foreground">{formatCurrency(due)}</p>
+              </div>
+            </div>
           </div>
         )}
 
-        <div className="flex gap-2">
-          <button type="button" onClick={() => setMethod('cash')} className={methodTabClass(method === 'cash')}>
-            <Banknote className="h-4 w-4" />
-            Cash
-          </button>
-          <button type="button" onClick={() => setMethod('gcash')} className={methodTabClass(method === 'gcash')}>
-            <Smartphone className="h-4 w-4" />
-            GCash
-          </button>
-        </div>
-
-        {method === 'cash' && (
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Banknote className="h-4 w-4" />
+            </div>
+            <h4 className="text-sm font-semibold text-foreground">Cash Details</h4>
+          </div>
           <div className="space-y-3">
             <div className="space-y-1">
               <div className="flex items-center justify-between">
@@ -247,67 +266,16 @@ export function PaymentModal({
                 </div>
               )
             )}
-
-            <Input
-              label="Reference / Transaction ID"
-              placeholder="Optional for cash"
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
-            />
           </div>
-        )}
+        </div>
 
-        {method === 'gcash' && (
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">Amount to collect</span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleAmountChange(due)}
-                    className="rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground shadow-sm hover:bg-bg"
-                  >
-                    Full
-                  </button>
-                  {!hideHalf && (
-                    <button
-                      type="button"
-                      onClick={() => handleAmountChange(Math.round(due / 2))}
-                      className="rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground shadow-sm hover:bg-bg"
-                    >
-                      Half
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="relative">
-                <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-muted">₱</span>
-                <input
-                  type="number"
-                  aria-label="Amount to collect"
-                  min={0}
-                  max={due}
-                  step="0.01"
-                  value={amount}
-                  onChange={(e) => handleAmountChange(Number(e.target.value))}
-                  className="w-full rounded-lg border border-border bg-card py-2 pl-7 pr-3 text-sm font-medium text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
-                />
-              </div>
-            </div>
-
-            <Input
-              label="Reference / Transaction ID"
-              placeholder="GCash reference or transaction ID"
-              value={reference}
-              onChange={(e) => setReference(e.target.value)}
-            />
-
-            <p className="rounded-lg border border-warning/20 bg-warning/10 px-3 py-2 text-xs text-warning">
-              Recorded as <span className="font-medium">pending</span> — verify on the Payments page.
-            </p>
-          </div>
-        )}
+        <Input
+          label="Reference / Transaction ID"
+          placeholder="Optional for cash"
+          icon={<ReceiptText className="h-4 w-4" />}
+          value={reference}
+          onChange={(e) => setReference(e.target.value)}
+        />
 
         {canCheckInAfter && (
           <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 text-sm">

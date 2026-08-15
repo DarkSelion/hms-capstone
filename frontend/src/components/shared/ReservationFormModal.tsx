@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import type { Reservation } from '@/types'
 import {
   Check, ChevronLeft, ChevronRight, BedDouble, Users as UsersIcon, CreditCard, ClipboardCheck, Loader2,
+  CalendarDays, Phone, Mail, BadgePercent, Tag, UserRound,
 } from 'lucide-react'
 
 interface ReservationFormModalProps {
@@ -205,56 +206,66 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
       isOpen={isOpen}
       onClose={onClose}
       title={editingReservation ? 'Edit Reservation' : 'New Reservation'}
-      size="lg"
+      size="xl"
     >
       {/* Step Indicator */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
+      <div className="mb-6 rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
+        <div className="flex items-center">
           {[
             { step: 1, label: 'Guest & Dates', icon: UsersIcon },
             { step: 2, label: 'Room', icon: BedDouble },
             { step: 3, label: 'Pricing', icon: CreditCard },
             { step: 4, label: 'Review', icon: ClipboardCheck },
-          ].map(({ step, label, icon: Icon }, idx) => (
-            <div key={step} className="flex items-center flex-1 last:flex-none">
-              <div className="flex flex-col items-center">
-                <div
-                  className={cn(
-                    'flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold transition-colors',
-                    wizardStep === step && 'bg-primary text-white',
-                    wizardStep > step && 'bg-success text-white',
-                    wizardStep < step && 'bg-border text-muted',
-                  )}
-                >
-                  {wizardStep > step ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+          ].map(({ step, label, icon: Icon }, idx) => {
+            const isActive = wizardStep === step
+            const isDone = wizardStep > step
+            return (
+              <div key={step} className="flex items-center flex-1 last:flex-none">
+                <div className="flex flex-col items-center">
+                  <div
+                    className={cn(
+                      'flex h-10 w-10 items-center justify-center rounded-full border-2 text-sm font-semibold transition-all duration-200',
+                      isActive && 'border-gold bg-gold text-white shadow-md shadow-gold/30 ring-4 ring-gold/15',
+                      isDone && 'border-success bg-success text-white',
+                      !isActive && !isDone && 'border-border bg-bg text-muted',
+                    )}
+                  >
+                    {isDone ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+                  </div>
+                  <span
+                    className={cn(
+                      'mt-1.5 text-[11px] font-semibold whitespace-nowrap',
+                      isActive ? 'text-gold-dark' : isDone ? 'text-success' : 'text-muted',
+                    )}
+                  >
+                    {label}
+                  </span>
                 </div>
-                <span
-                  className={cn(
-                    'mt-1.5 text-[11px] font-medium whitespace-nowrap',
-                    wizardStep === step ? 'text-primary' : 'text-muted',
-                  )}
-                >
-                  {label}
-                </span>
+                {idx < 3 && (
+                  <div className={cn(
+                    'mx-2 mb-5 h-[3px] flex-1 rounded-full transition-colors duration-300',
+                    wizardStep > step ? 'bg-success' : 'bg-gray-200',
+                  )} />
+                )}
               </div>
-              {idx < 3 && (
-                <div
-                  className={cn(
-                    'mx-2 mb-5 h-px flex-1',
-                    wizardStep > step ? 'bg-success' : 'bg-border',
-                  )}
-                />
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
       {/* Step 1: Guest & Dates */}
       {wizardStep === 1 && (
-        <div className="space-y-4">
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">Guest Information</h4>
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <UserRound className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-foreground">Guest Information</h4>
+                <p className="text-xs text-muted">Who is staying with us?</p>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-sm font-medium text-foreground">First Name *</label>
@@ -263,6 +274,7 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
                   onChange={(e) => handleFormChange('guest_first_name', e.target.value)}
                   error={formErrors.guest_first_name}
                   placeholder="Juan"
+                  icon={<UserRound className="h-4 w-4" />}
                 />
               </div>
               <div className="space-y-1">
@@ -272,6 +284,7 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
                   onChange={(e) => handleFormChange('guest_last_name', e.target.value)}
                   error={formErrors.guest_last_name}
                   placeholder="Dela Cruz"
+                  icon={<UserRound className="h-4 w-4" />}
                 />
               </div>
               <div className="space-y-1">
@@ -281,6 +294,7 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
                   onChange={(e) => handleFormChange('guest_phone', e.target.value)}
                   error={formErrors.guest_phone}
                   placeholder="09171234567"
+                  icon={<Phone className="h-4 w-4" />}
                 />
               </div>
               <div className="space-y-1">
@@ -290,12 +304,21 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
                   value={form.guest_email}
                   onChange={(e) => handleFormChange('guest_email', e.target.value)}
                   placeholder="juan@email.com"
+                  icon={<Mail className="h-4 w-4" />}
                 />
               </div>
             </div>
           </div>
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">Stay Details</h4>
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <CalendarDays className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-foreground">Stay Details</h4>
+                <p className="text-xs text-muted">Plan the length of the stay.</p>
+              </div>
+            </div>
             <div className="space-y-4">
               <div className="space-y-1">
                 <label className="text-sm font-medium text-foreground">Booking Source</label>
@@ -338,6 +361,7 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
                     value={form.adults}
                     onChange={(e) => handleFormChange('adults', Number(e.target.value))}
                     error={formErrors.adults}
+                    icon={<UsersIcon className="h-4 w-4" />}
                   />
                 </div>
                 <div className="space-y-1">
@@ -348,6 +372,7 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
                     value={form.children}
                     onChange={(e) => handleFormChange('children', Number(e.target.value))}
                     error={formErrors.children}
+                    icon={<UsersIcon className="h-4 w-4" />}
                   />
                 </div>
               </div>
@@ -360,22 +385,31 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
       {wizardStep === 2 && (
         <div className="space-y-4">
           {!formHasDates ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <BedDouble className="mb-3 h-10 w-10 text-muted/50" />
-              <p className="text-sm font-medium text-foreground">Set dates first</p>
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-bg py-10 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <CalendarDays className="h-7 w-7" />
+              </div>
+              <p className="mt-3 text-sm font-semibold text-foreground">Set dates first</p>
               <p className="text-sm text-muted">Go back and select check-in / check-out dates.</p>
             </div>
           ) : availableRooms.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <BedDouble className="mb-3 h-10 w-10 text-muted/50" />
-              <p className="text-sm font-medium text-foreground">No rooms available</p>
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-bg py-10 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-danger/10 text-danger">
+                <BedDouble className="h-7 w-7" />
+              </div>
+              <p className="mt-3 text-sm font-semibold text-foreground">No rooms available</p>
               <p className="text-sm text-muted">No rooms are available for the selected dates. Try different dates.</p>
             </div>
           ) : (
             <>
-              <p className="text-sm text-muted">
-                {availableRooms.length} room{availableRooms.length !== 1 ? 's' : ''} available for {formatDateDisplay(form.check_in)} → {formatDateDisplay(form.check_out)}
-              </p>
+              <div className="flex items-center justify-between rounded-xl bg-primary/5 px-4 py-2.5">
+                <p className="text-sm text-primary-dark">
+                  {availableRooms.length} room{availableRooms.length !== 1 ? 's' : ''} available
+                </p>
+                <p className="text-sm font-medium text-primary-dark">
+                  {formatDateDisplay(form.check_in)} → {formatDateDisplay(form.check_out)}
+                </p>
+              </div>
               {formErrors.room_id && (
                 <p className="text-sm text-danger">{formErrors.room_id}</p>
               )}
@@ -389,26 +423,31 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
                       setForm(prev => ({ ...prev, price_per_night: room.price_override ?? room.room_type.base_price }))
                     }}
                     className={cn(
-                      'flex items-start gap-3 rounded-lg border p-4 text-left transition-all hover:shadow-sm',
+                      'group relative flex items-start gap-3 rounded-2xl border p-4 text-left transition-all duration-200',
                       form.room_id === room.id
-                        ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                        : 'border-border bg-card hover:border-border',
+                        ? 'border-gold bg-gold/5 shadow-md shadow-gold/10 ring-1 ring-gold/30'
+                        : 'border-gray-200 bg-white shadow-sm hover:-translate-y-0.5 hover:border-gold/40 hover:shadow-md',
                     )}
                   >
                     <div className={cn(
-                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold',
-                      form.room_id === room.id ? 'bg-primary text-white' : 'bg-border/50 text-muted',
+                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold transition-colors',
+                      form.room_id === room.id ? 'bg-gold text-white' : 'bg-primary/10 text-primary group-hover:bg-primary/15',
                     )}>
                       {room.room_number}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-foreground">{room.room_type?.name}</p>
-                      <p className="text-xs text-muted">
-                        Floor {room.floor ?? '-'} · ₱{(room.price_override ?? room.room_type?.base_price)?.toLocaleString()}/night
+                      <p className="mt-0.5 text-xs text-muted">
+                        Floor {room.floor ?? '-'} · <span className="font-semibold text-primary-dark">₱{(room.price_override ?? room.room_type?.base_price)?.toLocaleString()}</span>/night
                       </p>
+                      {room.capacity ? (
+                        <p className="mt-0.5 flex items-center gap-1 text-xs text-muted">
+                          <UsersIcon className="h-3 w-3" /> Sleeps {room.capacity}
+                        </p>
+                      ) : null}
                     </div>
                     {form.room_id === room.id && (
-                      <div className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+                      <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-white shadow-sm">
                         <Check className="h-3 w-3" />
                       </div>
                     )}
@@ -422,51 +461,70 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
 
       {/* Step 3: Pricing & Extras */}
       {wizardStep === 3 && (
-        <div className="space-y-4">
-          <div className="rounded-lg border border-border bg-bg px-4 py-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted">Rate per Night (from room type)</span>
-              <span className="font-semibold text-foreground">{formatCurrency(form.price_per_night)}</span>
+        <div className="space-y-5">
+          <div className="flex items-center justify-between rounded-2xl border border-gold/30 bg-gold/5 px-5 py-4">
+            <div>
+              <p className="text-sm text-muted">Rate per Night</p>
+              <p className="text-xs text-muted">Set automatically from the selected room type.</p>
             </div>
-            <p className="mt-1 text-xs text-muted">
-              The nightly rate is set automatically based on the selected room type.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-foreground">Discount (%)</label>
-              <Input
-                type="number"
-                min={0}
-                max={100}
-                value={form.discount_percent}
-                onChange={(e) => handleFormChange('discount_percent', Number(e.target.value))}
-              />
+            <div className="text-right">
+              <p className="text-2xl font-bold text-gold-dark">{formatCurrency(form.price_per_night)}</p>
             </div>
           </div>
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-foreground">Special Requests</label>
-            <textarea
-              className="flex h-20 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50"
-              value={form.special_requests}
-              onChange={(e) => handleFormChange('special_requests', e.target.value)}
-              placeholder="Any special requests..."
-            />
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <BadgePercent className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-foreground">Discount & Requests</h4>
+                <p className="text-xs text-muted">Adjust pricing and add notes.</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-foreground">Discount (%)</label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={form.discount_percent}
+                  onChange={(e) => handleFormChange('discount_percent', Number(e.target.value))}
+                  icon={<BadgePercent className="h-4 w-4" />}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-foreground">Special Requests</label>
+                <textarea
+                  className="flex h-20 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  value={form.special_requests}
+                  onChange={(e) => handleFormChange('special_requests', e.target.value)}
+                  placeholder="Any special requests..."
+                />
+              </div>
+            </div>
           </div>
-          <div className="rounded-lg border border-border bg-bg p-4">
-            <h4 className="mb-2 text-sm font-semibold text-foreground">Price Summary</h4>
-            <div className="space-y-1.5 text-sm">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="mb-3 flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-success/10 text-success">
+                <Tag className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-foreground">Price Summary</h4>
+              </div>
+            </div>
+            <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted">Nights</span>
-                <span>{nights}</span>
+                <span className="font-medium text-foreground">{nights}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted">Rate per Night</span>
-                <span>{formatCurrency(form.price_per_night)}</span>
+                <span className="font-medium text-foreground">{formatCurrency(form.price_per_night)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted">Subtotal ({nights} × {formatCurrency(form.price_per_night)})</span>
-                <span>{formatCurrency(nights * form.price_per_night)}</span>
+                <span className="font-medium text-foreground">{formatCurrency(nights * form.price_per_night)}</span>
               </div>
               {form.discount_percent > 0 && (
                 <div className="flex justify-between text-danger">
@@ -476,11 +534,11 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
               )}
               <div className="flex justify-between">
                 <span className="text-muted">Tax ({taxLabel})</span>
-                <span>{formatCurrency(((nights * form.price_per_night) - ((nights * form.price_per_night) * (form.discount_percent / 100))) * taxRate)}</span>
+                <span className="font-medium text-foreground">{formatCurrency(((nights * form.price_per_night) - ((nights * form.price_per_night) * (form.discount_percent / 100))) * taxRate)}</span>
               </div>
-              <div className="flex justify-between border-t border-border pt-2 font-semibold text-foreground">
-                <span>Total</span>
-                <span>{formatCurrency(totalPreview)}</span>
+              <div className="flex items-center justify-between rounded-xl bg-primary/5 px-3 py-2.5">
+                <span className="text-sm font-semibold text-primary-dark">Total</span>
+                <span className="text-lg font-bold text-primary-dark">{formatCurrency(totalPreview)}</span>
               </div>
             </div>
           </div>
@@ -489,10 +547,19 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
 
       {/* Step 4: Review & Confirm */}
       {wizardStep === 4 && (
-        <div className="space-y-4">
-          <div className="rounded-lg border border-border bg-bg p-4">
-            <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <ClipboardCheck className="h-5 w-5" />
+              </div>
               <div>
+                <h4 className="text-sm font-semibold text-foreground">Reservation Summary</h4>
+                <p className="text-xs text-muted">Double-check everything looks right.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-xl bg-bg p-3">
                 <p className="text-xs font-medium text-muted mb-1">Guest</p>
                 <p className="text-sm font-semibold text-foreground">
                   {form.guest_first_name} {form.guest_last_name}
@@ -500,21 +567,21 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
                 {form.guest_email && <p className="text-xs text-muted">{form.guest_email}</p>}
                 {form.guest_phone && <p className="text-xs text-muted">{form.guest_phone}</p>}
               </div>
-              <div>
+              <div className="rounded-xl bg-bg p-3">
                 <p className="text-xs font-medium text-muted mb-1">Room</p>
                 <p className="text-sm font-semibold text-foreground">
                   {availableRooms.find(r => r.id === Number(form.room_id))?.room_number ?? '-'}
                 </p>
                 <p className="text-xs text-muted">{availableRooms.find(r => r.id === Number(form.room_id))?.room_type?.name}</p>
               </div>
-              <div>
+              <div className="rounded-xl bg-bg p-3">
                 <p className="text-xs font-medium text-muted mb-1">Check-in → Check-out</p>
                 <p className="text-sm font-semibold text-foreground">
                   {formatDateDisplay(form.check_in)} → {formatDateDisplay(form.check_out)}
                 </p>
                 <p className="text-xs text-muted">{nights} night{nights !== 1 ? 's' : ''}</p>
               </div>
-              <div>
+              <div className="rounded-xl bg-bg p-3">
                 <p className="text-xs font-medium text-muted mb-1">Guests</p>
                 <p className="text-sm font-semibold text-foreground">
                   {form.adults} Adult{form.adults !== 1 ? 's' : ''}
@@ -522,7 +589,7 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
                 </p>
               </div>
               {form.source && (
-                <div>
+                <div className="rounded-xl bg-bg p-3">
                   <p className="text-xs font-medium text-muted mb-1">Source</p>
                   <p className="text-sm font-semibold text-foreground">
                     {BOOKING_SOURCES.find(s => s.value === form.source)?.label ?? form.source}
@@ -530,7 +597,7 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
                 </div>
               )}
               {form.special_requests && (
-                <div className="col-span-2">
+                <div className="col-span-2 rounded-xl bg-bg p-3">
                   <p className="text-xs font-medium text-muted mb-1">Special Requests</p>
                   <p className="text-sm text-foreground">{form.special_requests}</p>
                 </div>
@@ -538,12 +605,17 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
             </div>
           </div>
 
-          <div className="rounded-lg border border-border bg-bg p-4">
-            <h4 className="mb-2 text-sm font-semibold text-foreground">Price Breakdown</h4>
-            <div className="space-y-1.5 text-sm">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <div className="mb-3 flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-success/10 text-success">
+                <Tag className="h-5 w-5" />
+              </div>
+              <h4 className="text-sm font-semibold text-foreground">Price Breakdown</h4>
+            </div>
+            <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted">{nights} nights × {formatCurrency(form.price_per_night)}</span>
-                <span>{formatCurrency(nights * form.price_per_night)}</span>
+                <span className="font-medium text-foreground">{formatCurrency(nights * form.price_per_night)}</span>
               </div>
               {form.discount_percent > 0 && (
                 <div className="flex justify-between text-danger">
@@ -553,17 +625,17 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
               )}
               <div className="flex justify-between">
                 <span className="text-muted">Tax ({taxLabel})</span>
-                <span>{formatCurrency(((nights * form.price_per_night) - ((nights * form.price_per_night) * (form.discount_percent / 100))) * taxRate)}</span>
+                <span className="font-medium text-foreground">{formatCurrency(((nights * form.price_per_night) - ((nights * form.price_per_night) * (form.discount_percent / 100))) * taxRate)}</span>
               </div>
-              <div className="flex justify-between border-t border-border pt-2 text-base font-bold text-foreground">
-                <span>Total</span>
-                <span>{formatCurrency(totalPreview)}</span>
+              <div className="flex items-center justify-between rounded-xl bg-primary/5 px-3 py-2.5">
+                <span className="text-sm font-semibold text-primary-dark">Total</span>
+                <span className="text-lg font-bold text-primary-dark">{formatCurrency(totalPreview)}</span>
               </div>
             </div>
           </div>
 
           {!editingReservation ? (
-            <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
+            <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/5 p-4">
               <label className="text-xs font-medium text-foreground">Reservation Status</label>
               <Select
                 value={form.status}
@@ -573,12 +645,12 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
                 <option value="pending">Pending Payment</option>
               </Select>
               <p className="text-xs text-muted">
-                Choose <span className="font-semibold">Pending Payment</span> when awaiting a downpayment or GCash proof. The reservation
+                Choose <span className="font-semibold">Pending Payment</span> when awaiting a downpayment or an online payment. The reservation
                 becomes <span className="font-semibold">Confirmed</span> automatically once a completed payment is recorded.
               </p>
             </div>
           ) : (
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-bg px-4 py-2.5">
+            <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
               <div className="h-2 w-2 rounded-full bg-primary" />
               <p className="text-xs font-medium text-primary">Status is managed from the reservation details.</p>
             </div>

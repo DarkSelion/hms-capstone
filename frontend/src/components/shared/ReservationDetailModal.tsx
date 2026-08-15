@@ -3,7 +3,9 @@ import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
 import { BOOKING_SOURCES } from '@/lib/constants'
-import { Pencil, CalendarPlus } from 'lucide-react'
+import {
+  BedDouble, CalendarDays, CreditCard, Pencil, CalendarPlus, UserRound, Globe, MessageSquare,
+} from 'lucide-react'
 import type { Reservation } from '@/types'
 
 interface ReservationDetailModalProps {
@@ -14,8 +16,19 @@ interface ReservationDetailModalProps {
   onExtendStay?: (reservation: Reservation) => void
 }
 
+function nightsBetween(checkIn: string, checkOut: string): number {
+  const inDate = new Date(checkIn?.split(/[\sT]/)[0])
+  const outDate = new Date(checkOut?.split(/[\sT]/)[0])
+  if (isNaN(inDate.getTime()) || isNaN(outDate.getTime())) return 0
+  return Math.max(0, Math.round((outDate.getTime() - inDate.getTime()) / (1000 * 60 * 60 * 24)))
+}
+
 export function ReservationDetailModal({ isOpen, onClose, reservation, onEdit, onExtendStay }: ReservationDetailModalProps) {
   if (!reservation) return null
+
+  const source = reservation.source
+    ? BOOKING_SOURCES.find(s => s.value === reservation.source)?.label ?? reservation.source
+    : null
 
   return (
     <Modal
@@ -23,59 +36,8 @@ export function ReservationDetailModal({ isOpen, onClose, reservation, onEdit, o
       onClose={onClose}
       title={`Reservation ${reservation.reservation_number ?? ''}`}
       size="lg"
-    >
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs font-medium text-muted">Guest</label>
-            <p className="text-sm font-medium">{reservation.guest?.first_name} {reservation.guest?.last_name}</p>
-            <p className="text-xs text-muted">{reservation.guest?.email}</p>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted">Room</label>
-            <p className="text-sm font-medium">{reservation.room?.room_number ?? '-'}</p>
-            <p className="text-xs text-muted">{reservation.room?.room_type?.name ?? ''}</p>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted">Check In</label>
-            <p className="text-sm">{formatDateDisplay(reservation.check_in)}</p>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted">Check Out</label>
-            <p className="text-sm">{formatDateDisplay(reservation.check_out)}</p>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted">Guests</label>
-            <p className="text-sm">{reservation.adults} Adult(s), {reservation.children} Child(ren)</p>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted">Source</label>
-            <p className="text-sm">{reservation.source ? BOOKING_SOURCES.find(s => s.value === reservation.source)?.label ?? reservation.source : '-'}</p>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted">Status</label>
-            <div className="mt-0.5"><StatusBadge status={reservation.status} /></div>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted">Payment</label>
-            <div className="mt-0.5"><StatusBadge status={reservation.payment_status} /></div>
-          </div>
-          <div className="col-span-2">
-            <label className="text-xs font-medium text-muted">Total Amount</label>
-            <p className="text-lg font-bold">{formatCurrency(reservation.total_amount)}</p>
-            <div className="mt-1 flex gap-4 text-xs text-muted">
-              <span>Paid: {formatCurrency(reservation.paid_amount)}</span>
-              <span>Due: {formatCurrency(reservation.due_amount)}</span>
-            </div>
-          </div>
-          {reservation.special_requests && (
-            <div className="col-span-2">
-              <label className="text-xs font-medium text-muted">Special Requests</label>
-              <p className="text-sm">{reservation.special_requests}</p>
-            </div>
-          )}
-        </div>
-        <div className="flex gap-2 pt-2">
+      footer={
+        <>
           <Button variant="outline" onClick={onClose}>Close</Button>
           {reservation.status === 'checked_in' && onExtendStay && (
             <Button variant="outline" onClick={() => onExtendStay(reservation)}>
@@ -87,6 +49,120 @@ export function ReservationDetailModal({ isOpen, onClose, reservation, onEdit, o
             <Pencil className="h-4 w-4" />
             Edit
           </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <BedDouble className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                {reservation.guest?.first_name} {reservation.guest?.last_name}
+              </p>
+              <p className="text-xs text-muted">Room {reservation.room?.room_number ?? '-'}</p>
+            </div>
+          </div>
+          <StatusBadge status={reservation.status} />
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl bg-bg p-3">
+              <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                <UserRound className="h-3.5 w-3.5" />
+                Guest
+              </p>
+              <p className="text-sm font-semibold text-foreground">
+                {reservation.guest?.first_name} {reservation.guest?.last_name}
+              </p>
+              {reservation.guest?.email && (
+                <p className="mt-0.5 truncate text-xs text-muted">{reservation.guest.email}</p>
+              )}
+              {reservation.guest?.phone && (
+                <p className="truncate text-xs text-muted">{reservation.guest.phone}</p>
+              )}
+            </div>
+            <div className="rounded-xl bg-bg p-3">
+              <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                <BedDouble className="h-3.5 w-3.5" />
+                Room
+              </p>
+              <p className="text-sm font-semibold text-foreground">
+                {reservation.room?.room_number ?? '-'}
+              </p>
+              <p className="mt-0.5 text-xs text-muted">
+                {reservation.room?.room_type?.name}
+                {reservation.room?.floor ? ` · Floor ${reservation.room.floor}` : ''}
+              </p>
+            </div>
+            <div className="rounded-xl bg-bg p-3">
+              <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                <CalendarDays className="h-3.5 w-3.5" />
+                Stay
+              </p>
+              <p className="text-sm font-semibold text-foreground">
+                {formatDateDisplay(reservation.check_in)} → {formatDateDisplay(reservation.check_out)}
+              </p>
+              <p className="mt-0.5 text-xs text-muted">
+                {nightsBetween(reservation.check_in, reservation.check_out)} night{nightsBetween(reservation.check_in, reservation.check_out) !== 1 ? 's' : ''}
+              </p>
+            </div>
+            <div className="rounded-xl bg-bg p-3">
+              <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                <UserRound className="h-3.5 w-3.5" />
+                Guests
+              </p>
+              <p className="text-sm font-semibold text-foreground">
+                {reservation.adults} Adult{reservation.adults !== 1 ? 's' : ''}
+                {reservation.children > 0 ? `, ${reservation.children} Child${reservation.children !== 1 ? 'ren' : ''}` : ''}
+              </p>
+              {source && (
+                <p className="mt-0.5 flex items-center gap-1 text-xs text-muted">
+                  <Globe className="h-3 w-3" />
+                  {source}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {reservation.special_requests && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl bg-bg p-3">
+              <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-muted">Special Requests</p>
+                <p className="text-sm text-foreground">{reservation.special_requests}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-success/10 text-success">
+                <CreditCard className="h-4 w-4" />
+              </div>
+              <h4 className="text-sm font-semibold text-foreground">Payment Summary</h4>
+            </div>
+            <StatusBadge status={reservation.payment_status} />
+          </div>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted">Total</span>
+              <span className="font-medium text-foreground">{formatCurrency(reservation.total_amount)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted">Paid</span>
+              <span className="font-medium text-success">{formatCurrency(reservation.paid_amount ?? 0)}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-xl bg-primary/5 px-3 py-2.5">
+              <span className="text-sm font-semibold text-primary-dark">Balance Due</span>
+              <span className="text-lg font-bold text-primary-dark">{formatCurrency(reservation.due_amount ?? 0)}</span>
+            </div>
+          </div>
         </div>
       </div>
     </Modal>
