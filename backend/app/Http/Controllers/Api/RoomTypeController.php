@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\RoomType;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class RoomTypeController extends Controller
 {
@@ -33,7 +34,7 @@ class RoomTypeController extends Controller
             'is_active' => 'sometimes|boolean',
         ]);
 
-        $roomType = RoomType::create($data);
+        $roomType = RoomType::create($data + ['slug' => $this->uniqueSlug($data['name'])]);
 
         return response()->json($roomType, 201);
     }
@@ -56,6 +57,10 @@ class RoomTypeController extends Controller
             'is_active' => 'sometimes|boolean',
         ]);
 
+        if (isset($data['name']) && $data['name'] !== $roomType->name) {
+            $data['slug'] = $this->uniqueSlug($data['name'], $roomType->id);
+        }
+
         $roomType->update($data);
 
         return response()->json($roomType);
@@ -70,5 +75,19 @@ class RoomTypeController extends Controller
         $roomType->delete();
 
         return response()->json(['message' => 'Room type deleted successfully.']);
+    }
+
+    protected function uniqueSlug(string $name, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($name) ?: 'room-type';
+        $slug = $base;
+        $i = 2;
+
+        while (RoomType::where('slug', $slug)->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))->exists()) {
+            $slug = $base.'-'.$i;
+            $i++;
+        }
+
+        return $slug;
     }
 }

@@ -154,8 +154,7 @@ class SecurityHardeningTest extends TestCase
             'amount' => 501,
             'payment_method' => 'gcash',
             'payment_type' => 'partial',
-        ])->assertStatus(422)
-            ->assertJsonValidationErrors('amount');
+        ])->assertStatus(404);
     }
 
     public function test_guest_cannot_pay_after_full_settlement(): void
@@ -169,17 +168,9 @@ class SecurityHardeningTest extends TestCase
             'amount' => 500,
             'payment_method' => 'gcash',
             'payment_type' => 'full',
-        ])->assertStatus(201);
+        ])->assertStatus(404);
 
-        $this->postJson('/api/public/payments', [
-            'reservation_id' => $reservation->id,
-            'amount' => 1,
-            'payment_method' => 'gcash',
-            'payment_type' => 'partial',
-        ])->assertStatus(422)
-            ->assertJsonValidationErrors('reservation_id');
-
-        $this->assertDatabaseCount('payments', 1);
+        $this->assertDatabaseCount('payments', 0);
     }
 
     public function test_admin_payment_status_update_reconciles_totals(): void

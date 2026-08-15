@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class OnlinePaymentGatewayController extends Controller
@@ -215,16 +216,31 @@ class OnlinePaymentGatewayController extends Controller
             ]);
         }
 
-        $payment = Payment::create([
-            'reservation_id' => $reservation->id,
-            'guest_id' => $reservation->guest_id,
-            'amount' => $amount,
-            'payment_method' => 'online',
-            'payment_type' => $amount >= (float) $reservation->due_amount ? 'full' : 'partial',
-            'status' => 'completed',
-            'reference_number' => 'ONLINE-'.$reservation->reservation_number,
-            'paid_at' => now(),
-        ]);
+        $payment = Payment::where('reservation_id', $reservation->id)
+            ->where('payment_method', 'online')
+            ->where('status', 'pending')
+            ->latest('id')
+            ->first();
+
+        if ($payment) {
+            $payment->update([
+                'amount' => $amount,
+                'payment_type' => $amount >= (float) $reservation->due_amount ? 'full' : 'partial',
+                'status' => 'completed',
+                'paid_at' => now(),
+            ]);
+        } else {
+            $payment = Payment::create([
+                'reservation_id' => $reservation->id,
+                'guest_id' => $reservation->guest_id,
+                'amount' => $amount,
+                'payment_method' => 'online',
+                'payment_type' => $amount >= (float) $reservation->due_amount ? 'full' : 'partial',
+                'status' => 'completed',
+                'reference_number' => 'ONLINE-'.$reservation->reservation_number.'-'.strtoupper(Str::random(6)),
+                'paid_at' => now(),
+            ]);
+        }
 
         $reservation->reconcileBalances();
 
@@ -245,7 +261,12 @@ class OnlinePaymentGatewayController extends Controller
             ->where('status', 'pending')
             ->exists();
 
-        if (! $alreadyPending) {
+        $alreadyCompleted = Payment::where('reservation_id', $reservation->id)
+            ->where('payment_method', 'online')
+            ->where('status', 'completed')
+            ->exists();
+
+        if (! $alreadyPending && ! $alreadyCompleted) {
             Payment::create([
                 'reservation_id' => $reservation->id,
                 'guest_id' => $reservation->guest_id,
@@ -253,7 +274,7 @@ class OnlinePaymentGatewayController extends Controller
                 'payment_method' => 'online',
                 'payment_type' => 'full',
                 'status' => 'pending',
-                'reference_number' => 'ONLINE-'.$reservation->reservation_number,
+                'reference_number' => 'ONLINE-'.$reservation->reservation_number.'-'.strtoupper(Str::random(6)),
             ]);
         }
     }

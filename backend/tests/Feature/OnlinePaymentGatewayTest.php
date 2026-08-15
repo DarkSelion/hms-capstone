@@ -366,6 +366,32 @@ class OnlinePaymentGatewayTest extends TestCase
         $this->assertSame(0, Payment::where('reservation_id', $reservation->id)->count());
     }
 
+    public function test_webhook_pending_then_paid_completes_same_payment(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+
+        $this->postJson('/api/webhooks/payment', [
+            'booking_ref' => $reservation->reservation_number,
+            'status' => 'pending',
+        ], ['X-Webhook-Secret' => 'webhook-secret-abc'])->assertOk();
+
+        $this->postJson('/api/webhooks/payment', [
+            'booking_ref' => $reservation->reservation_number,
+            'status' => 'paid',
+            'amount_paid' => 2000,
+        ], ['X-Webhook-Secret' => 'webhook-secret-abc'])->assertOk();
+
+        $this->assertSame(1, Payment::where('reservation_id', $reservation->id)->count());
+        $payment = Payment::where('reservation_id', $reservation->id)->firstOrFail();
+        $this->assertSame('completed', $payment->status);
+        $this->assertSame('online', $payment->payment_method);
+
+        $reservation->refresh();
+        $this->assertSame('paid', $reservation->payment_status);
+        $this->assertEqualsWithDelta(0, (float) $reservation->due_amount, 0.001);
+    }
+
     public function test_webhook_pending_creates_placeholder_and_failed_marks_it(): void
     {
         $this->enableGateway();

@@ -176,6 +176,8 @@ class ReservationController extends Controller
             'children' => 'nullable|integer|min:0',
             'source' => 'nullable|string|max:50',
             'special_requests' => 'nullable|string',
+            'price_per_night' => 'nullable|numeric|min:0',
+            'discount_percent' => 'nullable|numeric|min:0|max:100',
             'status' => 'sometimes|in:pending,confirmed,checked_in,checked_out,cancelled,no_show',
         ]);
 
@@ -230,49 +232,52 @@ class ReservationController extends Controller
         $newRoomId = isset($data['room_id']) ? (int) $data['room_id'] : $oldRoomId;
         $roomChanged = $newRoomId !== $oldRoomId;
         $datesChanged = isset($data['check_in']) || isset($data['check_out']);
+        $pricingChanged = isset($data['price_per_night']) || isset($data['discount_percent']);
 
-        if ($roomChanged || $datesChanged) {
-            $checkIn = $data['check_in'] ?? $reservation->check_in;
-            $checkOut = $data['check_out'] ?? $reservation->check_out;
+        DB::transaction(function () use ($data, $request, $reservation, $newRoomId, $oldRoomId, $roomChanged, $datesChanged, $pricingChanged) {
+            if ($roomChanged || $datesChanged) {
+                $checkIn = $data['check_in'] ?? $reservation->check_in;
+                $checkOut = $data['check_out'] ?? $reservation->check_out;
 
-            $overlap = $this->roomHasOverlap($newRoomId, $checkIn, $checkOut, $reservation->id);
+                $overlap = $this->roomHasOverlap($newRoomId, $checkIn, $checkOut, $reservation->id);
 
-            if ($overlap) {
-                $key = $roomChanged ? 'room_id' : 'check_in';
-                throw ValidationException::withMessages([
-                    $key => ['The room is not available for the selected dates.'],
-                ]);
+                if ($overlap) {
+                    $key = $roomChanged ? 'room_id' : 'check_in';
+                    throw ValidationException::withMessages([
+                        $key => ['The room is not available for the selected dates.'],
+                    ]);
+                }
             }
-        }
 
-        $reservation->update($data);
+            $reservation->update($data);
 
-        if ($roomChanged) {
-            $newRoom = Room::find($newRoomId);
-            if ($newRoom) {
-                $reservation->update([
-                    'price_per_night' => $newRoom->price_override ?? $newRoom->roomType->base_price,
-                ]);
+            if ($roomChanged) {
+                $newRoom = Room::find($newRoomId);
+                if ($newRoom) {
+                    $reservation->update([
+                        'price_per_night' => $newRoom->price_override ?? $newRoom->roomType->base_price,
+                    ]);
+                }
             }
-        }
 
-        if ($roomChanged || $datesChanged) {
-            $this->recalculatePricing($reservation);
-        }
-
-        if ($datesChanged && $reservation->is_overdue
-            && !$reservation->check_in->startOfDay()->lt(now()->startOfDay())) {
-            $reservation->update(['is_overdue' => false, 'overdue_at' => null]);
-        }
-
-        if (isset($data['room_id']) && (int) $data['room_id'] !== $oldRoomId) {
-            $oldRoom = Room::find($oldRoomId);
-            if ($oldRoom) {
-                $this->reconcileRoomStatus($oldRoom);
+            if ($roomChanged || $datesChanged || $pricingChanged) {
+                $this->recalculatePricing($reservation);
             }
-        }
 
-        $this->applyRoomState($reservation);
+            if ($datesChanged && $reservation->is_overdue
+                && !$reservation->check_in->startOfDay()->lt(now()->startOfDay())) {
+                $reservation->update(['is_overdue' => false, 'overdue_at' => null]);
+            }
+
+            if (isset($data['room_id']) && (int) $data['room_id'] !== $oldRoomId) {
+                $oldRoom = Room::find($oldRoomId);
+                if ($oldRoom) {
+                    $this->reconcileRoomStatus($oldRoom);
+                }
+            }
+
+            $this->applyRoomState($reservation);
+        });
 
         ActivityLog::create([
             'user_id' => $request->user()->id,
@@ -554,21 +559,29 @@ class ReservationController extends Controller
 
         $newCheckOut = $data['new_check_out'];
 
-        $overlap = $this->roomHasOverlap(
-            $reservation->room_id,
-            $reservation->check_in->toDateString(),
-            $newCheckOut,
-            $reservation->id
-        );
+        $reservationId = $reservation->id;
 
-        if ($overlap) {
-            return response()->json(['message' => 'The room is already reserved for another guest during the extended period.'], 422);
-        }
+        $wasBlocked = DB::transaction(function () use ($reservation, $newCheckOut, $reservationId) {
+            $overlap = $this->roomHasOverlap(
+                $reservation->room_id,
+                $reservation->check_in->toDateString(),
+                $newCheckOut,
+                $reservationId
+            );
 
-        DB::transaction(function () use ($reservation, $newCheckOut) {
+            if ($overlap) {
+                return true;
+            }
+
             $reservation->update(['check_out' => $newCheckOut]);
             $this->recalculatePricing($reservation);
+
+            return false;
         });
+
+        if ($wasBlocked) {
+            return response()->json(['message' => 'The room is already reserved for another guest during the extended period.'], 422);
+        }
 
         ActivityLog::create([
             'user_id' => $request->user()->id,
@@ -603,6 +616,7 @@ class ReservationController extends Controller
         return Reservation::where('room_id', $roomId)
             ->overlapping($checkIn, $checkOut)
             ->when($excludeId !== null, fn ($query) => $query->where('id', '!=', $excludeId))
+            ->lockForUpdate()
             ->exists();
     }
 

@@ -12,7 +12,6 @@ use App\Http\Controllers\Api\MaintenanceController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\Public\AuthController as PublicAuthController;
 use App\Http\Controllers\Api\Public\ContactController as PublicContactController;
-use App\Http\Controllers\Api\Public\PaymentController as PublicPaymentController;
 use App\Http\Controllers\Api\Public\OnlinePaymentGatewayController as PublicOnlinePaymentGatewayController;
 use App\Http\Controllers\Api\Public\ReservationController as PublicReservationController;
 use App\Http\Controllers\Api\Public\RoomController as PublicRoomController;
@@ -190,7 +189,6 @@ Route::prefix('public')->group(function () {
         Route::get('/reservations', [PublicReservationController::class, 'index']);
         Route::get('/reservations/{reservation}', [PublicReservationController::class, 'show']);
         Route::post('/reservations/{reservation}/cancel', [PublicReservationController::class, 'cancel']);
-        Route::post('/payments', [PublicPaymentController::class, 'store']);
         Route::post('/payments/initiate-online', [PublicOnlinePaymentGatewayController::class, 'initiate']);
     });
 });

@@ -242,6 +242,10 @@ export default function InvoicesPage() {
 
   function handleSubmitPayment() {
     if (!selectedInvoice) return
+    if (paymentAmount <= 0) {
+      addToast('Enter a payment amount greater than zero', 'error')
+      return
+    }
     createPayment.mutate({
       reservation_id: selectedInvoice.reservation_id,
       amount: paymentAmount,
@@ -251,6 +255,10 @@ export default function InvoicesPage() {
     }, {
       onSuccess: () => {
         setShowPaymentModal(false)
+      },
+      onError: (e) => {
+        const message = e instanceof Error ? e.message : 'Failed to record payment'
+        addToast(message, 'error')
       },
     })
   }
@@ -294,7 +302,8 @@ export default function InvoicesPage() {
 
   function handleRecordPayment() {
     if (!selectedInvoice) return
-    setPaymentAmount(selectedInvoice.total_amount)
+    const due = selectedInvoice.reservation?.due_amount
+    setPaymentAmount(due != null ? due : selectedInvoice.total_amount)
     setPaymentMethod('cash')
     setPaymentReference('')
     setShowPaymentModal(true)

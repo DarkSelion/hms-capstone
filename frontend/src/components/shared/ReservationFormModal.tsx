@@ -59,10 +59,9 @@ function buildInitialForm(reservation: Reservation | null): ReservationFormData 
 
   const checkIn = reservation.check_in?.split(/[\sT]/)[0] ?? ''
   const checkOut = reservation.check_out?.split(/[\sT]/)[0] ?? ''
-  const nights = checkIn && checkOut
-    ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)))
-    : 1
-  const rate = nights > 0 ? Math.round(reservation.total_amount / nights) : reservation.room?.room_type?.base_price ?? 0
+  const rate = reservation.price_per_night != null
+    ? reservation.price_per_night
+    : reservation.room?.room_type?.base_price ?? 0
 
   return {
     guest_first_name: reservation.guest?.first_name ?? '',
@@ -75,7 +74,7 @@ function buildInitialForm(reservation: Reservation | null): ReservationFormData 
     adults: reservation.adults,
     children: reservation.children,
     price_per_night: rate,
-    discount_percent: 0,
+    discount_percent: reservation.discount_percent ?? 0,
     special_requests: reservation.special_requests ?? '',
     source: reservation.source ?? '',
     status: 'confirmed',

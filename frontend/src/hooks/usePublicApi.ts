@@ -158,19 +158,6 @@ export function usePaymentSettings(): Record<string, unknown> {
 }
 
 // Payments
-export function usePublicCreatePayment() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (data: {
-      reservation_id: number; amount: number;
-      payment_method: string; payment_type: string;
-    }) => publicApi.post('/public/payments', data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['public-reservations'] })
-    },
-  })
-}
-
 export function usePublicInitiateOnlinePayment() {
   return useMutation({
     mutationFn: (reservationId: number) =>

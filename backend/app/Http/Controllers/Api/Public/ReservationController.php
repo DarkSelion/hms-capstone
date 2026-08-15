@@ -56,6 +56,7 @@ class ReservationController extends Controller
                 ->whereNotIn('id', $overlappingRoomIds)
                 ->orderBy('floor')
                 ->orderBy('room_number')
+                ->lockForUpdate()
                 ->first();
 
             if (!$room) {
@@ -151,7 +152,7 @@ class ReservationController extends Controller
 
             $room = $reservation->room;
             if ($room) {
-                $room->update(['status' => 'available']);
+                $room->reconcileStatus();
             }
         });
 

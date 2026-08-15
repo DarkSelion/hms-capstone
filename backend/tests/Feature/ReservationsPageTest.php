@@ -1189,7 +1189,7 @@ class ReservationsPageTest extends TestCase
         $this->assertEquals(2500, (float) $response->json('price_per_night'));
     }
 
-    public function test_update_ignores_client_price_and_total(): void
+    public function test_update_honors_client_price_and_ignores_client_total(): void
     {
         $admin = $this->admin();
         Sanctum::actingAs($admin);
@@ -1207,9 +1207,10 @@ class ReservationsPageTest extends TestCase
         ]);
 
         $response->assertStatus(200);
-        // No dates/room changed, so stored pricing is untouched and no recalc runs.
-        $this->assertEquals(1000, (float) $response->json('price_per_night'));
-        $this->assertEquals(2200, (float) $response->json('total_amount'));
+        // Client price is honored; the client total is discarded and recomputed
+        // from the rate (1 * 2 nights + 10% tax = 2.2).
+        $this->assertEquals(1, (float) $response->json('price_per_night'));
+        $this->assertEquals(2.2, (float) $response->json('total_amount'));
     }
 
     public function test_update_room_change_recalculates_from_new_room_rate(): void

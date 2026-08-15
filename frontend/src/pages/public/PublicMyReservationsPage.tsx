@@ -16,6 +16,7 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; icon: any }> = {
   checked_in: { bg: 'bg-sky-500/10', text: 'text-sky-600', icon: LogIn },
   checked_out: { bg: 'bg-gray-100', text: 'text-gray-500', icon: LogOut },
   cancelled: { bg: 'bg-danger/10', text: 'text-danger', icon: XCircle },
+  no_show: { bg: 'bg-gray-100', text: 'text-gray-500', icon: CalendarX },
 }
 
 const PAYMENT_STYLES: Record<string, { bg: string; text: string; border: string; icon: any }> = {
@@ -84,6 +85,7 @@ export default function PublicMyReservationsPage() {
   const paymentSettings = usePaymentSettings()
   const onlineGatewayEnabled = paymentSettings['online_gateway_enabled'] === '1' || paymentSettings['online_gateway_enabled'] === true
   const [cancelTarget, setCancelTarget] = useState<PublicReservation | null>(null)
+  const [cancelError, setCancelError] = useState('')
   const [paymentModal, setPaymentModal] = useState<PublicReservation | null>(null)
   const [filter, setFilter] = useState<FilterKey>('all')
   const today = toLocalDateStr(new Date())
@@ -294,7 +296,7 @@ export default function PublicMyReservationsPage() {
                           )}
                           {(r.status === 'pending' || r.status === 'confirmed') && (
                             <button
-                              onClick={() => setCancelTarget(r)}
+                              onClick={() => { setCancelError(''); setCancelTarget(r) }}
                               className="px-4 py-2 border border-danger/30 text-danger rounded-lg text-xs uppercase tracking-wider hover:bg-danger/5 hover:border-danger/60 transition-all flex items-center gap-1.5"
                             >
                               <XCircle className="h-3.5 w-3.5" />
@@ -379,6 +381,13 @@ export default function PublicMyReservationsPage() {
                   </p>
                 </div>
               )}
+
+              {cancelError && (
+                <div className="flex items-start gap-2.5 rounded-xl border border-danger/30 bg-danger/10 px-3.5 py-3">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
+                  <p className="text-xs text-danger leading-relaxed">{cancelError}</p>
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-end gap-3 border-t border-white/5 px-6 py-4">
               <button onClick={() => setCancelTarget(null)} disabled={cancelReservation.isPending} className="px-4 py-2 text-sm text-white/50 hover:text-white transition-colors disabled:opacity-30">
@@ -386,8 +395,14 @@ export default function PublicMyReservationsPage() {
               </button>
               <button
                 onClick={() => {
-                  cancelReservation.mutate(cancelTarget.id)
-                  setCancelTarget(null)
+                  setCancelError('')
+                  cancelReservation.mutate(cancelTarget.id, {
+                    onSuccess: () => setCancelTarget(null),
+                    onError: (e) => {
+                      const message = e instanceof Error ? e.message : 'Unable to cancel the reservation. Please try again.'
+                      setCancelError(message)
+                    },
+                  })
                 }}
                 disabled={cancelReservation.isPending}
                 className="px-4 py-2 text-sm bg-danger text-white rounded-lg hover:bg-danger/80 transition-colors flex items-center gap-2 disabled:opacity-50"

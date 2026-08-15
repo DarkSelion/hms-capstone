@@ -172,10 +172,9 @@ class InvoicePaymentTest extends TestCase
         ]);
     }
 
-    public function test_guest_cannot_pay_cancelled_reservation(): void
+    public function test_guest_payment_endpoint_removed(): void
     {
         $reservation = $this->makeReservation(2000);
-        $reservation->update(['status' => 'cancelled']);
         $guest = $reservation->guest;
         Sanctum::actingAs($guest);
 
@@ -184,20 +183,6 @@ class InvoicePaymentTest extends TestCase
             'amount' => 2000,
             'payment_method' => 'gcash',
             'payment_type' => 'full',
-        ])->assertStatus(422);
-    }
-
-    public function test_guest_cannot_submit_refund_type(): void
-    {
-        $reservation = $this->makeReservation(2000);
-        $guest = $reservation->guest;
-        Sanctum::actingAs($guest);
-
-        $this->postJson('/api/public/payments', [
-            'reservation_id' => $reservation->id,
-            'amount' => 2000,
-            'payment_method' => 'gcash',
-            'payment_type' => 'refund',
-        ])->assertStatus(422);
+        ])->assertStatus(404);
     }
 }
