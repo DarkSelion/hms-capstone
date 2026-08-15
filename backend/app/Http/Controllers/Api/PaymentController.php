@@ -73,6 +73,12 @@ class PaymentController extends Controller
         $payment = DB::transaction(function () use ($data, $request) {
             $reservation = Reservation::whereKey($data['reservation_id'])->lockForUpdate()->firstOrFail();
 
+            if (in_array($reservation->status, ['cancelled', 'checked_out', 'no_show'])) {
+                throw ValidationException::withMessages([
+                    'reservation_id' => ['Payments cannot be recorded on a '.$reservation->status.' reservation.'],
+                ]);
+            }
+
             // The check-out collect flow collects the PROJECTED balance (extra
             // nights from a changed departure and/or the same-day late fee),
             // which has not been persisted to the reservation yet. When the

@@ -117,7 +117,15 @@ class SettingController extends Controller
     public const PUBLIC_GROUPS = ['hotel', 'contact', 'tax', 'booking', 'payment', 'branding'];
 
     /** Keys that are server-only and must never be exposed on public endpoints. */
-    public const PUBLIC_REDACTED_KEYS = ['online_gateway_api_key', 'online_gateway_webhook_secret'];
+    public const PUBLIC_REDACTED_KEYS = [
+        'online_gateway_api_key',
+        'online_gateway_webhook_secret',
+        // Legacy GCash keys (removed from code) — stale rows may still exist in
+        // the DB and must not leak to the portal.
+        'online_payment_enabled',
+        'gcash_account',
+        'gcash_qr_image',
+    ];
 
     public function index()
     {

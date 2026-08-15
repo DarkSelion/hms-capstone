@@ -152,7 +152,11 @@ class OnlinePaymentGatewayController extends Controller
             'amount_paid' => 'nullable|numeric|min:0',
             'currency' => 'nullable|string|max:10',
             'reservation_id' => 'nullable|integer',
+            'transaction_id' => 'nullable|string|max:64',
+            'payment_id' => 'nullable|string|max:64',
         ]);
+
+        $transactionId = trim((string) ($data['transaction_id'] ?? $data['payment_id'] ?? ''));
 
         $reservation = Reservation::where('reservation_number', $data['booking_ref'])->first();
 
@@ -165,10 +169,10 @@ class OnlinePaymentGatewayController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($reservation, $data) {
+            DB::transaction(function () use ($reservation, $data, $transactionId) {
                 switch ($data['status']) {
                     case 'paid':
-                        $this->recordPaid($reservation, (float) $data['amount_paid']);
+                        $this->recordPaid($reservation, (float) $data['amount_paid'], $transactionId);
                         break;
 
                     case 'pending':
@@ -192,7 +196,7 @@ class OnlinePaymentGatewayController extends Controller
         return response()->json(['received' => true]);
     }
 
-    protected function recordPaid(Reservation $reservation, float $amount): void
+    protected function recordPaid(Reservation $reservation, float $amount, string $transactionId = ''): void
     {
         $amount = round($amount, 2);
 
@@ -200,11 +204,23 @@ class OnlinePaymentGatewayController extends Controller
             throw ValidationException::withMessages(['amount_paid' => ['The paid amount must be greater than zero.']]);
         }
 
-        $alreadyRecorded = Payment::where('reservation_id', $reservation->id)
-            ->where('payment_method', 'online')
-            ->where('status', 'completed')
-            ->where('amount', $amount)
-            ->exists();
+        // Dedupe on the gateway's unique transaction reference when provided
+        // (strong idempotency); otherwise fall back to the legacy
+        // (reservation, amount) key so retries of the same event can never
+        // double-record.
+        if ($transactionId !== '') {
+            $alreadyRecorded = Payment::where('payment_method', 'online')
+                ->where('status', 'completed')
+                ->where('reference_number', $transactionId)
+                ->where('reservation_id', $reservation->id)
+                ->exists();
+        } else {
+            $alreadyRecorded = Payment::where('reservation_id', $reservation->id)
+                ->where('payment_method', 'online')
+                ->where('status', 'completed')
+                ->where('amount', $amount)
+                ->exists();
+        }
 
         if ($alreadyRecorded) {
             return;
@@ -222,11 +238,16 @@ class OnlinePaymentGatewayController extends Controller
             ->latest('id')
             ->first();
 
+        $referenceNumber = $transactionId !== ''
+            ? $transactionId
+            : 'ONLINE-'.$reservation->reservation_number.'-'.strtoupper(Str::random(6));
+
         if ($payment) {
             $payment->update([
                 'amount' => $amount,
                 'payment_type' => $amount >= (float) $reservation->due_amount ? 'full' : 'partial',
                 'status' => 'completed',
+                'reference_number' => $referenceNumber,
                 'paid_at' => now(),
             ]);
         } else {
@@ -237,7 +258,7 @@ class OnlinePaymentGatewayController extends Controller
                 'payment_method' => 'online',
                 'payment_type' => $amount >= (float) $reservation->due_amount ? 'full' : 'partial',
                 'status' => 'completed',
-                'reference_number' => 'ONLINE-'.$reservation->reservation_number.'-'.strtoupper(Str::random(6)),
+                'reference_number' => $referenceNumber,
                 'paid_at' => now(),
             ]);
         }

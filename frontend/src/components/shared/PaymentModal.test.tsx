@@ -260,6 +260,25 @@ describe('PaymentModal', () => {
     expect(screen.getByRole('button', { name: 'Record Payment' })).toBeEnabled()
   })
 
+  it('keeps in-progress input when the parent re-renders with a new reservation object', async () => {
+    const onClose = vi.fn<OnClose>()
+    const onSuccess = vi.fn<OnSuccess>()
+    const result = render(
+      <PaymentModal isOpen onClose={onClose} reservation={reservation()} onSuccess={onSuccess} />,
+    )
+
+    fireEvent.change(amountInput(), { target: { value: '120' } })
+
+    // Parent re-renders the SAME reservation (same id) as a brand-new object
+    // literal (e.g. a live checkout preview) — must NOT wipe the entry.
+    result.rerender(
+      <PaymentModal isOpen onClose={onClose} reservation={{ ...reservation(), due_amount: 150 }} onSuccess={onSuccess} />,
+    )
+
+    expect(amountInput()).toHaveValue(120)
+    expect(tenderedInput()).toHaveValue(120)
+  })
+
   it('does not check in when the option is not enabled', async () => {
     const { onSuccess, onClose } = renderModal()
     mockMutate.mockResolvedValue({ id: 50, amount: 330, status: 'completed' })

@@ -132,7 +132,7 @@ export default function SettingsPage() {
         password_min_length: s.password_min_length ?? 8,
         session_timeout: s.session_timeout ?? 30,
         max_login_attempts: s.max_login_attempts ?? 5,
-        two_factor_auth: s.two_factor_auth ?? false,
+        two_factor_auth: s.two_factor_auth === '1' || s.two_factor_auth === true,
       })
       setContactForm({
         hotel_address: s.hotel_address ?? '',
@@ -186,7 +186,9 @@ export default function SettingsPage() {
     } else if (activeTab === 'Taxes') {
       Object.assign(payload, taxForm)
     } else if (activeTab === 'Security') {
-      Object.assign(payload, securityForm)
+      Object.assign(payload, securityForm, {
+        two_factor_auth: securityForm.two_factor_auth ? '1' : '0',
+      })
     } else if (activeTab === 'Contact') {
       Object.assign(payload, contactForm, { contact_faq: JSON.stringify(faqItems) })
     } else if (activeTab === 'Payments') {

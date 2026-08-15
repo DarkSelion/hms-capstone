@@ -42,9 +42,10 @@ export interface Guest {
   nationality?: string;
   date_of_birth?: string;
   gender?: string;
-  address?: string;
+address?: string;
   city?: string;
   country?: string;
+  postal_code?: string;
   is_blacklisted: boolean;
   blacklist_reason?: string;
   photo?: string;

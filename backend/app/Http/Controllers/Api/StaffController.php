@@ -104,7 +104,40 @@ class StaffController extends Controller
             'is_active' => 'sometimes|boolean',
         ]);
 
+        $creatorRole = $request->user()->roleSlug();
+
+        $allowedCreators = ['super_admin', 'admin', 'hotel_manager'];
+        if (!in_array($creatorRole, $allowedCreators)) {
+            return response()->json(['message' => 'You are not allowed to update staff accounts.'], 403);
+        }
+
+        if (isset($data['role_id']) && (int) $data['role_id'] !== (int) $user->role_id) {
+            $targetRole = Role::find($data['role_id']);
+
+            if ($creatorRole === 'hotel_manager' && in_array($targetRole->slug, ['super_admin', 'admin', 'hotel_manager'])) {
+                return response()->json(['message' => 'Hotel managers cannot assign admin-level roles.'], 403);
+            }
+
+            if ($creatorRole === 'admin' && $targetRole->slug === 'super_admin') {
+                return response()->json(['message' => 'Admins cannot assign the super admin role.'], 403);
+            }
+
+            // A super admin is the only one who can change a super admin's role.
+            if ($user->roleSlug() === 'super_admin' && $creatorRole !== 'super_admin') {
+                return response()->json(['message' => 'Only a super admin can change a super admin\'s role.'], 403);
+            }
+        }
+
         $user->update($data);
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'updated',
+            'module' => 'staff',
+            'model_type' => 'User',
+            'model_id' => $user->id,
+            'description' => "Updated staff account: {$user->name} ({$user->email})",
+        ]);
 
         return response()->json($user->load('role'));
     }

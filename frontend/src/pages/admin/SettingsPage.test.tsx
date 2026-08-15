@@ -211,4 +211,44 @@ describe('SettingsPage', () => {
     expect(screen.queryByText('GCash Account Number')).not.toBeInTheDocument()
     expect(screen.queryByText('GCash QR Code')).not.toBeInTheDocument()
   })
+
+  it('parses a stored two_factor_auth "false" string as unchecked', () => {
+    mockUseSettings.mockReturnValue({
+      data: {
+        ...baseSettings,
+        two_factor_auth: 'false',
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    render(<SettingsPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Security' }))
+
+    expect(screen.getByLabelText('Enable Two-Factor Authentication')).not.toBeChecked()
+  })
+
+  it('saves two_factor_auth as 1/0 so it never round-trips as a truthy string', () => {
+    mockUseSettings.mockReturnValue({
+      data: { ...baseSettings },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    render(<SettingsPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Security' }))
+    fireEvent.click(screen.getByLabelText('Enable Two-Factor Authentication'))
+    fireEvent.click(screen.getByRole('button', { name: /save settings/i }))
+
+    expect(mockMutateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        settings: expect.arrayContaining([
+          { key: 'two_factor_auth', value: '1', group: 'security' },
+        ]),
+      }),
+      expect.anything(),
+    )
+  })
 })

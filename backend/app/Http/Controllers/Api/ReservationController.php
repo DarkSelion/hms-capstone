@@ -96,7 +96,10 @@ class ReservationController extends Controller
                 ]);
             }
 
-            $room = Room::findOrFail($data['room_id']);
+            // Lock the room row so two concurrent bookings for the same room
+            // serialize — the overlap check below then runs after the previous
+            // transaction commits (avoids the store() double-booking race).
+            $room = Room::whereKey($data['room_id'])->lockForUpdate()->firstOrFail();
 
             $rate = $room->price_override ?? $room->roomType->base_price;
             $nights = now()->parse($data['check_in'])->diffInDays(now()->parse($data['check_out']));
@@ -181,13 +184,20 @@ class ReservationController extends Controller
             'status' => 'sometimes|in:pending,confirmed,checked_in,checked_out,cancelled,no_show',
         ]);
 
+        // The DB column is NOT NULL (default 0); coerce an explicit null so a
+        // cleared form field degrades to 0 instead of a 500.
+        if (array_key_exists('children', $data) && $data['children'] === null) {
+            $data['children'] = 0;
+        }
+
         if (isset($data['status'])) {
             $newStatus = $data['status'];
             $oldStatus = $reservation->status;
+            $statusChanged = $newStatus !== $oldStatus;
 
             // Same-status no-op — allow re-saving without transition validation
             // (edit forms may submit the current status unchanged).
-            if ($newStatus === $oldStatus) {
+            if (! $statusChanged) {
                 unset($data['status']);
             } else {
                 $allowedTransitions = [
@@ -206,7 +216,9 @@ class ReservationController extends Controller
                 }
             }
 
-            if ($newStatus === 'checked_in') {
+            // Audit timestamps only reflect an ACTUAL status change, never a
+            // same-status re-save of an edit form.
+            if ($statusChanged && $newStatus === 'checked_in') {
                 if ($reservation->due_amount > 0 && ! $reservation->hasRecordedPayment()) {
                     return response()->json(['message' => 'Collect a payment before checking in.'], 422);
                 }
@@ -214,7 +226,7 @@ class ReservationController extends Controller
                 $data['checked_in_at'] = now();
             }
 
-            if ($newStatus === 'checked_out') {
+            if ($statusChanged && $newStatus === 'checked_out') {
                 if ((float) $reservation->due_amount > 0) {
                     return response()->json(['message' => 'Settle the outstanding balance before checking out.'], 422);
                 }
@@ -222,7 +234,7 @@ class ReservationController extends Controller
                 $data['checked_out_at'] = now();
             }
 
-            if ($newStatus === 'no_show') {
+            if ($statusChanged && $newStatus === 'no_show') {
                 $data['no_show_by'] = $request->user()->id;
                 $data['is_overdue'] = false;
             }
@@ -297,6 +309,15 @@ class ReservationController extends Controller
             return response()->json(['message' => 'Cannot delete a checked-in or checked-out reservation.'], 422);
         }
 
+        $hasPayments = $reservation->payments()->exists();
+        $hasInvoices = $reservation->invoices()->exists();
+
+        if ($hasPayments || $hasInvoices) {
+            return response()->json([
+                'message' => 'Cannot delete a reservation that has payment or invoice records.',
+            ], 422);
+        }
+
         $number = $reservation->reservation_number;
 
         DB::transaction(function () use ($reservation) {
@@ -367,6 +388,12 @@ class ReservationController extends Controller
                 : $reservation->check_out->toDateString());
 
         $datesChanged = $actualCheckOut !== $reservation->check_out->toDateString();
+
+        // Extending a stay can collide with a following booking for the same
+        // room — reject before touching money or dates.
+        if ($datesChanged && $this->roomHasOverlap($reservation->room_id, $reservation->check_in, $actualCheckOut, $reservation->id)) {
+            return response()->json(['message' => 'The room is already booked for part of the extended stay.'], 422);
+        }
 
         // Same-day late check-out fee applies only when departing on the booked
         // check-out date (no date change). Departures after the booked date bill

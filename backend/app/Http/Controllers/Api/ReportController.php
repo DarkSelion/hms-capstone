@@ -61,7 +61,7 @@ class ReportController extends Controller
                 'date' => $date,
                 'revenue' => $revenue,
                 'bookings' => $bookings,
-                'adr' => $bookings > 0 ? round($revenue / $bookings, 2) : 0,
+                'adr' => $occupied > 0 ? round($revenue / $occupied, 2) : 0,
                 'occupancy_rate' => $totalRooms > 0 ? round(($occupied / $totalRooms) * 100, 2) : 0,
             ];
         });
@@ -116,7 +116,12 @@ class ReportController extends Controller
             ->get();
 
         return $dates->mapWithKeys(function ($date) use ($reservations) {
-            $occupied = $reservations->filter(fn ($r) => $r->check_in <= $date && ($r->status === 'checked_in' || $r->check_out > $date))->count();
+            $occupied = $reservations->filter(function ($r) use ($date) {
+                $checkIn = $r->check_in->format('Y-m-d');
+                $checkOut = $r->check_out->format('Y-m-d');
+
+                return $checkIn <= $date && ($r->status === 'checked_in' || $checkOut > $date);
+            })->count();
 
             return [$date => $occupied];
         })->all();

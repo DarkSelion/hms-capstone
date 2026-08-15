@@ -18,6 +18,9 @@ class EnsureUserHasRole
 
         // Public guests are authenticated via Guest model
         if ($user instanceof Guest) {
+            if ($user->is_blacklisted) {
+                return response()->json(['message' => 'Your account has been blacklisted. Contact the hotel for assistance.'], 403);
+            }
             $userRole = 'guest';
         } else {
             if ($user->is_active === false) {

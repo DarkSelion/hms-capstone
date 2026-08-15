@@ -65,7 +65,11 @@ export function PaymentModal({
       setAmount(0)
       setTendered(0)
     }
-  }, [isOpen, reservation])
+    // Key on the reservation id, not the object: the parent recreates the
+    // reservation object (e.g. a live checkout preview) on every render,
+    // which would otherwise wipe in-progress input mid-entry.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, reservation?.id])
 
   function handleReservationSelect(id: number) {
     const res = reservations?.find((r) => r.id === id) ?? null
