@@ -75,6 +75,7 @@ export interface Room {
   room_number: string;
   room_type: RoomType;
   floor: number;
+  bed_type?: string;
   status: 'available' | 'occupied' | 'maintenance' | 'reserved' | 'dirty';
   cleaning_status: 'clean' | 'dirty' | 'in_progress';
   price_override?: number;
