@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/stores/authStore'
 import { isAdminRole } from '@/lib/permissions'
-import { Plus, Search, Eye, Image, Clock, DollarSign, User, Users, Trash2, Edit } from 'lucide-react'
+import { Plus, Search, Eye, Image, Clock, DollarSign, User, Users, Trash2, Edit, Wrench, BedDouble, ClipboardList, MessageSquareText, TriangleAlert } from 'lucide-react'
 
 const CATEGORY_OPTIONS = [
   { value: 'Plumbing', label: 'Plumbing' },
@@ -116,6 +116,17 @@ export default function MaintenancePage() {
   const requests = requestsData?.data ?? []
   const technicians = techniciansData ?? []
   const rooms = roomsData?.data ?? []
+
+  const selectedRoom = rooms.find(r => r.id === Number(formData.room_id)) ?? null
+  const selectedCategoryLabel = CATEGORY_OPTIONS.find(o => o.value === formData.category)?.label ?? ''
+  const selectedPriorityLabel = PRIORITY_OPTIONS.find(o => o.value === formData.priority)?.label ?? ''
+
+  const priorityChipClass =
+    formData.priority === 'urgent'
+      ? 'bg-danger/10 text-danger ring-danger/20'
+      : formData.priority === 'high'
+        ? 'bg-warning/10 text-warning ring-warning/20'
+        : 'bg-success/10 text-success ring-success/20'
 
   function openNewModal() {
     setFormData({ room_id: '', title: '', description: '', category: '', priority: 'medium', notes: '' })
@@ -410,61 +421,128 @@ export default function MaintenancePage() {
           </div>
         }
       >
-        <div className="space-y-4">
-          <Select
-            label="Room"
-            placeholder="Select a room"
-            value={formData.room_id}
-            onChange={(e) => setFormData(f => ({ ...f, room_id: e.target.value }))}
-          >
-            {rooms.map(r => (
-              <option key={r.id} value={r.id}>{r.room_number} — {r.room_type?.name ?? ''}</option>
-            ))}
-          </Select>
-          <Input
-            label="Title"
-            placeholder="Brief description of the issue"
-            value={formData.title}
-            onChange={(e) => setFormData(f => ({ ...f, title: e.target.value }))}
-          />
-          <div>
-            <label className="mb-1 block text-sm font-medium text-foreground">Description</label>
-            <textarea
-              className="flex min-h-[100px] w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary"
-              placeholder="Detailed description of the issue..."
-              value={formData.description}
-              onChange={(e) => setFormData(f => ({ ...f, description: e.target.value }))}
-            />
+        <div className="space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-warning/15 text-warning">
+              <Wrench className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-foreground">Report an Issue</h4>
+              <p className="text-xs text-muted">
+                Log a maintenance problem so the team can assign a technician and get it fixed.
+              </p>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Category"
-              placeholder="Select category"
-              value={formData.category}
-              onChange={(e) => setFormData(f => ({ ...f, category: e.target.value }))}
-            >
-              {CATEGORY_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </Select>
-            <Select
-              label="Priority"
-              value={formData.priority}
-              onChange={(e) => setFormData(f => ({ ...f, priority: e.target.value }))}
-            >
-              {PRIORITY_OPTIONS.filter(o => o.value).map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </Select>
+
+          {(selectedRoom || selectedCategoryLabel) && (
+            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-warning/20 bg-warning/5 px-3.5 py-2.5">
+              {selectedRoom && (
+                <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <BedDouble className="h-3.5 w-3.5 text-warning" />
+                  Room {selectedRoom.room_number}
+                  <span className="text-xs font-normal text-muted">
+                    {selectedRoom.room_type?.name ?? ''}
+                    {selectedRoom.room_type?.name && selectedRoom.floor ? ` · Floor ${selectedRoom.floor}` : ''}
+                  </span>
+                </span>
+              )}
+              {selectedRoom && selectedCategoryLabel && <span className="text-warning">·</span>}
+              {selectedCategoryLabel && (
+                <span className="flex items-center gap-1 rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-foreground ring-1 ring-gray-200">
+                  <ClipboardList className="h-3 w-3 text-muted" />
+                  {selectedCategoryLabel}
+                </span>
+              )}
+              {selectedPriorityLabel && (
+                <span className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ring-1 ${priorityChipClass}`}>
+                  <TriangleAlert className="h-3 w-3" />
+                  {selectedPriorityLabel}
+                </span>
+              )}
+            </div>
+          )}
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warning/10 text-warning">
+                <TriangleAlert className="h-4 w-4" />
+              </div>
+              <h4 className="text-sm font-semibold text-foreground">Issue Details</h4>
+            </div>
+            <div className="space-y-4">
+              <Select
+                label="Room"
+                placeholder="Select a room"
+                value={formData.room_id}
+                onChange={(e) => setFormData(f => ({ ...f, room_id: e.target.value }))}
+              >
+                {rooms.map(r => (
+                  <option key={r.id} value={r.id}>{r.room_number} — {r.room_type?.name ?? ''}</option>
+                ))}
+              </Select>
+              <Input
+                label="Title"
+                placeholder="Brief description of the issue"
+                value={formData.title}
+                onChange={(e) => setFormData(f => ({ ...f, title: e.target.value }))}
+              />
+              <div>
+                <label className="mb-1 flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <MessageSquareText className="h-3.5 w-3.5 text-muted" />
+                  Description
+                </label>
+                <textarea
+                  className="flex min-h-[100px] w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary"
+                  placeholder="Detailed description of the issue..."
+                  value={formData.description}
+                  onChange={(e) => setFormData(f => ({ ...f, description: e.target.value }))}
+                />
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-foreground">Notes</label>
-            <textarea
-              className="flex min-h-[80px] w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary"
-              placeholder="Internal notes..."
-              value={formData.notes}
-              onChange={(e) => setFormData(f => ({ ...f, notes: e.target.value }))}
-            />
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <ClipboardList className="h-4 w-4" />
+              </div>
+              <h4 className="text-sm font-semibold text-foreground">Category & Priority</h4>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Select
+                  label="Category"
+                  placeholder="Select category"
+                  value={formData.category}
+                  onChange={(e) => setFormData(f => ({ ...f, category: e.target.value }))}
+                >
+                  {CATEGORY_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </Select>
+                <Select
+                  label="Priority"
+                  value={formData.priority}
+                  onChange={(e) => setFormData(f => ({ ...f, priority: e.target.value }))}
+                >
+                  {PRIORITY_OPTIONS.filter(o => o.value).map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <label className="mb-1 flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <MessageSquareText className="h-3.5 w-3.5 text-muted" />
+                  Notes
+                </label>
+                <textarea
+                  className="flex min-h-[80px] w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary"
+                  placeholder="Internal notes..."
+                  value={formData.notes}
+                  onChange={(e) => setFormData(f => ({ ...f, notes: e.target.value }))}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </Modal>

@@ -9,7 +9,8 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { Badge } from '@/components/ui/badge'
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
+import { NoShowModal } from '@/components/shared/NoShowModal'
+import { CancelReservationModal } from '@/components/shared/CancelReservationModal'
 import { ReservationDetailModal } from '@/components/shared/ReservationDetailModal'
 import { ReservationFormModal } from '@/components/shared/ReservationFormModal'
 import { ReservationCheckInOutModal } from '@/components/shared/ReservationCheckInOutModal'
@@ -375,26 +376,20 @@ export default function ReservationsPage() {
         onConfirm={handleExtendStayConfirm}
       />
 
-      <ConfirmDialog
+      <CancelReservationModal
         isOpen={!!cancelTarget}
         onClose={() => setCancelTarget(null)}
-        onConfirm={handleCancelConfirm}
-        title="Cancel Reservation"
-        message="Are you sure you want to cancel this reservation? This action may be subject to cancellation fees based on the hotel's cancellation policy."
-        confirmLabel="Cancel Reservation"
-        variant="danger"
+        reservation={cancelTarget}
         isLoading={cancelReservation.isPending}
+        onConfirm={handleCancelConfirm}
       />
 
-      <ConfirmDialog
+      <NoShowModal
         isOpen={!!noShowTarget}
         onClose={() => setNoShowTarget(null)}
-        onConfirm={handleMarkNoShowConfirm}
-        title="Mark as No Show"
-        message={`Mark the reservation for ${noShowTarget?.guest?.first_name ?? ''} ${noShowTarget?.guest?.last_name ?? ''} as No Show? The room will be released and a no-show fee may apply.`}
-        confirmLabel="Mark No Show"
-        variant="danger"
+        reservation={noShowTarget}
         isLoading={markNoShow.isPending}
+        onConfirm={handleMarkNoShowConfirm}
       />
     </div>
   )

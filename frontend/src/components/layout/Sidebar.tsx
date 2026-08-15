@@ -134,10 +134,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               onBlur={onBlur}
               onClick={() => !collapsed && toggleMenu(sectionLabel)}
               className={cn(
-                'flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150',
+                'flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150',
                 collapsed
                   ? 'justify-center px-3 py-3 hover:bg-[var(--color-sidebar-hover-bg)]'
-                  : 'hover:translate-x-1 hover:bg-[var(--color-sidebar-hover-bg)]',
+                  : 'hover:bg-[var(--color-sidebar-hover-bg)]',
                 isChildActive
                   ? 'bg-[var(--color-sidebar-active-bg)] text-[var(--color-sidebar-active-text)] font-semibold border-l-[3px] border-[var(--color-primary)] rounded-l-none [&_svg]:text-[var(--color-sidebar-active-text)]'
                   : 'text-[var(--color-sidebar-text)] hover:text-[var(--color-sidebar-active-text)]',
@@ -171,12 +171,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     }
 
     const baseClasses =
-      'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150'
+      'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150'
 
     const activeClasses =
       'bg-[var(--color-sidebar-active-bg)] text-[var(--color-sidebar-active-text)] font-semibold border-l-[3px] border-[var(--color-primary)] rounded-l-none [&_svg]:text-[var(--color-sidebar-active-text)]'
     const inactiveClasses =
-      'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover-bg)] hover:translate-x-1 hover:text-[var(--color-sidebar-active-text)]'
+      'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover-bg)] hover:text-[var(--color-sidebar-active-text)]'
 
     return (
       <Tooltip key={item.path ?? item.label} content={item.label} side="right" align="start">
@@ -238,7 +238,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3">
+      <nav className="flex-1 overflow-y-auto py-3 [overflow-anchor:none]">
         {sidebarSections.map((section) => {
           const visibleItems = section.items.filter((item) => !item.adminOnly || isAdminRole(role))
           if (visibleItems.length === 0) return null
@@ -263,7 +263,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                           to={sub.path ?? '#'}
                           className={({ isActive }) =>
                             cn(
-                              'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-150',
+                              'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-150',
                               isActive
                                 ? 'bg-[var(--color-sidebar-active-bg)] text-[var(--color-sidebar-active-text)] font-semibold border-l-[3px] border-[var(--color-primary)] rounded-l-none [&_svg]:text-[var(--color-sidebar-active-text)]'
                                 : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover-bg)] hover:text-[var(--color-sidebar-active-text)]',

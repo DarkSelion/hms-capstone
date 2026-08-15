@@ -22,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/stores/authStore'
 import { isAdminRole } from '@/lib/permissions'
-import { Plus, List, LayoutGrid, Search, SprayCan, RotateCcw, AlertCircle, Clock, User, Edit, Trash2, Loader2 } from 'lucide-react'
+import { Plus, List, LayoutGrid, Search, SprayCan, RotateCcw, AlertCircle, Clock, User, Edit, Trash2, Loader2, BedDouble, UserRound, MessageSquareText } from 'lucide-react'
 
 const TASK_TYPES = [
   { value: 'Daily Cleaning', label: 'Daily Cleaning' },
@@ -118,6 +118,11 @@ export default function HousekeepingPage() {
   const dirtyRooms = rooms.filter(r => r.cleaning_status !== 'clean' || r.status === 'dirty')
 
   const isSaving = createTask.isPending || updateTask.isPending
+
+  const selectedRoom = dirtyRooms.find(r => r.id === Number(taskForm.room_id)) ?? null
+  const selectedTaskLabel = TASK_TYPES.find(t => t.value === taskForm.task_type)?.label ?? ''
+  const selectedPriorityLabel = PRIORITY_OPTIONS.find(o => o.value === taskForm.priority)?.label ?? ''
+  const selectedStaffName = staff.find(s => s.id === Number(taskForm.assigned_to))?.name ?? ''
 
   const tasksByStatus = useMemo(() => {
     const map: Record<string, HousekeepingTask[]> = { pending: [], in_progress: [], completed: [] }
@@ -514,65 +519,135 @@ export default function HousekeepingPage() {
           </div>
         }
       >
-        <div className="space-y-4">
-          <Select
-            label="Room"
-            placeholder="Select a room"
-            value={taskForm.room_id}
-            onChange={(e) => setTaskForm(f => ({ ...f, room_id: e.target.value }))}
-          >
-            <option value="">No room (general task)</option>
-            {dirtyRooms.map(r => (
-              <option key={r.id} value={r.id}>
-                {r.room_number} — {r.room_type?.name ?? ''} ({r.cleaning_status})
-              </option>
-            ))}
-          </Select>
-          <Select
-            label="Task Type"
-            placeholder="Select task type"
-            value={taskForm.task_type}
-            onChange={(e) => setTaskForm(f => ({ ...f, task_type: e.target.value }))}
-          >
-            {TASK_TYPES.map(t => (
-              <option key={t.value} value={t.value}>{t.label}</option>
-            ))}
-          </Select>
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Priority"
-              value={taskForm.priority}
-              onChange={(e) => setTaskForm(f => ({ ...f, priority: e.target.value }))}
-            >
-              {PRIORITY_OPTIONS.filter(o => o.value).map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </Select>
-            <DatePicker
-              label="Scheduled Date"
-              value={taskForm.scheduled_date}
-              onChange={(v) => setTaskForm(f => ({ ...f, scheduled_date: v }))}
-            />
+        <div className="space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/15 text-gold-dark">
+              <SprayCan className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-foreground">
+                {editTask ? 'Update Housekeeping Task' : 'Create a New Task'}
+              </h4>
+              <p className="text-xs text-muted">
+                {editTask ? 'Adjust the details for this cleaning task.' : 'Schedule cleaning for a room or a general task.'}
+              </p>
+            </div>
           </div>
-          <Select
-            label="Assigned To"
-            placeholder="Select staff"
-            value={taskForm.assigned_to}
-            onChange={(e) => setTaskForm(f => ({ ...f, assigned_to: e.target.value }))}
-          >
-            {staff.map(s => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </Select>
-          <div>
-            <label htmlFor="task-notes" className="mb-1 block text-sm font-medium text-foreground">Notes</label>
-            <textarea
-              id="task-notes"
-              className="flex min-h-[80px] w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary"
-              placeholder="Additional notes..."
-              value={taskForm.notes}
-              onChange={(e) => setTaskForm(f => ({ ...f, notes: e.target.value }))}
-            />
+
+          {(selectedRoom || selectedTaskLabel) && (
+            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-gold/20 bg-gold/5 px-3.5 py-2.5">
+              {selectedRoom && (
+                <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <BedDouble className="h-3.5 w-3.5 text-gold-dark" />
+                  Room {selectedRoom.room_number}
+                  <span className="text-xs font-normal text-muted">
+                    {selectedRoom.room_type?.name ?? ''}
+                    {selectedRoom.cleaning_status ? ` · ${selectedRoom.cleaning_status.replace('_', ' ')}` : ''}
+                  </span>
+                </span>
+              )}
+              {selectedRoom && selectedTaskLabel && <span className="text-gold-dark">·</span>}
+              {selectedTaskLabel && (
+                <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-foreground ring-1 ring-gray-200">
+                  {selectedTaskLabel}
+                </span>
+              )}
+              {selectedPriorityLabel && (
+                <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-foreground ring-1 ring-gray-200 capitalize">
+                  {selectedPriorityLabel} priority
+                </span>
+              )}
+              {selectedStaffName && (
+                <span className="flex items-center gap-1 text-xs text-muted">
+                  <UserRound className="h-3 w-3" />
+                  {selectedStaffName}
+                </span>
+              )}
+            </div>
+          )}
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <BedDouble className="h-4 w-4" />
+              </div>
+              <h4 className="text-sm font-semibold text-foreground">Task Details</h4>
+            </div>
+            <div className="space-y-4">
+              <Select
+                label="Room"
+                placeholder="Select a room"
+                value={taskForm.room_id}
+                onChange={(e) => setTaskForm(f => ({ ...f, room_id: e.target.value }))}
+              >
+                <option value="">No room (general task)</option>
+                {dirtyRooms.map(r => (
+                  <option key={r.id} value={r.id}>
+                    {r.room_number} — {r.room_type?.name ?? ''} ({r.cleaning_status})
+                  </option>
+                ))}
+              </Select>
+              <Select
+                label="Task Type"
+                placeholder="Select task type"
+                value={taskForm.task_type}
+                onChange={(e) => setTaskForm(f => ({ ...f, task_type: e.target.value }))}
+              >
+                {TASK_TYPES.map(t => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <Select
+                  label="Priority"
+                  value={taskForm.priority}
+                  onChange={(e) => setTaskForm(f => ({ ...f, priority: e.target.value }))}
+                >
+                  {PRIORITY_OPTIONS.filter(o => o.value).map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </Select>
+                <DatePicker
+                  label="Scheduled Date"
+                  value={taskForm.scheduled_date}
+                  onChange={(v) => setTaskForm(f => ({ ...f, scheduled_date: v }))}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-success/10 text-success">
+                <UserRound className="h-4 w-4" />
+              </div>
+              <h4 className="text-sm font-semibold text-foreground">Assignment</h4>
+            </div>
+            <div className="space-y-4">
+              <Select
+                label="Assigned To"
+                placeholder="Select staff"
+                value={taskForm.assigned_to}
+                onChange={(e) => setTaskForm(f => ({ ...f, assigned_to: e.target.value }))}
+              >
+                {staff.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </Select>
+              <div>
+                <label htmlFor="task-notes" className="mb-1 flex items-center gap-1.5 text-sm font-medium text-foreground">
+                  <MessageSquareText className="h-3.5 w-3.5 text-muted" />
+                  Notes
+                </label>
+                <textarea
+                  id="task-notes"
+                  className="flex min-h-[80px] w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary"
+                  placeholder="Additional notes..."
+                  value={taskForm.notes}
+                  onChange={(e) => setTaskForm(f => ({ ...f, notes: e.target.value }))}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </Modal>

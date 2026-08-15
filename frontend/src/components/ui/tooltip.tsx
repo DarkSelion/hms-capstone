@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '../../lib/utils'
 
 export interface TooltipTriggerProps {
@@ -112,18 +113,20 @@ export function Tooltip({
         onFocus: handleFocusWithPosition,
         onBlur: handleBlur,
       })}
-      {visible && (
-        <div
-          className={cn(
-            'fixed z-[60] rounded-md bg-foreground px-2.5 py-1.5 text-xs font-medium text-card shadow-lg',
-            'pointer-events-none transition-opacity duration-200',
-          )}
-          style={{ top: `${position.top}px`, left: `${position.left}px` }}
-          role="tooltip"
-        >
-          {content}
-        </div>
-      )}
+      {visible &&
+        createPortal(
+          <div
+            className={cn(
+              'fixed z-[60] rounded-md bg-foreground px-2.5 py-1.5 text-xs font-medium text-card shadow-lg',
+              'pointer-events-none transition-opacity duration-200',
+            )}
+            style={{ top: `${position.top}px`, left: `${position.left}px` }}
+            role="tooltip"
+          >
+            {content}
+          </div>,
+          document.body,
+        )}
     </>
   )
 }
