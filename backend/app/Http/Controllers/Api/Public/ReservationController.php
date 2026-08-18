@@ -65,6 +65,12 @@ class ReservationController extends Controller
                 ]);
             }
 
+            if ($room->capacity && (int) $data['adults'] > (int) $room->capacity) {
+                throw ValidationException::withMessages([
+                    'adults' => ["The number of adults cannot exceed the room capacity of {$room->capacity}."],
+                ]);
+            }
+
             $reservation = Reservation::createWithNumber([
                 'guest_id' => $guest->id,
                 'room_id' => $room->id,

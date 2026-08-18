@@ -204,6 +204,12 @@ class OnlinePaymentGatewayController extends Controller
             throw ValidationException::withMessages(['amount_paid' => ['The paid amount must be greater than zero.']]);
         }
 
+        // A payment callback for a dead reservation (e.g. it was cancelled after
+        // the guest hit Pay Now) must not resurrect financial records — skip it.
+        if (in_array($reservation->status, ['cancelled', 'checked_out', 'no_show'], true)) {
+            return;
+        }
+
         // Dedupe on the gateway's unique transaction reference when provided
         // (strong idempotency); otherwise fall back to the legacy
         // (reservation, amount) key so retries of the same event can never
@@ -277,6 +283,11 @@ class OnlinePaymentGatewayController extends Controller
 
     protected function recordPending(Reservation $reservation): void
     {
+        // Never create a pending payment placeholder on a dead reservation.
+        if (in_array($reservation->status, ['cancelled', 'checked_out', 'no_show'], true)) {
+            return;
+        }
+
         $alreadyPending = Payment::where('reservation_id', $reservation->id)
             ->where('payment_method', 'online')
             ->where('status', 'pending')

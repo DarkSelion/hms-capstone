@@ -101,6 +101,12 @@ class ReservationController extends Controller
             // transaction commits (avoids the store() double-booking race).
             $room = Room::whereKey($data['room_id'])->lockForUpdate()->firstOrFail();
 
+            if ($room->capacity && (int) $data['adults'] > (int) $room->capacity) {
+                throw ValidationException::withMessages([
+                    'adults' => ["The number of adults cannot exceed the room capacity of {$room->capacity}."],
+                ]);
+            }
+
             $rate = $room->price_override ?? $room->roomType->base_price;
             $nights = now()->parse($data['check_in'])->diffInDays(now()->parse($data['check_out']));
             $subtotal = $rate * $nights;
@@ -251,6 +257,14 @@ class ReservationController extends Controller
                 $checkIn = $data['check_in'] ?? $reservation->check_in;
                 $checkOut = $data['check_out'] ?? $reservation->check_out;
 
+                // Serialize concurrent date/room changes on the affected room(s)
+                // so the overlap check below runs against committed data only
+                // (mirrors the room-row lock in store()).
+                Room::whereKey($newRoomId)->lockForUpdate()->firstOrFail();
+                if ($oldRoomId !== $newRoomId) {
+                    Room::whereKey($oldRoomId)->lockForUpdate()->firstOrFail();
+                }
+
                 $overlap = $this->roomHasOverlap($newRoomId, $checkIn, $checkOut, $reservation->id);
 
                 if ($overlap) {
@@ -266,8 +280,23 @@ class ReservationController extends Controller
             if ($roomChanged) {
                 $newRoom = Room::find($newRoomId);
                 if ($newRoom) {
+                    if ($newRoom->capacity && (int) $reservation->adults > (int) $newRoom->capacity) {
+                        throw ValidationException::withMessages([
+                            'room_id' => ["The selected room cannot accommodate {$reservation->adults} adults (capacity {$newRoom->capacity})."],
+                        ]);
+                    }
+
                     $reservation->update([
                         'price_per_night' => $newRoom->price_override ?? $newRoom->roomType->base_price,
+                    ]);
+                }
+            }
+
+            if (isset($data['adults'])) {
+                $room = $reservation->room;
+                if ($room && $room->capacity && (int) $data['adults'] > (int) $room->capacity) {
+                    throw ValidationException::withMessages([
+                        'adults' => ["The number of adults cannot exceed the room capacity of {$room->capacity}."],
                     ]);
                 }
             }
@@ -389,37 +418,39 @@ class ReservationController extends Controller
 
         $datesChanged = $actualCheckOut !== $reservation->check_out->toDateString();
 
-        // Extending a stay can collide with a following booking for the same
-        // room — reject before touching money or dates.
-        if ($datesChanged && $this->roomHasOverlap($reservation->room_id, $reservation->check_in, $actualCheckOut, $reservation->id)) {
-            return response()->json(['message' => 'The room is already booked for part of the extended stay.'], 422);
-        }
-
         // Same-day late check-out fee applies only when departing on the booked
         // check-out date (no date change). Departures after the booked date bill
         // the actual extra nights instead (datesChanged path), so the flat fee
         // never stacks with them.
-        $lateFee = $datesChanged ? 0.0 : $reservation->lateCheckoutFee();
-
-        // Compute the projected balance BEFORE persisting anything, so a blocked
-        // check-out leaves the reservation dates/totals untouched (AC-002).
-        $paid = $reservation->recordedPaid();
-        $currentTotal = $datesChanged
-            ? (float) $reservation->computePricing($actualCheckOut)['total_amount']
-            : (float) $reservation->total_amount;
-        $currentTotal += $lateFee;
-        $projectedDue = max(0, $currentTotal - $paid);
-
-        if ($projectedDue > 0) {
-            return response()->json(['message' => 'Settle the outstanding balance before checking out.'], 422);
-        }
-
-        // Fee folding, date recalc, status change, and room cleanup all happen in
-        // ONE transaction, so a failure rolls everything back — a retry recomputes
-        // from a clean state and can never double-charge the late fee.
         $userId = $request->user()->id;
 
-        DB::transaction(function () use ($reservation, $actualCheckOut, $datesChanged, $lateFee, $userId) {
+        // The whole gate (overlap re-check, projected-balance computation, and
+        // every write) runs in ONE transaction under a room-row lock so a
+        // concurrent change can never double-book or double-charge, and a
+        // blocked/failed check-out leaves the reservation untouched.
+        $result = DB::transaction(function () use ($reservation, $actualCheckOut, $datesChanged, $userId) {
+            Room::whereKey($reservation->room_id)->lockForUpdate()->firstOrFail();
+
+            // Extending a stay can collide with a following booking for the same
+            // room — reject before touching money or dates.
+            if ($datesChanged && $this->roomHasOverlap($reservation->room_id, $reservation->check_in, $actualCheckOut, $reservation->id)) {
+                return ['blocked' => 'overlap'];
+            }
+
+            // Compute the projected balance BEFORE persisting anything, so a
+            // blocked check-out leaves the reservation dates/totals untouched.
+            $lateFee = $datesChanged ? 0.0 : $reservation->lateCheckoutFee();
+            $paid = $reservation->recordedPaid();
+            $currentTotal = $datesChanged
+                ? (float) $reservation->computePricing($actualCheckOut)['total_amount']
+                : (float) $reservation->total_amount;
+            $currentTotal += $lateFee;
+            $projectedDue = max(0, $currentTotal - $paid);
+
+            if ($projectedDue > 0) {
+                return ['blocked' => 'balance'];
+            }
+
             if ($datesChanged) {
                 $reservation->update(['check_out' => $actualCheckOut]);
                 $this->recalculatePricing($reservation);
@@ -440,7 +471,19 @@ class ReservationController extends Controller
             ]);
 
             $reservation->room->update(['status' => 'dirty', 'cleaning_status' => 'dirty']);
+
+            return ['blocked' => null, 'late_fee' => $lateFee];
         });
+
+        if ($result['blocked'] === 'overlap') {
+            return response()->json(['message' => 'The room is already booked for part of the extended stay.'], 422);
+        }
+
+        if ($result['blocked'] === 'balance') {
+            return response()->json(['message' => 'Settle the outstanding balance before checking out.'], 422);
+        }
+
+        $lateFee = (float) $result['late_fee'];
 
         if ($lateFee > 0) {
             ActivityLog::create([
@@ -589,6 +632,10 @@ class ReservationController extends Controller
         $reservationId = $reservation->id;
 
         $wasBlocked = DB::transaction(function () use ($reservation, $newCheckOut, $reservationId) {
+            // Serialize against concurrent changes to this room so the overlap
+            // check sees committed data only (mirrors store()'s room-row lock).
+            Room::whereKey($reservation->room_id)->lockForUpdate()->firstOrFail();
+
             $overlap = $this->roomHasOverlap(
                 $reservation->room_id,
                 $reservation->check_in->toDateString(),

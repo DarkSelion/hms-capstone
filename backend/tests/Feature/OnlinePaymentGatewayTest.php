@@ -496,4 +496,38 @@ class OnlinePaymentGatewayTest extends TestCase
             ->assertJsonPath('online_gateway_api_key', 'REDACTED_GATEWAY_KEY')
             ->assertJsonPath('online_gateway_webhook_secret', 'webhook-secret-abc');
     }
+
+    public function test_webhook_paid_on_cancelled_reservation_records_nothing(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+        $reservation->update(['status' => 'cancelled']);
+
+        $this->postJson('/api/webhooks/payment', [
+            'booking_ref' => $reservation->reservation_number,
+            'status' => 'paid',
+            'amount_paid' => 2000,
+        ], ['X-Webhook-Secret' => 'webhook-secret-abc'])
+            ->assertOk();
+
+        $this->assertSame(0, Payment::where('reservation_id', $reservation->id)->count());
+        $reservation->refresh();
+        $this->assertSame('cancelled', $reservation->status);
+        $this->assertSame('unpaid', $reservation->payment_status);
+    }
+
+    public function test_webhook_pending_on_dead_reservation_creates_no_placeholder(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+        $reservation->update(['status' => 'no_show']);
+
+        $this->postJson('/api/webhooks/payment', [
+            'booking_ref' => $reservation->reservation_number,
+            'status' => 'pending',
+        ], ['X-Webhook-Secret' => 'webhook-secret-abc'])
+            ->assertOk();
+
+        $this->assertSame(0, Payment::where('reservation_id', $reservation->id)->count());
+    }
 }

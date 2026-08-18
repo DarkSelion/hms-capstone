@@ -700,6 +700,33 @@ class PublicTest extends TestCase
         ]);
     }
 
+    public function test_public_reservation_rejects_adults_over_room_capacity(): void
+    {
+        $this->setupSettings();
+        $type = $this->roomType('deluxe', 150);
+        $this->room($type);
+        $guest = $this->guest();
+        Sanctum::actingAs($guest);
+
+        $checkIn = now()->addDays(10)->format('Y-m-d');
+        $checkOut = now()->addDays(12)->format('Y-m-d');
+
+        $response = $this->postJson('/api/public/reservations', [
+            'room_type_id' => $type->id,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'adults' => 5,
+            'children' => 1,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('adults');
+
+        $this->assertDatabaseMissing('reservations', [
+            'room_type_id' => $type->id,
+        ]);
+    }
+
     public function test_public_reservation_requires_auth(): void
     {
         $type = $this->roomType('deluxe', 150);

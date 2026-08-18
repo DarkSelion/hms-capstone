@@ -412,4 +412,53 @@ class AdminBugsBatchHTest extends TestCase
         Storage::disk('public')->assertExists('receipts/existing.pdf');
         $this->assertDatabaseHas('expenses', ['id' => $expense->id, 'receipt' => 'receipts/existing.pdf']);
     }
+
+    public function test_admin_reservation_store_rejects_adults_over_capacity(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $room = $this->room(null, ['capacity' => 1]);
+        $checkIn = now()->addDays(10)->format('Y-m-d');
+        $checkOut = now()->addDays(12)->format('Y-m-d');
+
+        $response = $this->postJson('/api/reservations', [
+            'guest_first_name' => 'Alice',
+            'guest_last_name' => 'Wonder',
+            'guest_phone' => '09171234567',
+            'room_id' => $room->id,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'adults' => 2,
+            'children' => 0,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('adults');
+
+        $this->assertDatabaseMissing('reservations', [
+            'room_id' => $room->id,
+        ]);
+    }
+
+    public function test_admin_reservation_update_rejects_adults_over_capacity(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $room = $this->room(null, ['capacity' => 1]);
+        $reservation = $this->reservation($room);
+
+        $response = $this->putJson("/api/reservations/{$reservation->id}", [
+            'adults' => 3,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('adults');
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'adults' => 2,
+        ]);
+    }
 }
