@@ -82,6 +82,13 @@ export default function App() {
   return (
     <ToastProvider>
       <Routes>
+        {/* Guest portal at root */}
+        <Route path="/" element={
+          <Suspense fallback={<PageLoader />}><PublicLayout /></Suspense>
+        }>
+          <Route index element={<Suspense fallback={<PageLoader />}><PublicHomePage /></Suspense>} />
+        </Route>
+
         {/* Admin routes */}
         <Route path="/admin/login" element={<LoginPage />} />
         <Route

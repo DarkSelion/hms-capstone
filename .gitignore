@@ -20,3 +20,6 @@ backend/storage/logs/*.log
 dev-server.log
 lint_out.txt
 $
+
+# Secrets / keys
+*.pem
