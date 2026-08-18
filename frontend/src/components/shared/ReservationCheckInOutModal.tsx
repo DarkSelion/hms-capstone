@@ -131,7 +131,7 @@ export function ReservationCheckInOutModal({
   const { data: settings } = useSettings()
   const checkoutTimeSetting = (settings as Record<string, unknown> | undefined)?.['check_out_time']
   const checkoutTimeLabel = formatCheckoutTime(
-    typeof checkoutTimeSetting === 'string' ? checkoutTimeSetting : '12:00',
+    typeof checkoutTimeSetting === 'string' ? checkoutTimeSetting : '11:00',
   )
 
   const effective: Reservation | null =

@@ -14,7 +14,7 @@ const SUBJECTS = [
 const DEFAULT_FAQ = [
   {
     q: 'What time is check-in and check-out?',
-    a: 'Thanks to our 24/7 reception, you can check in and check out at any time.',
+    a: 'Check-in is available 24/7 at our front desk. Check-out time is 11:00 AM. Need more time? Ask our team about late check-out options.',
   },
   {
     q: 'Do you offer airport transfers?',

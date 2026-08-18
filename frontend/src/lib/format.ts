@@ -70,9 +70,9 @@ export interface ParsedCheckoutTime {
 }
 
 export function parseCheckoutTime(value: string): ParsedCheckoutTime {
-  const [h, m] = (value || '12:00').split(':')
+  const [h, m] = (value || '11:00').split(':')
   const hour = parseInt(h, 10)
-  const safeHour = isNaN(hour) ? 12 : hour
+  const safeHour = isNaN(hour) ? 11 : hour
   const minute = (m || '00').padStart(2, '0')
   const hour12 = safeHour % 12 === 0 ? 12 : safeHour % 12
   return {

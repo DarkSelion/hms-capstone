@@ -104,7 +104,7 @@ export default function PublicBookingPage() {
   const cancellationPolicy = (bookingSettings as Record<string, unknown> | undefined)?.cancellation_policy
   const cancellationLabel = typeof cancellationPolicy === 'string' && cancellationPolicy.trim() ? cancellationPolicy.trim() : ''
   const checkoutTimeSetting = (bookingSettings as Record<string, unknown> | undefined)?.check_out_time
-  const checkoutTimeLabel = formatCheckoutTime(typeof checkoutTimeSetting === 'string' ? checkoutTimeSetting : '12:00')
+  const checkoutTimeLabel = formatCheckoutTime(typeof checkoutTimeSetting === 'string' ? checkoutTimeSetting : '11:00')
   const { addToast } = useToast()
 
   useEffect(() => {

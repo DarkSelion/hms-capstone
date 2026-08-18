@@ -127,9 +127,9 @@ describe('SettingsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Booking' }))
 
-    expect(screen.getByLabelText('Check-out hour')).toHaveValue('12')
+    expect(screen.getByLabelText('Check-out hour')).toHaveValue('11')
     expect(screen.getByLabelText('Check-out minute')).toHaveValue('00')
-    expect(screen.getByLabelText('Check-out meridiem')).toHaveValue('PM')
+    expect(screen.getByLabelText('Check-out meridiem')).toHaveValue('AM')
     fireEvent.change(screen.getByLabelText('Check-out hour'), { target: { value: '1' } })
     fireEvent.change(screen.getByLabelText('Check-out minute'), { target: { value: '30' } })
     fireEvent.change(screen.getByLabelText('Check-out meridiem'), { target: { value: 'PM' } })

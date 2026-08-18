@@ -84,7 +84,7 @@ export default function PublicMyReservationsPage() {
   const fmt = (amount: number) => formatCurrencyWith(amount, currency)
   const { data: bookingSettings } = usePublicSettings('booking')
   const booking = (bookingSettings ?? {}) as Record<string, unknown>
-  const checkoutTimeLabel = formatCheckoutTime(typeof booking['check_out_time'] === 'string' ? booking['check_out_time'] : '12:00')
+  const checkoutTimeLabel = formatCheckoutTime(typeof booking['check_out_time'] === 'string' ? booking['check_out_time'] : '11:00')
   const cancellationPolicy = typeof booking['cancellation_policy'] === 'string' ? booking['cancellation_policy'] : ''
   const paymentSettings = usePaymentSettings()
   const onlineGatewayEnabled = paymentSettings['online_gateway_enabled'] === '1' || paymentSettings['online_gateway_enabled'] === true

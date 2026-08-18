@@ -26,9 +26,9 @@ describe('formatCheckoutTime', () => {
     expect(formatCheckoutTime('14:00')).toBe('2:00 PM')
   })
 
-  it('falls back to 12:00 PM for empty or malformed input', () => {
-    expect(formatCheckoutTime('')).toBe('12:00 PM')
-    expect(formatCheckoutTime('bogus')).toBe('12:00 PM')
+  it('falls back to 11:00 AM for empty or malformed input', () => {
+    expect(formatCheckoutTime('')).toBe('11:00 AM')
+    expect(formatCheckoutTime('bogus')).toBe('11:00 AM')
   })
 })
 

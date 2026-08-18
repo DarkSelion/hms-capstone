@@ -78,7 +78,7 @@ export default function SettingsPage() {
     hotel_name: '', default_currency: 'PHP', timezone: 'Asia/Manila',
   })
   const [bookingForm, setBookingForm] = useState({
-    default_discount: 0, cancellation_policy: '', early_checkin_fee: 0, late_checkout_fee: 0, check_out_time: '12:00', max_advance_days: 30,
+    default_discount: 0, cancellation_policy: '', early_checkin_fee: 0, late_checkout_fee: 0, check_out_time: '11:00', max_advance_days: 30,
   })
   const [taxForm, setTaxForm] = useState({ tax_name: '', tax_rate: 0 })
   const [securityForm, setSecurityForm] = useState({
@@ -121,7 +121,7 @@ export default function SettingsPage() {
         cancellation_policy: s.cancellation_policy ?? '',
         early_checkin_fee: s.early_checkin_fee ?? 0,
         late_checkout_fee: s.late_checkout_fee ?? 0,
-        check_out_time: s.check_out_time ?? '12:00',
+        check_out_time: s.check_out_time ?? '11:00',
         max_advance_days: s.max_advance_days ?? 30,
       })
       setTaxForm({

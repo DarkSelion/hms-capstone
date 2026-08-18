@@ -226,7 +226,7 @@ class Reservation extends Model
             return 0.0;
         }
 
-        $cutoff = (string) (Setting::where('key', 'check_out_time')->value('value') ?? '12:00');
+        $cutoff = (string) (Setting::where('key', 'check_out_time')->value('value') ?? '11:00');
 
         if ($now->format('H:i') <= $cutoff) {
             return 0.0;
