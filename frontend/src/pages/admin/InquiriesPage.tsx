@@ -10,7 +10,18 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
-import { Eye, Trash2, AlertCircle, Mail, User, Reply } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import {
+  Eye, Trash2, AlertCircle, Mail, UserRound, Reply, MessageSquareText, Clock, Server,
+} from 'lucide-react'
+
+function formatLongDate(dateStr: string) {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return '-'
+  const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  return `${formatDateDisplay(dateStr, 'long')} · ${time}`
+}
 
 function gmailReplyUrl(m: ContactMessage): string {
   const to = encodeURIComponent(m.email)
@@ -146,61 +157,97 @@ export default function InquiriesPage() {
         isOpen={showDetail}
         onClose={() => setShowDetail(false)}
         title="Message Details"
-        size="lg"
+        size="xl"
+        footer={
+          <>
+            <a
+              href={selected ? gmailReplyUrl(selected) : '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg bg-gold px-4 py-2 text-sm font-medium text-white hover:bg-gold-light"
+            >
+              <Reply className="h-4 w-4" /> Reply via Gmail
+            </a>
+            <Button variant="outline" onClick={() => setShowDetail(false)}>Close</Button>
+            <Button
+              variant="danger"
+              onClick={() => selected && setDeleteConfirmId(selected.id)}
+              disabled={deleteMessage.isPending}
+            >
+              <Trash2 className="h-4 w-4" /> Delete
+            </Button>
+          </>
+        }
       >
         {selected ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-medium text-muted flex items-center gap-1">
-                  <User className="h-3 w-3" /> From
-                </label>
-                <p className="mt-0.5 text-sm text-foreground break-words">{selected.name}</p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted flex items-center gap-1">
-                  <Mail className="h-3 w-3" /> Email
-                </label>
-                <a href={`mailto:${selected.email}`} className="mt-0.5 block text-sm text-primary hover:underline break-all">
-                  {selected.email}
-                </a>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">Received</label>
-                <p className="mt-0.5 text-sm text-foreground">{formatDateDisplay(selected.created_at)}</p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">Subject</label>
-                <p className="mt-0.5 text-sm font-medium text-foreground break-words">{selected.subject}</p>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="text-xs font-medium text-muted">Message</label>
-                <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-foreground">{selected.message}</p>
-              </div>
-              {selected.ip_address && (
-                <div className="sm:col-span-2">
-                  <label className="text-xs font-medium text-muted">IP Address</label>
-                  <p className="mt-0.5 text-sm text-muted">{selected.ip_address}</p>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gold/15 text-gold-dark">
+                  <Mail className="h-5 w-5" />
                 </div>
-              )}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">{selected.name}</p>
+                  <p className="truncate text-xs text-muted">{selected.subject}</p>
+                </div>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <Badge variant="gold">Portal inquiry</Badge>
+                <span className="text-xs text-muted">{formatDateDisplay(selected.created_at)}</span>
+              </div>
             </div>
-            <div className="flex gap-2 pt-2">
-              <a
-                href={selected ? gmailReplyUrl(selected) : '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg bg-gold px-4 py-2 text-sm font-medium text-white hover:bg-gold-light"
-              >
-                <Reply className="h-4 w-4" /> Reply via Gmail
-              </a>
-              <Button variant="outline" onClick={() => setShowDetail(false)}>Close</Button>
-              <Button
-                variant="danger"
-                onClick={() => setDeleteConfirmId(selected.id)}
-                disabled={deleteMessage.isPending}
-              >
-                <Trash2 className="h-4 w-4" /> Delete
-              </Button>
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/15 text-gold-dark">
+                  <MessageSquareText className="h-4 w-4" />
+                </div>
+                <h4 className="text-sm font-semibold text-foreground">Message</h4>
+                <span className="ml-auto truncate text-xs text-muted">{selected.email}</span>
+              </div>
+              <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
+                {selected.message || '—'}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-xl bg-bg p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                    <UserRound className="h-3.5 w-3.5" /> From
+                  </p>
+                  <p className="break-words text-sm font-semibold text-foreground">{selected.name}</p>
+                </div>
+                <div className="rounded-xl bg-bg p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                    <Mail className="h-3.5 w-3.5" /> Email
+                  </p>
+                  <a
+                    href={`mailto:${selected.email}`}
+                    className="break-all text-sm font-semibold text-primary hover:underline"
+                  >
+                    {selected.email}
+                  </a>
+                </div>
+                <div className="rounded-xl bg-bg p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                    <Clock className="h-3.5 w-3.5" /> Received
+                  </p>
+                  <p className="text-sm font-semibold text-foreground">{formatLongDate(selected.created_at)}</p>
+                </div>
+                <div className="rounded-xl bg-bg p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                    <Server className="h-3.5 w-3.5" /> IP Address
+                  </p>
+                  <p className="break-words text-sm font-semibold text-foreground">{selected.ip_address || '—'}</p>
+                </div>
+                <div className="rounded-xl bg-bg p-3 sm:col-span-2">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                    <MessageSquareText className="h-3.5 w-3.5" /> Subject
+                  </p>
+                  <p className="break-words text-sm font-semibold text-foreground">{selected.subject || '—'}</p>
+                </div>
+              </div>
             </div>
           </div>
         ) : (

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useActivityLogs, useStaffAssignable } from '@/hooks/useApi'
 import type { ActivityLog } from '@/types'
-import { formatDateDisplay } from '@/lib/format'
+import { formatDateDisplay, formatCurrency } from '@/lib/format'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { RowActions, RowActionButton } from '@/components/shared/RowActions'
@@ -10,7 +10,13 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Modal } from '@/components/ui/modal'
 import { Badge } from '@/components/ui/badge'
-import { Eye, AlertCircle, User, UserX, Clock, Server, Braces } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import {
+  Eye, AlertCircle, UserX, Clock, Server, MonitorSmartphone, GitCompareArrows,
+  BedDouble, CreditCard, ReceiptText, UserRound, Sparkles, Wrench, Wallet,
+  DoorOpen, Users, Lock, Settings,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 const MODULES = [
   'reservations',
@@ -55,6 +61,140 @@ const MODULE_COLORS: Record<string, 'info' | 'success' | 'warning' | 'danger' | 
   rooms: 'warning',
   auth: 'default',
   settings: 'default',
+}
+
+const MODULE_ICONS: Record<string, LucideIcon> = {
+  reservations: BedDouble,
+  payments: CreditCard,
+  invoices: ReceiptText,
+  guests: UserRound,
+  housekeeping: Sparkles,
+  maintenance: Wrench,
+  expenses: Wallet,
+  staff: Users,
+  room_list: DoorOpen,
+  rooms: DoorOpen,
+  auth: Lock,
+  settings: Settings,
+}
+
+function moduleTileClass(module: string): string {
+  switch (MODULE_COLORS[module] ?? 'default') {
+    case 'gold': return 'bg-gold/20 text-gold-dark'
+    case 'success': return 'bg-success/10 text-success'
+    case 'warning': return 'bg-warning/10 text-warning'
+    case 'danger': return 'bg-danger/10 text-danger'
+    case 'info': return 'bg-info/10 text-info'
+    default: return 'bg-border/50 text-muted'
+  }
+}
+
+/** Human-friendly labels for common changed fields in the diff table. */
+const FIELD_LABELS: Record<string, string> = {
+  status: 'Status',
+  payment_status: 'Payment Status',
+  cleaning_status: 'Cleaning Status',
+  price_per_night: 'Price / Night',
+  total_amount: 'Total Amount',
+  paid_amount: 'Paid Amount',
+  due_amount: 'Balance Due',
+  discount_percent: 'Discount %',
+  tax_percent: 'Tax %',
+  room_id: 'Room',
+  guest_id: 'Guest',
+  check_in: 'Check-in',
+  check_out: 'Check-out',
+  is_active: 'Active',
+  is_blacklisted: 'Blacklisted',
+  is_overdue: 'Overdue',
+  role_id: 'Role',
+  notes: 'Notes',
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+const CURRENCY_FIELDS = new Set(['price_per_night', 'total_amount', 'paid_amount', 'due_amount', 'discount_percent', 'tax_percent'])
+
+/** Pretty-print a single changed value (currency, dates, booleans, JSON, plain text). */
+function formatDiffValue(value: unknown, field?: string): string {
+  if (value === null || value === undefined || value === '') return '—'
+  if (typeof value === 'number' && field && CURRENCY_FIELDS.has(field)) {
+    return formatCurrency(value)
+  }
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  if (typeof value === 'string' && field && CURRENCY_FIELDS.has(field) && value.trim() !== '') {
+    const parsed = Number(value)
+    if (!isNaN(parsed)) return formatCurrency(parsed)
+  }
+  if (typeof value === 'string') {
+    if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+      const formatted = formatDateDisplay(value)
+      if (formatted !== '-') return formatted
+    }
+    return value
+  }
+  if (Array.isArray(value) || isPlainObject(value)) {
+    return JSON.stringify(value)
+  }
+  return String(value)
+}
+
+function humanizeField(key: string): string {
+  return FIELD_LABELS[key] ?? key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+/**
+ * Friendly change view: side-by-side Before/After table over the union of
+ * keys in old_values and new_values. Falls back to showing just the "After"
+ * values when old values are absent (e.g. a record was created).
+ */
+function ChangeTable({
+  oldValues,
+  newValues,
+}: {
+  oldValues: Record<string, unknown> | null | undefined
+  newValues: Record<string, unknown> | null | undefined
+}) {
+  const oldObj = isPlainObject(oldValues) ? oldValues : {}
+  const newObj = isPlainObject(newValues) ? newValues : {}
+  const keys = Array.from(new Set([...Object.keys(oldObj), ...Object.keys(newObj)]))
+
+  if (keys.length === 0) {
+    return <p className="text-sm text-muted">No field-level changes recorded.</p>
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-border">
+      <table className="w-full text-left text-sm">
+        <thead className="bg-bg text-xs text-muted">
+          <tr>
+            <th className="px-3 py-2 font-medium">Field</th>
+            <th className="px-3 py-2 font-medium">Before</th>
+            <th className="px-3 py-2 font-medium">After</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {keys.map((key) => (
+            <tr key={key}>
+              <td className="px-3 py-2 font-medium text-foreground">{humanizeField(key)}</td>
+              <td className="px-3 py-2 text-muted">
+                <span className="block max-w-[200px] truncate" title={formatDiffValue(oldObj[key], key)}>
+                  {formatDiffValue(oldObj[key], key)}
+                </span>
+              </td>
+              <td className="px-3 py-2 text-foreground">
+                <span className="block max-w-[200px] truncate" title={formatDiffValue(newObj[key], key)}>
+                  {formatDiffValue(newObj[key], key)}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
 }
 
 const ACTIONS = [
@@ -116,8 +256,99 @@ function formatDateTime(dateStr: string) {
   return `${formatDateDisplay(dateStr)} · ${time}`
 }
 
+function formatLongDateTime(dateStr: string) {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return '-'
+  const time = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  return `${formatDateDisplay(dateStr, 'long')} · ${time}`
+}
+
 function isGuestRow(a: ActivityLog): boolean {
   return !a.user && !a.user_id
+}
+
+type DescriptionToken =
+  | { type: 'text'; value: string }
+  | { type: 'reservation'; value: string }
+  | { type: 'id'; value: string }
+  | { type: 'currency'; value: string }
+  | { type: 'email'; value: string }
+
+const DESCRIPTION_TOKEN_PATTERN =
+  /(#(?:BK|INV|PAY|REF)-\d{4}-\d{4}(?:-[A-Za-z0-9]+)?)|(#\d+)|(₱[\d,]+(?:\.\d{2})?)|([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g
+
+function splitDescription(description: string): DescriptionToken[] {
+  const tokens: DescriptionToken[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  DESCRIPTION_TOKEN_PATTERN.lastIndex = 0
+  while ((match = DESCRIPTION_TOKEN_PATTERN.exec(description)) !== null) {
+    if (match.index > lastIndex) {
+      tokens.push({ type: 'text', value: description.slice(lastIndex, match.index) })
+    }
+    if (match[1]) {
+      tokens.push({ type: 'reservation', value: match[1] })
+    } else if (match[2]) {
+      tokens.push({ type: 'id', value: match[2] })
+    } else if (match[3]) {
+      tokens.push({ type: 'currency', value: match[3] })
+    } else if (match[4]) {
+      tokens.push({ type: 'email', value: match[4] })
+    }
+    lastIndex = match.index + match[0].length
+  }
+  if (lastIndex < description.length) {
+    tokens.push({ type: 'text', value: description.slice(lastIndex) })
+  }
+  return tokens
+}
+
+function DescriptionText({ description }: { description?: string }) {
+  if (!description) return <span className="text-sm text-muted">—</span>
+  const tokens = splitDescription(description)
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
+      {tokens.map((token, i) => {
+        if (token.type === 'reservation') {
+          return (
+            <span
+              key={i}
+              className="inline-flex items-center rounded-md bg-gold/15 px-1.5 py-0.5 font-mono text-xs font-semibold text-gold-dark"
+            >
+              {token.value}
+            </span>
+          )
+        }
+        if (token.type === 'id') {
+          return (
+            <span
+              key={i}
+              className="inline-flex items-center rounded-md bg-bg px-1.5 py-0.5 font-mono text-xs font-medium text-primary"
+            >
+              {token.value}
+            </span>
+          )
+        }
+        if (token.type === 'currency') {
+          return (
+            <span key={i} className="font-semibold text-success">
+              {token.value}
+            </span>
+          )
+        }
+        if (token.type === 'email') {
+          return (
+            <span key={i} className="font-mono text-xs text-muted">
+              {token.value}
+            </span>
+          )
+        }
+        return <span key={i}>{token.value}</span>
+      })}
+    </p>
+  )
 }
 
 export default function ActivityLogsPage() {
@@ -299,93 +530,113 @@ export default function ActivityLogsPage() {
         isOpen={showDetail}
         onClose={() => setShowDetail(false)}
         title="Activity Details"
-        size="lg"
+        size="xl"
+        footer={
+          <Button variant="outline" onClick={() => setShowDetail(false)}>
+            Close
+          </Button>
+        }
       >
         {selected ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-medium text-muted flex items-center gap-1">
-                  <User className="h-3 w-3" /> Actor
-                </label>
-                <p className="mt-0.5 text-sm text-foreground break-words">
-                  {isGuestRow(selected) ? (
-                    <span className="inline-flex items-center gap-1 text-muted">
-                      <UserX className="h-3.5 w-3.5" /> Guest
-                    </span>
-                  ) : (
-                    selected.user?.name ?? 'Unknown'
-                  )}
-                </p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted flex items-center gap-1">
-                  <Clock className="h-3 w-3" /> Time
-                </label>
-                <p className="mt-0.5 text-sm text-foreground">{formatDateTime(selected.created_at)}</p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">Module</label>
-                <div className="mt-0.5">
-                  <Badge variant={MODULE_COLORS[selected.module] ?? 'default'}>
-                    {MODULE_LABELS[selected.module] ?? selected.module}
-                  </Badge>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${moduleTileClass(selected.module)}`}>
+                  {(() => {
+                    const Icon = MODULE_ICONS[selected.module] ?? UserRound
+                    return <Icon className="h-5 w-5" />
+                  })()}
                 </div>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">Action</label>
-                <div className="mt-0.5">
-                  <Badge variant={ACTION_COLORS[selected.action] ?? 'default'}>
-                    {ACTION_LABELS[selected.action] ?? selected.action}
-                  </Badge>
-                </div>
-              </div>
-              {selected.model_type && (
-                <div>
-                  <label className="text-xs font-medium text-muted">Model</label>
-                  <p className="mt-0.5 text-sm text-muted">
-                    {selected.model_type}
-                    {selected.model_id ? ` #${selected.model_id}` : ''}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {isGuestRow(selected) ? 'Guest' : (selected.user?.name ?? 'Unknown')}
+                  </p>
+                  <p className="text-xs text-muted">
+                    {isGuestRow(selected) ? 'Portal / customer action' : 'Staff member'}
                   </p>
                 </div>
-              )}
-              {selected.ip_address && (
-                <div>
-                  <label className="text-xs font-medium text-muted flex items-center gap-1">
-                    <Server className="h-3 w-3" /> IP Address
-                  </label>
-                  <p className="mt-0.5 text-sm text-muted">{selected.ip_address}</p>
-                </div>
-              )}
-              <div className="sm:col-span-2">
-                <label className="text-xs font-medium text-muted">Description</label>
-                <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-foreground">{selected.description || '-'}</p>
               </div>
-              {hasDiff && (
-                <div className="sm:col-span-2 space-y-3">
-                  {selected.new_values && (
-                    <div>
-                      <label className="text-xs font-medium text-muted flex items-center gap-1">
-                        <Braces className="h-3 w-3" /> New Values
-                      </label>
-                      <pre className="mt-1 max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-border bg-bg p-3 text-xs text-foreground">
-                        {JSON.stringify(selected.new_values, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-                  {selected.old_values && (
-                    <div>
-                      <label className="text-xs font-medium text-muted flex items-center gap-1">
-                        <Braces className="h-3 w-3" /> Old Values
-                      </label>
-                      <pre className="mt-1 max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-border bg-bg p-3 text-xs text-foreground">
-                        {JSON.stringify(selected.old_values, null, 2)}
-                      </pre>
-                    </div>
+              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <Badge variant={ACTION_COLORS[selected.action] ?? 'default'}>
+                  {ACTION_LABELS[selected.action] ?? selected.action}
+                </Badge>
+                <Badge variant={MODULE_COLORS[selected.module] ?? 'default'}>
+                  {MODULE_LABELS[selected.module] ?? selected.module}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="mb-2 flex items-center gap-2">
+                <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${moduleTileClass(selected.module)}`}>
+                  {(() => {
+                    const Icon = MODULE_ICONS[selected.module] ?? UserRound
+                    return <Icon className="h-4 w-4" />
+                  })()}
+                </div>
+                <h4 className="text-sm font-semibold text-foreground">What Happened</h4>
+              </div>
+              <DescriptionText description={selected.description} />
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-xl bg-bg p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                    <UserRound className="h-3.5 w-3.5" /> Actor
+                  </p>
+                  <p className="break-words text-sm font-semibold text-foreground">
+                    {isGuestRow(selected) ? 'Guest' : (selected.user?.name ?? 'Unknown')}
+                  </p>
+                  {selected.user?.email && (
+                    <p className="mt-0.5 truncate text-xs text-muted">{selected.user.email}</p>
                   )}
                 </div>
-              )}
+                <div className="rounded-xl bg-bg p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                    <Clock className="h-3.5 w-3.5" /> Time
+                  </p>
+                  <p className="text-sm font-semibold text-foreground">{formatLongDateTime(selected.created_at)}</p>
+                </div>
+                <div className="rounded-xl bg-bg p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                    <Server className="h-3.5 w-3.5" /> IP Address
+                  </p>
+                  <p className="break-words text-sm font-semibold text-foreground">{selected.ip_address || '—'}</p>
+                </div>
+                <div className="rounded-xl bg-bg p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                    <MonitorSmartphone className="h-3.5 w-3.5" /> Device
+                  </p>
+                  <p className="truncate text-sm font-semibold text-foreground" title={selected.user_agent}>
+                    {selected.user_agent || '—'}
+                  </p>
+                </div>
+                {selected.model_type && (
+                  <div className="rounded-xl bg-bg p-3 sm:col-span-2">
+                    <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                      <BedDouble className="h-3.5 w-3.5" /> Related Record
+                    </p>
+                    <p className="break-words text-sm font-semibold text-foreground">
+                      {selected.model_type}
+                      {selected.model_id ? ` #${selected.model_id}` : ''}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {hasDiff && (
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-info/10 text-info">
+                    <GitCompareArrows className="h-4 w-4" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-foreground">Changes</h4>
+                </div>
+                <ChangeTable oldValues={selected.old_values} newValues={selected.new_values} />
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center py-8 text-center">

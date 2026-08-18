@@ -124,4 +124,69 @@ describe('PaymentsPage', () => {
     expect(screen.getByText('Reference Number')).toBeInTheDocument()
     expect(screen.getAllByText('₱330.00').length).toBeGreaterThan(0)
   })
+
+  it('renders a friendly detail modal with amount, method, and reservation details', () => {
+    mockUsePayments.mockReturnValue({
+      data: {
+        data: [
+          payment({
+            id: 7,
+            reference_number: 'REF-042',
+            amount: 1250,
+            payment_method: 'gcash',
+            status: 'completed',
+            payment_type: 'partial',
+            transaction_id: 'TXN-88',
+            notes: 'GCash pending reference',
+            paid_at: '2026-10-01T00:00:00.000000Z',
+            reservation: {
+              id: 9,
+              reservation_number: 'BK-2026-0009',
+              total_amount: 2500,
+              paid_amount: 1250,
+              due_amount: 1250,
+              check_in: '2026-10-05',
+              check_out: '2026-10-07',
+              guest: { first_name: 'John', last_name: 'Doe', email: 'john@test.com' },
+              room: { room_number: '204', room_type: { name: 'Deluxe' } },
+            } as unknown as Reservation,
+          }),
+        ],
+        current_page: 1,
+        last_page: 1,
+        per_page: 10,
+        total: 1,
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    mockUseReservations.mockReturnValue({ data: { data: [] }, isLoading: false })
+    render(<PaymentsPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'REF-042' }))
+
+    expect(screen.getByText('Amount Collected')).toBeInTheDocument()
+    expect(screen.getAllByText('₱1,250.00').length).toBeGreaterThan(0)
+    expect(screen.getByText('Partial')).toBeInTheDocument()
+    expect(screen.getByText('TXN-88')).toBeInTheDocument()
+    expect(screen.getByText('GCash pending reference')).toBeInTheDocument()
+    expect(screen.getByText('Reservation Details')).toBeInTheDocument()
+    expect(screen.getAllByText('BK-2026-0009').length).toBeGreaterThan(0)
+    expect(screen.getByText('john@test.com')).toBeInTheDocument()
+    expect(screen.getByText('Deluxe')).toBeInTheDocument()
+    expect(screen.getAllByText('John Doe').length).toBeGreaterThan(0)
+    expect(screen.getByText('2 nights')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Close'))
+    expect(screen.queryByText('Amount Collected')).toBeNull()
+  })
+
+  it('shows em dash placeholders when optional fields are absent', () => {
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'REF-001' }))
+    expect(screen.getByText('Payment Type')).toBeInTheDocument()
+    expect(screen.getByText('Transaction ID')).toBeInTheDocument()
+  })
 })

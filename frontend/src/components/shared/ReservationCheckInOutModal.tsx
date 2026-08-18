@@ -5,9 +5,12 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { PaymentModal } from '@/components/shared/PaymentModal'
 import { useCheckoutPreview, useSettings } from '@/hooks/useApi'
-import { formatCurrency, formatDateDisplay, formatCheckoutTime } from '@/lib/format'
+import { formatCurrency, formatDateDisplay, formatCheckoutTime, formatTime } from '@/lib/format'
 import { BOOKING_SOURCES } from '@/lib/constants'
-import { AlertCircle, AlertTriangle, Wallet, Phone, Mail } from 'lucide-react'
+import {
+  AlertCircle, AlertTriangle, Wallet, LogIn, LogOut, UserRound, BedDouble, CalendarDays, Users, Globe,
+  MessageSquare, ReceiptText, CalendarRange,
+} from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { Payment, Reservation } from '@/types'
 
@@ -42,22 +45,47 @@ function nightsBetween(start: string, end: string): number {
   return Number.isFinite(diff) && diff > 0 ? Math.round(diff) : 0
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+const cardTiles = {
+  primary: 'bg-primary/10 text-primary',
+  success: 'bg-success/10 text-success',
+  warning: 'bg-warning/10 text-warning',
+  sky: 'bg-sky-500/10 text-sky-600',
+}
+
+function Card({ title, icon, tone = 'primary', children }: {
+  title: string
+  icon: ReactNode
+  tone?: keyof typeof cardTiles
+  children: ReactNode
+}) {
   return (
-    <section className="rounded-lg border border-border">
-      <header className="border-b border-border bg-bg px-4 py-2.5">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">{title}</h4>
-      </header>
-      <div className="px-4 py-3">{children}</div>
+    <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 flex items-center gap-2">
+        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${cardTiles[tone]}`}>{icon}</div>
+        <h4 className="text-sm font-semibold text-foreground">{title}</h4>
+      </div>
+      {children}
     </section>
   )
 }
 
-function InfoRow({ label, value, valueClass }: { label: string; value: ReactNode; valueClass?: string }) {
+function SummaryCell({ label, icon, children }: { label: string; icon: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-1 text-sm">
-      <dt className="shrink-0 text-muted">{label}</dt>
-      <dd className={`text-right font-medium text-foreground ${valueClass ?? ''}`}>{value}</dd>
+    <div className="rounded-xl bg-bg p-3">
+      <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+        {icon}
+        {label}
+      </p>
+      {children}
+    </div>
+  )
+}
+
+function BillRow({ label, value, valueClass }: { label: string; value: ReactNode; valueClass?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 text-sm">
+      <span className="text-muted">{label}</span>
+      <span className={`font-medium text-foreground ${valueClass ?? ''}`}>{value}</span>
     </div>
   )
 }
@@ -89,9 +117,15 @@ export function ReservationCheckInOutModal({
     }
   }, [isOpen, isCheckIn, reservation])
 
+  const todayStr = toLocalDateStr(new Date())
+  const bookedCheckOut = reservation?.check_out ?? ''
+  const defaultDeparture =
+    !isCheckIn && bookedCheckOut ? (todayStr > bookedCheckOut ? todayStr : bookedCheckOut) : ''
+  const actualDeparture = departureDate || defaultDeparture
+
   const preview = useCheckoutPreview(
     !isCheckIn && reservation ? reservation.id : 0,
-    departureDate || undefined,
+    actualDeparture || undefined,
   )
 
   const { data: settings } = useSettings()
@@ -114,8 +148,8 @@ export function ReservationCheckInOutModal({
         : reservation
       : reservation
 
-  const departureChanged = !isCheckIn && !!departureDate && departureDate !== (reservation?.check_out ?? '')
-  const actualCheckOut = !isCheckIn && departureDate ? departureDate : undefined
+  const departureChanged = !isCheckIn && !!actualDeparture && actualDeparture !== (reservation?.check_out ?? '')
+  const actualCheckOut = !isCheckIn && actualDeparture ? actualDeparture : undefined
   const projectedTotal = !isCheckIn ? preview.data?.total_amount : undefined
 
   if (!effective) return null
@@ -131,6 +165,8 @@ export function ReservationCheckInOutModal({
   const requiresPayment = isCheckIn
     ? hasBalance && !hasPayment && !isRetry
     : hasBalance && !isRetry
+
+  const previewPending = !isCheckIn && preview.isLoading && !preview.data
 
   const verb = isCheckIn ? 'Check In' : 'Check Out'
   const confirmLabel = isRetry ? `Retry ${verb}` : requiresPayment ? `Collect & ${verb}` : verb
@@ -180,10 +216,13 @@ export function ReservationCheckInOutModal({
   const payments = effective.payments ?? []
 
   const handleConfirm = () => {
+    if (previewPending) return
     if (isRetry) onConfirmAfterPayment?.(undefined, actualCheckOut, projectedTotal)
     else if (requiresPayment) setShowPaymentModal(true)
     else onConfirm(actualCheckOut)
   }
+
+  const actualCheckoutStamp = effective.checked_out_at ?? new Date().toISOString()
 
   return (
     <Modal
@@ -195,28 +234,36 @@ export function ReservationCheckInOutModal({
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleConfirm} disabled={isLoading}>
-            {isLoading ? 'Processing...' : confirmLabel}
+          <Button variant="primary" onClick={handleConfirm} disabled={isLoading || previewPending}>
+            {isLoading ? 'Processing...' : previewPending ? 'Calculating…' : confirmLabel}
           </Button>
         </>
       }
     >
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            {isCheckIn ? <LogIn className="h-5 w-5" /> : <LogOut className="h-5 w-5" />}
+          </div>
+          <div className="min-w-0 flex-1">
             <h3 className="text-lg font-semibold text-foreground">
               {isCheckIn ? 'Check In Guest' : 'Check Out Guest'}
             </h3>
-            <p className="mt-0.5 text-sm text-muted">
+            <p className="truncate text-sm text-muted">
               {effective.reservation_number} · Room {roomNumber}
+              {roomTypeName ? ` · ${roomTypeName}` : ''}
             </p>
-            {effective.payment_status !== 'unpaid' && (
-              <p className="mt-1 text-sm font-medium text-foreground">{paymentLabel}</p>
+            {previewPending ? (
+              <p className="mt-0.5 text-sm text-muted">Calculating balance…</p>
+            ) : (
+              effective.payment_status !== 'unpaid' && (
+                <p className="mt-0.5 text-sm font-medium text-foreground">{paymentLabel}</p>
+              )
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <StatusBadge status={effective.status} />
-            <StatusBadge status={effective.payment_status} />
+            {!previewPending && <StatusBadge status={effective.payment_status} />}
           </div>
         </div>
 
@@ -227,92 +274,116 @@ export function ReservationCheckInOutModal({
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Section title="Guest">
-            <dl>
-              <InfoRow label="Name" value={guestName} />
-              <div className="flex items-start justify-between gap-4 py-1 text-sm">
-                <dt className="flex shrink-0 items-center gap-1.5 text-muted">
-                  <Phone className="h-3.5 w-3.5" /> Phone
-                </dt>
-                <dd className="text-right font-medium text-foreground">{effective.guest?.phone || '—'}</dd>
-              </div>
-              <div className="flex items-start justify-between gap-4 py-1 text-sm">
-                <dt className="flex shrink-0 items-center gap-1.5 text-muted">
-                  <Mail className="h-3.5 w-3.5" /> Email
-                </dt>
-                <dd className="max-w-[60%] truncate text-right font-medium text-foreground">
-                  {effective.guest?.email || '—'}
-                </dd>
-              </div>
-            </dl>
-          </Section>
+        <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <SummaryCell label="Guest" icon={<UserRound className="h-3.5 w-3.5" />}>
+              <p className="text-sm font-semibold text-foreground">{guestName}</p>
+              {effective.guest?.phone && (
+                <p className="mt-0.5 truncate text-xs text-muted">{effective.guest.phone}</p>
+              )}
+              {effective.guest?.email && (
+                <p className="truncate text-xs text-muted">{effective.guest.email}</p>
+              )}
+            </SummaryCell>
 
-          <Section title="Stay">
-            <dl>
-              <InfoRow label="Check In" value={formatDateDisplay(effective.check_in)} />
-              <InfoRow label="Check Out" value={formatDateDisplay(effective.check_out)} />
-              <InfoRow label="Check-out Time" value={checkoutTimeLabel} />
-              <InfoRow label="Nights" value={breakdown.nights} />
-              <InfoRow
-                label="Guests"
-                value={`${effective.adults} Adult${effective.adults === 1 ? '' : 's'}${
-                  effective.children > 0 ? `, ${effective.children} Child${effective.children === 1 ? '' : 'ren'}`
-                    : ''
-                }`}
-              />
-              <InfoRow label="Room Type" value={roomTypeName || '—'} />
-              <InfoRow label="Floor" value={floor != null ? String(floor) : '—'} />
-            </dl>
-          </Section>
-        </div>
+            <SummaryCell label="Room" icon={<BedDouble className="h-3.5 w-3.5" />}>
+              <p className="text-sm font-semibold text-foreground">{roomNumber}</p>
+              {roomTypeName && <p className="mt-0.5 text-xs text-muted">{roomTypeName}</p>}
+              {floor != null && <p className="text-xs text-muted">Floor {floor}</p>}
+            </SummaryCell>
 
-        <Section title="Billing">
-          <dl>
-            <InfoRow
+            <SummaryCell label="Stay" icon={<CalendarDays className="h-3.5 w-3.5" />}>
+              <p className="text-sm font-semibold text-foreground">
+                {formatDateDisplay(effective.check_in)} → {formatDateDisplay(effective.check_out)}
+              </p>
+              <div className="mt-1.5 space-y-1 text-xs text-muted">
+                <div className="flex items-center justify-between gap-2">
+                  <span>Nights</span>
+                  <span className="tabular-nums font-medium text-foreground">{breakdown.nights}</span>
+                </div>
+                {!isCheckIn ? (
+                  <>
+                    <div className="flex items-center justify-between gap-2">
+                      <span>Check-out Time</span>
+                      <span className="tabular-nums font-medium text-foreground">
+                        {formatTime(actualCheckoutStamp)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span>Checked-out At</span>
+                      <span className="tabular-nums font-medium text-foreground">
+                        {formatDateDisplay(actualCheckoutStamp)}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between gap-2">
+                    <span>Check-out Time</span>
+                    <span className="tabular-nums font-medium text-foreground">{checkoutTimeLabel}</span>
+                  </div>
+                )}
+              </div>
+            </SummaryCell>
+
+            <SummaryCell label="Guests" icon={<Users className="h-3.5 w-3.5" />}>
+              <p className="text-sm font-semibold text-foreground">
+                {effective.adults} Adult{effective.adults === 1 ? '' : 's'}
+                {effective.children > 0 ? `, ${effective.children} Child${effective.children === 1 ? '' : 'ren'}` : ''}
+              </p>
+              {sourceLabel && (
+                <p className="mt-0.5 flex items-center gap-1 text-xs text-muted">
+                  <Globe className="h-3 w-3" />
+                  {sourceLabel}
+                </p>
+              )}
+            </SummaryCell>
+          </div>
+
+          {effective.special_requests && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl bg-bg p-3">
+              <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-muted">Special Requests</p>
+                <p className="text-sm text-foreground">{effective.special_requests}</p>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <Card title="Billing" icon={<Wallet className="h-4 w-4" />} tone="success">
+          <div className="space-y-2 text-sm">
+            <BillRow
               label={`${breakdown.nights} night${breakdown.nights === 1 ? '' : 's'} × ${formatCurrency(rate)}`}
               value={formatCurrency(breakdown.subtotal)}
             />
             {breakdown.discount > 0 && (
-              <InfoRow
+              <BillRow
                 label={`Discount (${effective.discount_percent ?? 0}%)`}
                 value={`-${formatCurrency(breakdown.discount)}`}
                 valueClass="text-success"
               />
             )}
-            <InfoRow
+            <BillRow
               label={`Tax (${Math.round(breakdown.taxPercent)}%)`}
               value={formatCurrency(breakdown.tax)}
             />
             <div className="my-1 border-t border-border" />
-            <InfoRow label="Total" value={formatCurrency(breakdown.total)} />
-            <InfoRow label="Paid" value={formatCurrency(breakdown.paid)} valueClass="text-success" />
-            <InfoRow
-              label="Balance Due"
-              value={formatCurrency(breakdown.due)}
-              valueClass={breakdown.due > 0 ? 'font-semibold text-danger' : 'font-semibold text-success'}
-            />
-          </dl>
-          {sourceLabel && (
-            <dl className="mt-1 border-t border-border pt-1">
-              <InfoRow label="Source" value={sourceLabel} />
-            </dl>
-          )}
-          {effective.special_requests && (
-            <div className="mt-2 rounded-md bg-bg px-3 py-2 text-sm">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted">Special Requests</p>
-              <p className="mt-1 text-foreground">{effective.special_requests}</p>
+            <BillRow label="Total" value={formatCurrency(breakdown.total)} />
+            <BillRow label="Paid" value={formatCurrency(breakdown.paid)} valueClass="text-success" />
+            <div className="flex items-center justify-between rounded-xl bg-primary/5 px-3 py-2.5">
+              <span className="text-sm font-semibold text-primary-dark">Balance Due</span>
+              <span className="text-lg font-bold text-primary-dark">{formatCurrency(breakdown.due)}</span>
             </div>
-          )}
-        </Section>
+          </div>
+        </Card>
 
-        <Section title="Payments">
+        <Card title="Payments" icon={<ReceiptText className="h-4 w-4" />} tone="sky">
           {payments.length > 0 ? (
             <ul className="space-y-2">
               {payments.map((p) => (
                 <li
                   key={p.id}
-                  className="flex items-center justify-between gap-3 rounded-md border border-border bg-bg px-3 py-2 text-sm"
+                  className="flex items-center justify-between gap-3 rounded-xl bg-bg px-3 py-2 text-sm"
                 >
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-foreground">{formatCurrency(p.amount)}</span>
@@ -328,13 +399,13 @@ export function ReservationCheckInOutModal({
           ) : (
             <p className="text-sm text-muted">No payments recorded.</p>
           )}
-        </Section>
+        </Card>
 
         {!isCheckIn && (
-          <Section title="Actual Departure">
+          <Card title="Actual Departure" icon={<CalendarRange className="h-4 w-4" />} tone="warning">
             <DatePicker
               label="Actual departure"
-              value={departureDate}
+              value={actualDeparture}
               onChange={setDepartureDate}
               min={effective.check_in}
               placeholder="Select departure date"
@@ -373,11 +444,11 @@ export function ReservationCheckInOutModal({
               ) : (
                 <p className="mt-2 text-[13px] text-muted">Could not preview the new total.</p>
               ))}
-          </Section>
+          </Card>
         )}
 
         {preview.data?.late_checkout_applies && (
-          <div className="flex items-start gap-2.5 rounded-lg border border-warning/20 bg-warning/10 px-3 py-2.5">
+          <div className="flex items-start gap-2.5 rounded-xl border border-warning/20 bg-warning/10 px-3 py-2.5">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
             <div className="min-w-0 flex-1 text-sm">
               <p className="font-medium text-warning">
@@ -391,7 +462,7 @@ export function ReservationCheckInOutModal({
         )}
 
         {hasBalance && (
-          <div className="flex items-start gap-2.5 rounded-lg border border-warning/20 bg-warning/10 px-3 py-2.5">
+          <div className="flex items-start gap-2.5 rounded-xl border border-warning/20 bg-warning/10 px-3 py-2.5">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
             <div className="min-w-0 flex-1 text-sm">
               <p className="font-medium text-warning">

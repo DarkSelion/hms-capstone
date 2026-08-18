@@ -102,6 +102,7 @@ class StaffController extends Controller
             'phone' => 'nullable|string|max:20',
             'role_id' => 'sometimes|exists:roles,id',
             'is_active' => 'sometimes|boolean',
+            'password' => 'sometimes|nullable|string|min:8|confirmed',
         ]);
 
         $creatorRole = $request->user()->roleSlug();
@@ -128,6 +129,28 @@ class StaffController extends Controller
             }
         }
 
+        // Optional password reset — blank (or absent) keeps the current password.
+        $passwordProvided = isset($data['password']) && $data['password'] !== null && $data['password'] !== '';
+
+        if ($passwordProvided) {
+            $targetSlug = $user->roleSlug();
+
+            if ($creatorRole === 'hotel_manager' && in_array($targetSlug, ['super_admin', 'admin', 'hotel_manager'])) {
+                return response()->json(['message' => 'Hotel managers cannot reset passwords for admin-level accounts.'], 403);
+            }
+
+            if ($creatorRole === 'admin' && $targetSlug === 'super_admin') {
+                return response()->json(['message' => 'Admins cannot reset the super admin\'s password.'], 403);
+            }
+
+            // A super admin is the only one who can reset a super admin's password.
+            if ($targetSlug === 'super_admin' && $creatorRole !== 'super_admin') {
+                return response()->json(['message' => 'Only a super admin can reset a super admin\'s password.'], 403);
+            }
+        } else {
+            unset($data['password']);
+        }
+
         $user->update($data);
 
         ActivityLog::create([
@@ -136,7 +159,9 @@ class StaffController extends Controller
             'module' => 'staff',
             'model_type' => 'User',
             'model_id' => $user->id,
-            'description' => "Updated staff account: {$user->name} ({$user->email})",
+            'description' => $passwordProvided
+                ? "Updated staff account and reset password: {$user->name} ({$user->email})"
+                : "Updated staff account: {$user->name} ({$user->email})",
         ]);
 
         return response()->json($user->load('role'));
@@ -172,6 +197,46 @@ class StaffController extends Controller
         $schedule = StaffSchedule::create($data);
 
         return response()->json($schedule->load('user'), 201);
+    }
+
+    public function updateSchedule(Request $request, StaffSchedule $schedule)
+    {
+        $data = $request->validate([
+            'user_id' => 'sometimes|exists:users,id',
+            'date' => 'sometimes|date',
+            'start_time' => 'sometimes|date_format:H:i',
+            'end_time' => 'sometimes|date_format:H:i|after:start_time',
+            'notes' => 'nullable|string',
+        ]);
+
+        $schedule->update($data);
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'updated',
+            'module' => 'schedule',
+            'model_type' => 'StaffSchedule',
+            'model_id' => $schedule->id,
+            'description' => "Updated schedule for {$schedule->user->name} on {$schedule->date->format('Y-m-d')}",
+        ]);
+
+        return response()->json($schedule->load('user'));
+    }
+
+    public function destroySchedule(Request $request, StaffSchedule $schedule)
+    {
+        $schedule->delete();
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'deleted',
+            'module' => 'schedule',
+            'model_type' => 'StaffSchedule',
+            'model_id' => $schedule->id,
+            'description' => "Deleted schedule for {$schedule->user->name} on {$schedule->date->format('Y-m-d')}",
+        ]);
+
+        return response()->json(['message' => 'Schedule removed successfully.']);
     }
 
     public function leaveRequests(Request $request)

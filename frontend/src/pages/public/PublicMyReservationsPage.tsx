@@ -62,6 +62,10 @@ function isPastReservation(r: PublicReservation, today: string): boolean {
   return r.status !== 'cancelled' && (r.status === 'checked_out' || r.status === 'no_show' || dateKey(r.check_out) < today)
 }
 
+function canPayOnline(r: PublicReservation): boolean {
+  return r.status !== 'cancelled' && r.status !== 'checked_out' && r.status !== 'no_show'
+}
+
 type FilterKey = 'all' | 'upcoming' | 'past' | 'cancelled'
 
 const FILTER_TABS: { key: FilterKey; label: string }[] = [
@@ -280,7 +284,7 @@ export default function PublicMyReservationsPage() {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          {(r.payment_status === 'unpaid' || r.payment_status === 'partial') && (
+                          {(r.payment_status === 'unpaid' || r.payment_status === 'partial') && canPayOnline(r) && (
                             onlineGatewayEnabled ? (
                               <button
                                 onClick={() => setPaymentModal(r)}

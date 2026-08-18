@@ -647,6 +647,72 @@ class AdminCrudCoverageTest extends TestCase
             ->assertJsonValidationErrors('end_time');
     }
 
+    public function test_schedule_can_be_updated(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $target = $this->staff('receptionist');
+
+        $schedule = StaffSchedule::create([
+            'user_id' => $target->id,
+            'date' => '2026-11-15',
+            'start_time' => '08:00',
+            'end_time' => '16:00',
+            'notes' => 'Morning shift',
+        ]);
+
+        $this->putJson("/api/staff-schedules/{$schedule->id}", [
+            'user_id' => $target->id,
+            'date' => '2026-11-16',
+            'start_time' => '10:00',
+            'end_time' => '18:00',
+            'notes' => 'Mid shift',
+        ])->assertOk()
+            ->assertJsonPath('date', '2026-11-16')
+            ->assertJsonPath('start_time', '10:00')
+            ->assertJsonPath('end_time', '18:00')
+            ->assertJsonPath('notes', 'Mid shift');
+
+        $this->assertDatabaseHas('staff_schedules', [
+            'id' => $schedule->id,
+            'date' => '2026-11-16',
+            'start_time' => '10:00',
+        ]);
+
+        $this->assertDatabaseHas('activity_logs', [
+            'module' => 'schedule',
+            'action' => 'updated',
+            'model_type' => 'StaffSchedule',
+        ]);
+    }
+
+    public function test_schedule_can_be_deleted(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $target = $this->staff('receptionist');
+
+        $schedule = StaffSchedule::create([
+            'user_id' => $target->id,
+            'date' => '2026-11-15',
+            'start_time' => '08:00',
+            'end_time' => '16:00',
+        ]);
+
+        $this->deleteJson("/api/staff-schedules/{$schedule->id}")
+            ->assertOk()
+            ->assertJsonPath('message', 'Schedule removed successfully.');
+
+        $this->assertDatabaseMissing('staff_schedules', ['id' => $schedule->id]);
+        $this->assertDatabaseHas('activity_logs', [
+            'module' => 'schedule',
+            'action' => 'deleted',
+            'model_type' => 'StaffSchedule',
+        ]);
+    }
+
     public function test_leave_request_can_be_created_and_approved(): void
     {
         $admin = $this->admin();
@@ -979,5 +1045,117 @@ class AdminCrudCoverageTest extends TestCase
             'payment_method' => 'online',
             'payment_type' => 'partial',
         ])->assertStatus(201);
+    }
+
+    public function test_admin_can_reset_password_of_lower_tier_staff(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $target = $this->staff('receptionist');
+
+        $this->putJson("/api/staff/{$target->id}", [
+            'name' => $target->name,
+            'password' => 'NewSecret123',
+            'password_confirmation' => 'NewSecret123',
+        ])->assertOk();
+
+        $this->assertTrue(Hash::check('NewSecret123', $target->fresh()->password));
+        $this->assertDatabaseHas('activity_logs', [
+            'module' => 'staff',
+            'action' => 'updated',
+            'model_type' => 'User',
+            'model_id' => $target->id,
+            'description' => "Updated staff account and reset password: {$target->name} ({$target->email})",
+        ]);
+    }
+
+    public function test_blank_password_keeps_current_password(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $target = $this->staff('receptionist');
+
+        $this->putJson("/api/staff/{$target->id}", [
+            'name' => $target->name,
+            'password' => '',
+        ])->assertOk();
+
+        $this->assertTrue(Hash::check('password', $target->fresh()->password));
+    }
+
+    public function test_hotel_manager_cannot_reset_admin_level_password(): void
+    {
+        $manager = $this->staff('hotel_manager');
+        Sanctum::actingAs($manager);
+
+        $adminTarget = $this->staff('admin');
+
+        $this->putJson("/api/staff/{$adminTarget->id}", [
+            'name' => $adminTarget->name,
+            'password' => 'NewSecret123',
+            'password_confirmation' => 'NewSecret123',
+        ])->assertStatus(403)
+            ->assertJsonPath('message', 'Hotel managers cannot reset passwords for admin-level accounts.');
+    }
+
+    public function test_admin_cannot_reset_super_admin_password(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $superAdmin = $this->staff('super_admin');
+
+        $this->putJson("/api/staff/{$superAdmin->id}", [
+            'name' => $superAdmin->name,
+            'password' => 'NewSecret123',
+            'password_confirmation' => 'NewSecret123',
+        ])->assertStatus(403)
+            ->assertJsonPath('message', "Admins cannot reset the super admin's password.");
+    }
+
+    public function test_super_admin_can_reset_super_admin_password(): void
+    {
+        $superAdmin = $this->staff('super_admin');
+        Sanctum::actingAs($superAdmin);
+
+        $otherSuperAdmin = User::create([
+            'name' => 'Second Super Admin',
+            'email' => 'super2@test.com',
+            'password' => Hash::make('password'),
+            'role_id' => $superAdmin->role_id,
+            'is_active' => true,
+        ]);
+
+        $this->putJson("/api/staff/{$otherSuperAdmin->id}", [
+            'name' => $otherSuperAdmin->name,
+            'password' => 'BrandNewPass1',
+            'password_confirmation' => 'BrandNewPass1',
+        ])->assertOk();
+
+        $this->assertTrue(Hash::check('BrandNewPass1', $otherSuperAdmin->fresh()->password));
+    }
+
+    public function test_password_reset_requires_confirmation_and_min_length(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $target = $this->staff('receptionist');
+
+        $this->putJson("/api/staff/{$target->id}", [
+            'name' => $target->name,
+            'password' => 'short',
+            'password_confirmation' => 'short',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors('password');
+
+        $this->putJson("/api/staff/{$target->id}", [
+            'name' => $target->name,
+            'password' => 'NewSecret123',
+            'password_confirmation' => 'Different123',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors('password');
     }
 }

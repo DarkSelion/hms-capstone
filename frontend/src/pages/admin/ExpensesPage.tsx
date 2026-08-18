@@ -16,7 +16,7 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { useToast } from '@/components/ui/toast'
 import {
   Plus, Eye, Edit, Trash2, FileText, Save, Wallet, TrendingUp, ReceiptText, CalendarRange,
-  AlertCircle, Upload, X,
+  AlertCircle, Upload, X, Tag, CalendarDays, UserRound, MessageSquareText,
 } from 'lucide-react'
 
 const CATEGORIES = [
@@ -37,6 +37,10 @@ const CATEGORY_COLORS: Record<string, string> = {
   marketing: 'bg-gold/10 text-gold-dark',
   food: 'bg-danger/10 text-danger',
   other: 'bg-border/50 text-muted',
+}
+
+function categoryLabel(value: string): string {
+  return CATEGORIES.find(c => c.value === value)?.label ?? value
 }
 
 function formatDate(dateStr: string) {
@@ -189,8 +193,15 @@ export default function ExpensesPage() {
   }
 
   function handleRemoveReceipt(expense: Expense) {
+    if (deleteReceipt.isPending) return
     deleteReceipt.mutate(expense.id, {
-      onSuccess: () => addToast('Receipt removed successfully', 'success'),
+      onSuccess: () => {
+        setSelectedExpense(prev =>
+          prev && prev.id === expense.id ? { ...prev, receipt: undefined, receipt_url: null } : prev)
+        setEditingExpense(prev =>
+          prev && prev.id === expense.id ? { ...prev, receipt: undefined, receipt_url: null } : prev)
+        addToast('Receipt removed successfully', 'success')
+      },
       onError: () => addToast('Failed to remove receipt', 'error'),
     })
   }
@@ -369,64 +380,131 @@ export default function ExpensesPage() {
         isOpen={showDetailModal}
         onClose={() => setShowDetailModal(false)}
         title="Expense Details"
-        size="lg"
+        size="xl"
+        footer={
+          <>
+            {selectedExpense?.receipt_url && (
+              <Button
+                variant="outline"
+                onClick={() => selectedExpense && handleRemoveReceipt(selectedExpense)}
+                disabled={deleteReceipt.isPending}
+              >
+                <Trash2 className="h-4 w-4" />
+                {deleteReceipt.isPending ? 'Removing...' : 'Remove Receipt'}
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setShowDetailModal(false)}>Close</Button>
+          </>
+        }
       >
         {selectedExpense ? (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-medium text-muted">Category</label>
-                <p className="mt-0.5">
-                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${CATEGORY_COLORS[selectedExpense.category] ?? 'bg-border/50 text-muted'}`}>
-                    {CATEGORIES.find(c => c.value === selectedExpense.category)?.label ?? selectedExpense.category}
-                  </span>
-                </p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">Amount</label>
-                <p className="text-lg font-bold text-foreground">{formatCurrency(selectedExpense.amount)}</p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">Date</label>
-                <p className="text-sm text-foreground">{formatDate(selectedExpense.date)}</p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted">Created By</label>
-                <p className="text-sm text-foreground">{selectedExpense.created_by_user?.name ?? '-'}</p>
-              </div>
-              <div className="col-span-2">
-                <label className="text-xs font-medium text-muted">Description</label>
-                <p className="text-sm text-foreground">{selectedExpense.description || '-'}</p>
-              </div>
-              <div className="col-span-2">
-                <label className="text-xs font-medium text-muted">Receipt</label>
-                {selectedExpense.receipt_url ? (
-                  <div className="flex flex-wrap items-center gap-3">
-                    <a
-                      href={selectedExpense.receipt_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                    >
-                      <FileText className="h-4 w-4" />
-                      View receipt
-                    </a>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRemoveReceipt(selectedExpense)}
-                      disabled={deleteReceipt.isPending}
-                    >
-                      {deleteReceipt.isPending ? 'Removing...' : 'Remove'}
-                    </Button>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted">No receipt attached</p>
-                )}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${CATEGORY_COLORS[selectedExpense.category] ?? 'bg-border/50 text-muted'}`}>
+                  <ReceiptText className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {categoryLabel(selectedExpense.category)}
+                  </p>
+                  <p className="text-xs text-muted">
+                    {selectedExpense.created_by_user?.name
+                      ? `Recorded by ${selectedExpense.created_by_user.name}`
+                      : 'Expense record'}
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="flex gap-2 pt-2">
-              <Button variant="outline" onClick={() => setShowDetailModal(false)}>Close</Button>
+
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10 text-success">
+                  <Wallet className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted">Amount</p>
+                  <p className="text-2xl font-bold text-foreground">{formatCurrency(selectedExpense.amount)}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-medium text-muted">Date</p>
+                <p className="text-sm font-semibold text-foreground">{formatDate(selectedExpense.date)}</p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="mb-2 flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/15 text-gold-dark">
+                  <MessageSquareText className="h-4 w-4" />
+                </div>
+                <h4 className="text-sm font-semibold text-foreground">Details</h4>
+              </div>
+              <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
+                {selectedExpense.description || '—'}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-xl bg-bg p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                    <Tag className="h-3.5 w-3.5" /> Category
+                  </p>
+                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${CATEGORY_COLORS[selectedExpense.category] ?? 'bg-border/50 text-muted'}`}>
+                    {categoryLabel(selectedExpense.category)}
+                  </span>
+                </div>
+                <div className="rounded-xl bg-bg p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                    <CalendarDays className="h-3.5 w-3.5" /> Date
+                  </p>
+                  <p className="text-sm font-semibold text-foreground">{formatDate(selectedExpense.date)}</p>
+                </div>
+                <div className="rounded-xl bg-bg p-3 sm:col-span-2">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                    <UserRound className="h-3.5 w-3.5" /> Created By
+                  </p>
+                  <p className="text-sm font-semibold text-foreground">{selectedExpense.created_by_user?.name ?? '—'}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-info/10 text-info">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <h4 className="text-sm font-semibold text-foreground">Receipt</h4>
+              </div>
+              {selectedExpense.receipt_url ? (
+                <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl bg-bg p-3">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <a
+                    href={selectedExpense.receipt_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                  >
+                    View receipt
+                  </a>
+                  <span className="text-xs text-muted">Attached</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-auto"
+                    onClick={() => handleRemoveReceipt(selectedExpense)}
+                    disabled={deleteReceipt.isPending}
+                  >
+                    {deleteReceipt.isPending ? 'Removing...' : 'Remove'}
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-3 flex items-center gap-3 rounded-xl bg-bg p-3">
+                  <FileText className="h-4 w-4 text-muted" />
+                  <p className="text-sm text-muted">No receipt attached</p>
+                </div>
+              )}
             </div>
           </div>
         ) : (
@@ -441,7 +519,7 @@ export default function ExpensesPage() {
         isOpen={showFormModal}
         onClose={closeFormModal}
         title={editingExpense ? 'Edit Expense' : 'Add Expense'}
-        size="md"
+        size="lg"
         footer={
           <div className="flex gap-3">
             <Button variant="outline" onClick={closeFormModal} disabled={isFormSubmitting}>
@@ -454,91 +532,127 @@ export default function ExpensesPage() {
         }
       >
         <div className="space-y-4">
-          <Select
-            label="Category"
-            placeholder="Select category"
-            value={form.category}
-            onChange={(e) => updateField('category', e.target.value)}
-            error={formErrors.category}
-          >
-            {CATEGORIES.map(c => (
-              <option key={c.value} value={c.value}>{c.label}</option>
-            ))}
-          </Select>
-
-          <Input
-            label="Amount (₱)"
-            type="number"
-            min={0}
-            step="0.01"
-            placeholder="0.00"
-            value={form.amount === '' ? '' : form.amount}
-            onChange={(e) => updateField('amount', e.target.value ? Number(e.target.value) : '')}
-            error={formErrors.amount}
-          />
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-foreground">Description</label>
-            <textarea
-              className="flex min-h-[80px] w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary"
-              placeholder="Expense description..."
-              value={form.description}
-              onChange={(e) => updateField('description', e.target.value)}
-            />
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/15 text-gold-dark">
+              <Wallet className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-foreground">
+                {editingExpense ? 'Edit Expense' : 'Add Expense'}
+              </h4>
+              <p className="text-xs text-muted">
+                {editingExpense ? 'Update the expense details.' : 'Record a hotel expense or operational cost.'}
+              </p>
+            </div>
           </div>
 
-          <DatePicker
-            label="Date"
-            value={form.date}
-            onChange={(v) => updateField('date', v)}
-          />
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/15 text-gold-dark">
+                <ReceiptText className="h-4 w-4" />
+              </div>
+              <h4 className="text-sm font-semibold text-foreground">Expense Details</h4>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Select
+                label="Category"
+                placeholder="Select category"
+                value={form.category}
+                onChange={(e) => updateField('category', e.target.value)}
+                error={formErrors.category}
+              >
+                {CATEGORIES.map(c => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </Select>
 
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-foreground">Receipt</label>
-            <div className="flex flex-wrap items-center gap-3">
-              {receiptFile ? (
-                <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-foreground">
-                  <FileText className="h-4 w-4 text-primary" />
-                  <span className="max-w-[200px] truncate">{receiptFile.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => setReceiptFile(null)}
-                    className="text-muted hover:text-danger"
-                    aria-label="Remove receipt"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm text-muted hover:bg-bg">
-                    <Upload className="h-4 w-4" />
+              <Input
+                label="Amount (₱)"
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="0.00"
+                value={form.amount === '' ? '' : form.amount}
+                onChange={(e) => updateField('amount', e.target.value ? Number(e.target.value) : '')}
+                error={formErrors.amount}
+              />
+            </div>
+            <div className="mt-4">
+              <DatePicker
+                label="Date"
+                value={form.date}
+                onChange={(v) => updateField('date', v)}
+              />
+            </div>
+            <div className="mt-4 space-y-1">
+              <label className="text-sm font-medium text-foreground">Description</label>
+              <textarea
+                className="flex min-h-[80px] w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary"
+                placeholder="Expense description..."
+                value={form.description}
+                onChange={(e) => updateField('description', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-info/10 text-info">
+                <Upload className="h-4 w-4" />
+              </div>
+              <h4 className="text-sm font-semibold text-foreground">Receipt</h4>
+            </div>
+            {receiptFile ? (
+              <div className="flex flex-wrap items-center gap-3 rounded-xl bg-bg p-3">
+                <FileText className="h-4 w-4 text-primary" />
+                <span className="max-w-[220px] truncate text-sm text-foreground">{receiptFile.name}</span>
+                <button
+                  type="button"
+                  onClick={() => setReceiptFile(null)}
+                  className="text-muted hover:text-danger"
+                  aria-label="Remove receipt"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-bg px-4 py-6 text-center transition-colors hover:border-primary/40 hover:bg-cream">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/15 text-gold-dark">
+                    <Upload className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-medium text-foreground">
                     {editingExpense?.receipt_url ? 'Replace Receipt' : 'Upload Receipt'}
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*,.pdf"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) setReceiptFile(file)
-                      }}
-                    />
-                  </label>
-                  {editingExpense?.receipt_url && (
+                  </span>
+                  <span className="text-xs text-muted">PNG, JPG or PDF · Max 4MB</span>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*,.pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) setReceiptFile(file)
+                    }}
+                  />
+                </label>
+                {editingExpense?.receipt_url && (
+                  <div className="mt-3 flex items-center gap-2 rounded-xl bg-bg p-3">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <span className="text-sm text-foreground">Current receipt attached</span>
                     <Button
                       variant="outline"
                       size="sm"
                       type="button"
+                      className="ml-auto"
                       onClick={() => handleRemoveReceipt(editingExpense)}
                       disabled={deleteReceipt.isPending}
                     >
                       {deleteReceipt.isPending ? 'Removing...' : 'Remove'}
                     </Button>
-                  )}
-                </>
-              )}
-              <span className="text-xs text-muted">PNG, JPG or PDF</span>
-            </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </Modal>

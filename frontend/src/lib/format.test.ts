@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { formatCurrency, formatCurrencyWith, formatCheckoutTime, parseCheckoutTime, buildCheckoutTime } from './format'
+import {
+  formatCurrency, formatCurrencyWith, formatCheckoutTime, parseCheckoutTime, buildCheckoutTime, formatDateTime, formatTime,
+} from './format'
 
 describe('formatCurrencyWith', () => {
   it('formats with the given currency code', () => {
@@ -36,5 +38,41 @@ describe('checkout time round-trip', () => {
       const p = parseCheckoutTime(t)
       expect(buildCheckoutTime(p.hour12, p.minute, p.meridiem)).toBe(t)
     }
+  })
+})
+
+describe('formatDateTime', () => {
+  it('formats a timestamp with date and time', () => {
+    const value = '2026-08-17T11:04:00'
+    const expected = new Date(value).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+    expect(formatDateTime(value)).toBe(expected)
+  })
+
+  it('returns a dash for empty or invalid input', () => {
+    expect(formatDateTime('')).toBe('-')
+    expect(formatDateTime(undefined)).toBe('-')
+    expect(formatDateTime(null)).toBe('-')
+    expect(formatDateTime('bogus')).toBe('-')
+  })
+})
+
+describe('formatTime', () => {
+  it('formats just the time of a timestamp', () => {
+    expect(formatTime('2026-08-17T11:16:00')).toBe('11:16 AM')
+    expect(formatTime('2026-08-17T23:04:00')).toBe('11:04 PM')
+    expect(formatTime('2026-08-17T00:05:00')).toBe('12:05 AM')
+  })
+
+  it('returns a dash for empty or invalid input', () => {
+    expect(formatTime('')).toBe('-')
+    expect(formatTime(undefined)).toBe('-')
+    expect(formatTime(null)).toBe('-')
+    expect(formatTime('bogus')).toBe('-')
   })
 })

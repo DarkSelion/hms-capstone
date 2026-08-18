@@ -116,6 +116,7 @@ function renderModal(overrides: {
 describe('ReservationCheckInOutModal', () => {
   beforeEach(() => {
     mockPreview.data = null
+    mockPreview.isLoading = false
     mockPreviewArgs.length = 0
     mockPaymentModalProps.actualCheckOut = undefined
   })
@@ -137,6 +138,45 @@ describe('ReservationCheckInOutModal', () => {
 
     expect(screen.getByText('Check-out Time')).toBeInTheDocument()
     expect(screen.getByText('12:00 PM')).toBeInTheDocument()
+  })
+
+  it('shows the exact check-out time and date in check-out mode only', () => {
+    const { unmount } = renderWithClient(
+      <ReservationCheckInOutModal
+        mode="check-out"
+        reservation={reservation({ status: 'checked_in', due_amount: 0, payment_status: 'paid' })}
+        isOpen
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    )
+    expect(screen.getByText('Checked-out At')).toBeInTheDocument()
+    expect(screen.getByText(/^\d{1,2}:\d{2} (AM|PM)$/)).toBeInTheDocument()
+    unmount()
+
+    renderModal()
+    expect(screen.queryByText('Checked-out At')).not.toBeInTheDocument()
+    expect(screen.getByText('12:00 PM')).toBeInTheDocument()
+  })
+
+  it('does not show a stale Paid state while the checkout preview is still loading', () => {
+    mockPreview.isLoading = true
+    renderModal({
+      mode: 'check-out',
+      reservation: reservation({
+        status: 'checked_in',
+        check_out: '2026-10-12',
+        payment_status: 'paid',
+        paid_amount: 330,
+        due_amount: 0,
+      }),
+    })
+
+    expect(screen.getByText('Calculating balance…')).toBeInTheDocument()
+    expect(screen.queryByText('Paid in full')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Paid').length).toBe(1)
+    expect(screen.getByRole('button', { name: 'Calculating…' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Check Out' })).not.toBeInTheDocument()
   })
 
   it('renders payment status labels', () => {

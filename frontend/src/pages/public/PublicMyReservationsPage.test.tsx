@@ -132,6 +132,52 @@ describe('PublicMyReservationsPage', () => {
     expect(screen.queryByText('Pay Now')).not.toBeInTheDocument()
   })
 
+  it('hides pay actions for no-show reservations', () => {
+    renderPage([
+      reservation({ status: 'no_show', payment_status: 'unpaid' }),
+    ])
+
+    expect(screen.queryByText('Pay Now')).not.toBeInTheDocument()
+    expect(screen.queryByText('Online Payment Unavailable')).not.toBeInTheDocument()
+  })
+
+  it('hides pay actions for checked-out reservations', () => {
+    renderPage([
+      reservation({ status: 'checked_out', payment_status: 'unpaid' }),
+    ])
+
+    expect(screen.queryByText('Pay Now')).not.toBeInTheDocument()
+    expect(screen.queryByText('Online Payment Unavailable')).not.toBeInTheDocument()
+  })
+
+  it('hides pay actions for cancelled reservations', () => {
+    renderPage([
+      reservation({ status: 'cancelled', payment_status: 'unpaid' }),
+    ])
+
+    expect(screen.queryByText('Pay Now')).not.toBeInTheDocument()
+    expect(screen.queryByText('Online Payment Unavailable')).not.toBeInTheDocument()
+  })
+
+  it('keeps Pay Now for checked-in reservations with a balance', () => {
+    renderPage([
+      reservation({ status: 'checked_in', payment_status: 'partial', paid_amount: 1000, due_amount: 2300 }),
+    ])
+
+    expect(screen.getByText('Pay Now')).toBeInTheDocument()
+  })
+
+  it('hides both pay actions for no-show when gateway disabled', () => {
+    mockUsePaymentSettings.mockReturnValue({ online_gateway_enabled: '0' })
+
+    renderPage([
+      reservation({ status: 'no_show', payment_status: 'unpaid' }),
+    ])
+
+    expect(screen.queryByText('Pay Now')).not.toBeInTheDocument()
+    expect(screen.queryByText('Online Payment Unavailable')).not.toBeInTheDocument()
+  })
+
   it('shows partial payment balance', () => {
     renderPage([
       reservation({

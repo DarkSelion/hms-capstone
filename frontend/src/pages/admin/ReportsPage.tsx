@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useRevenueReport, useOccupancyReport, useReservationReport } from '@/hooks/useApi'
-import { formatCurrency, formatDateDisplay } from '@/lib/format'
+import { formatCurrency, formatDateDisplay, toLocalDateStr } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { StatCard } from '@/components/shared/StatCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
-import { DatePicker } from '@/components/ui/date-picker'
+import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableContainer } from '@/components/ui/table'
 import {
@@ -31,6 +32,62 @@ const EXPORT_FORMATS = [
 ]
 
 const PIE_COLORS = ['#f59e0b', '#1e3a5f', '#10b981', '#c9a84c', '#ef4444', '#6b7280']
+
+const EARLIEST_DATE = '2000-01-01'
+
+const PRESET_RANGES = [
+  { key: 'today', label: 'Today' },
+  { key: 'last7', label: 'Last 7 days' },
+  { key: 'last30', label: 'Last 30 days' },
+  { key: 'thisMonth', label: 'This month' },
+  { key: 'lastMonth', label: 'Last month' },
+  { key: 'thisYear', label: 'This year' },
+]
+
+function presetRange(key: string): { from: string; to: string } {
+  const today = new Date()
+  const to = toLocalDateStr(today)
+  switch (key) {
+    case 'today':
+      return { from: to, to }
+    case 'last7':
+      return { from: toLocalDateStr(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6)), to }
+    case 'last30':
+      return { from: toLocalDateStr(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 29)), to }
+    case 'thisMonth':
+      return {
+        from: toLocalDateStr(new Date(today.getFullYear(), today.getMonth(), 1)),
+        to: toLocalDateStr(new Date(today.getFullYear(), today.getMonth() + 1, 0)),
+      }
+    case 'lastMonth':
+      return {
+        from: toLocalDateStr(new Date(today.getFullYear(), today.getMonth() - 1, 1)),
+        to: toLocalDateStr(new Date(today.getFullYear(), today.getMonth(), 0)),
+      }
+    case 'thisYear':
+      return {
+        from: toLocalDateStr(new Date(today.getFullYear(), 0, 1)),
+        to: toLocalDateStr(new Date(today.getFullYear(), 11, 31)),
+      }
+    default:
+      return { from: to, to }
+  }
+}
+
+function presetKeyFor(range: { from: string; to: string }): string | null {
+  for (const p of PRESET_RANGES) {
+    const r = presetRange(p.key)
+    if (r.from === range.from && r.to === range.to) return p.key
+  }
+  return null
+}
+
+function dayCount(from: string, to: string): number {
+  if (!from || !to) return 0
+  const a = new Date(from + 'T00:00:00')
+  const b = new Date(to + 'T00:00:00')
+  return Math.round((b.getTime() - a.getTime()) / 86400000) + 1
+}
 
 function formatDate(dateStr: string) {
   if (!dateStr) return '-'
@@ -76,33 +133,105 @@ function CustomTooltip({ active, payload, label }: any) {
   )
 }
 
+function ReportRangeFilter({ value, onApply, max }: {
+  value: { from: string; to: string }
+  onApply: (range: { from: string; to: string }) => void
+  max: string
+}) {
+  const [customOpen, setCustomOpen] = useState(false)
+  const [pending, setPending] = useState(value)
+  const active = presetKeyFor(value)
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        {PRESET_RANGES.map((p) => (
+          <button
+            key={p.key}
+            type="button"
+            onClick={() => {
+              const r = presetRange(p.key)
+              setPending(r)
+              setCustomOpen(false)
+              onApply(r)
+            }}
+            className={cn(
+              'rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
+              active === p.key
+                ? 'bg-gold text-dark shadow-sm'
+                : 'bg-bg text-muted hover:bg-cream hover:text-primary',
+            )}
+          >
+            {p.label}
+          </button>
+        ))}
+
+        <button
+          type="button"
+          onClick={() => setCustomOpen(!customOpen)}
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors',
+            customOpen
+              ? 'bg-primary text-white shadow-sm'
+              : 'bg-bg text-muted hover:bg-cream hover:text-primary',
+          )}
+        >
+          <CalendarDays className="h-4 w-4" />
+          Custom range
+        </button>
+      </div>
+
+      {customOpen && (
+        <div className="mt-3">
+          <div className="w-64">
+            <DateRangePicker
+              value={pending}
+              onChange={(r) => {
+                setPending(r)
+                if (r.from && r.to) {
+                  onApply(r)
+                  setCustomOpen(false)
+                }
+              }}
+              min={EARLIEST_DATE}
+              max={max}
+              placeholder="Select a date range"
+            />
+          </div>
+          <p className="mt-2 text-xs text-muted">
+            Pick a start and end date — the report updates automatically.
+          </p>
+        </div>
+      )}
+
+      <p className="mt-3 text-xs text-muted">
+        Showing{' '}
+        <span className="font-medium text-foreground">
+          {formatDateDisplay(value.from)} — {formatDateDisplay(value.to)}
+        </span>{' '}
+        ({dayCount(value.from, value.to)} days)
+      </p>
+    </div>
+  )
+}
+
 export default function ReportsPage() {
   const { addToast } = useToast()
   const [activeTab, setActiveTab] = useState<string>('Revenue')
 
-  const today = new Date().toISOString().split('T')[0]
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const today = toLocalDateStr(new Date())
 
-  const [revenueFrom, setRevenueFrom] = useState(thirtyDaysAgo)
-  const [revenueTo, setRevenueTo] = useState(today)
-  const [revenueParams, setRevenueParams] = useState({ from: thirtyDaysAgo, to: today })
-
-  const [occupancyFrom, setOccupancyFrom] = useState(thirtyDaysAgo)
-  const [occupancyTo, setOccupancyTo] = useState(today)
-  const [occupancyParams, setOccupancyParams] = useState({ from: thirtyDaysAgo, to: today })
-
-  const [reservationFrom, setReservationFrom] = useState(thirtyDaysAgo)
-  const [reservationTo, setReservationTo] = useState(today)
-  const [reservationParams, setReservationParams] = useState({ from: thirtyDaysAgo, to: today })
+  const [revenueRange, setRevenueRange] = useState(() => presetRange('last30'))
+  const [occupancyRange, setOccupancyRange] = useState(() => presetRange('last30'))
+  const [reservationRange, setReservationRange] = useState(() => presetRange('last30'))
+  const [exportRange, setExportRange] = useState(() => presetRange('last30'))
 
   const [exportType, setExportType] = useState('revenue')
   const [exportFormat, setExportFormat] = useState('csv')
-  const [exportFrom, setExportFrom] = useState(thirtyDaysAgo)
-  const [exportTo, setExportTo] = useState(today)
 
-  const { data: revenueData, isLoading: revenueLoading, error: revenueError, refetch: refetchRevenue } = useRevenueReport(revenueParams)
-  const { data: occupancyData, isLoading: occupancyLoading, error: occupancyError, refetch: refetchOccupancy } = useOccupancyReport(occupancyParams)
-  const { data: reservationData, isLoading: reservationLoading, error: reservationError, refetch: refetchReservations } = useReservationReport(reservationParams)
+  const { data: revenueData, isLoading: revenueLoading, error: revenueError, refetch: refetchRevenue } = useRevenueReport({ from: revenueRange.from, to: revenueRange.to })
+  const { data: occupancyData, isLoading: occupancyLoading, error: occupancyError, refetch: refetchOccupancy } = useOccupancyReport({ from: occupancyRange.from, to: occupancyRange.to })
+  const { data: reservationData, isLoading: reservationLoading, error: reservationError, refetch: refetchReservations } = useReservationReport({ from: reservationRange.from, to: reservationRange.to })
 
   const revenue = (revenueData ?? []) as any[]
   const occupancy = (occupancyData ?? []) as any[]
@@ -123,8 +252,8 @@ export default function ReportsPage() {
   async function handleExport() {
     const params = new URLSearchParams({
       format: exportFormat === 'pdf' ? 'pdf' : 'csv',
-      from: exportFrom,
-      to: exportTo,
+      from: exportRange.from,
+      to: exportRange.to,
     })
     try {
       const { blob, filename } = await downloadFile(
@@ -166,28 +295,7 @@ export default function ReportsPage() {
 
       {activeTab === 'Revenue' && (
         <div className="space-y-6">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="w-44">
-              <DatePicker
-                value={revenueFrom}
-                onChange={(v) => setRevenueFrom(v)}
-                clearable
-              />
-            </div>
-            <div className="w-44">
-              <DatePicker
-                value={revenueTo}
-                onChange={(v) => setRevenueTo(v)}
-                clearable
-              />
-            </div>
-            <Button
-              variant="primary"
-              onClick={() => setRevenueParams({ from: revenueFrom, to: revenueTo })}
-            >
-              Apply
-            </Button>
-          </div>
+          <ReportRangeFilter value={revenueRange} onApply={setRevenueRange} max={today} />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard icon={<DollarSign className="h-5 w-5" />} label="Total Revenue" value={formatCurrency(totalRevenue)} />
@@ -281,28 +389,7 @@ export default function ReportsPage() {
 
       {activeTab === 'Occupancy' && (
         <div className="space-y-6">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="w-44">
-              <DatePicker
-                value={occupancyFrom}
-                onChange={(v) => setOccupancyFrom(v)}
-                clearable
-              />
-            </div>
-            <div className="w-44">
-              <DatePicker
-                value={occupancyTo}
-                onChange={(v) => setOccupancyTo(v)}
-                clearable
-              />
-            </div>
-            <Button
-              variant="primary"
-              onClick={() => setOccupancyParams({ from: occupancyFrom, to: occupancyTo })}
-            >
-              Apply
-            </Button>
-          </div>
+          <ReportRangeFilter value={occupancyRange} onApply={setOccupancyRange} max={today} />
 
           {occupancyLoading ? (
             <ChartSkeleton />
@@ -400,28 +487,7 @@ export default function ReportsPage() {
 
       {activeTab === 'Reservations' && (
         <div className="space-y-6">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="w-44">
-              <DatePicker
-                value={reservationFrom}
-                onChange={(v) => setReservationFrom(v)}
-                clearable
-              />
-            </div>
-            <div className="w-44">
-              <DatePicker
-                value={reservationTo}
-                onChange={(v) => setReservationTo(v)}
-                clearable
-              />
-            </div>
-            <Button
-              variant="primary"
-              onClick={() => setReservationParams({ from: reservationFrom, to: reservationTo })}
-            >
-              Apply
-            </Button>
-          </div>
+          <ReportRangeFilter value={reservationRange} onApply={setReservationRange} max={today} />
 
           {reservationLoading ? (
             <ChartSkeleton />
@@ -539,18 +605,7 @@ export default function ReportsPage() {
                 ))}
               </Select>
 
-              <div className="grid grid-cols-2 gap-4">
-                <DatePicker
-                  label="From Date"
-                  value={exportFrom}
-                  onChange={(v) => setExportFrom(v)}
-                />
-                <DatePicker
-                  label="To Date"
-                  value={exportTo}
-                  onChange={(v) => setExportTo(v)}
-                />
-              </div>
+              <ReportRangeFilter value={exportRange} onApply={setExportRange} max={today} />
 
               <Button variant="primary" onClick={handleExport}>
                 <Download className="h-4 w-4" />

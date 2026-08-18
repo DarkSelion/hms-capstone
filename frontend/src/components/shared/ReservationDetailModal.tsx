@@ -1,10 +1,10 @@
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/shared/StatusBadge'
-import { formatCurrency, formatDateDisplay } from '@/lib/format'
+import { formatCurrency, formatDateDisplay, formatDateTime } from '@/lib/format'
 import { BOOKING_SOURCES } from '@/lib/constants'
 import {
-  BedDouble, CalendarDays, CreditCard, Pencil, CalendarPlus, UserRound, Globe, MessageSquare,
+  BedDouble, CalendarDays, CreditCard, Pencil, CalendarPlus, UserRound, Globe, MessageSquare, LogIn, LogOut,
 } from 'lucide-react'
 import type { Reservation } from '@/types'
 
@@ -109,6 +109,22 @@ export function ReservationDetailModal({ isOpen, onClose, reservation, onEdit, o
               <p className="mt-0.5 text-xs text-muted">
                 {nightsBetween(reservation.check_in, reservation.check_out)} night{nightsBetween(reservation.check_in, reservation.check_out) !== 1 ? 's' : ''}
               </p>
+              {(reservation.checked_in_at || reservation.checked_out_at) && (
+                <div className="mt-2 space-y-1 border-t border-gray-100 pt-2">
+                  {reservation.checked_in_at && (
+                    <p className="flex items-center gap-1 text-xs text-muted">
+                      <LogIn className="h-3 w-3 text-emerald-500" />
+                      Checked in {formatDateTime(reservation.checked_in_at)}
+                    </p>
+                  )}
+                  {reservation.checked_out_at && (
+                    <p className="flex items-center gap-1 text-xs text-muted">
+                      <LogOut className="h-3 w-3 text-amber-500" />
+                      Checked out {formatDateTime(reservation.checked_out_at)}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             <div className="rounded-xl bg-bg p-3">
               <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">

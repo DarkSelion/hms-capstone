@@ -3,14 +3,16 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { PaymentModal } from './PaymentModal'
 import type { Guest, Payment, Reservation, Room } from '@/types'
 
-const { mockMutate, mockCheckIn } = vi.hoisted(() => ({
+const { mockMutate, mockCheckIn, mockCheckOut } = vi.hoisted(() => ({
   mockMutate: vi.fn(),
   mockCheckIn: vi.fn(),
+  mockCheckOut: vi.fn(),
 }))
 
 vi.mock('@/hooks/useApi', () => ({
   useCreatePayment: () => ({ mutateAsync: mockMutate, isPending: false }),
   useCheckIn: () => ({ mutateAsync: mockCheckIn, isPending: false }),
+  useCheckOut: () => ({ mutateAsync: mockCheckOut, isPending: false }),
 }))
 
 type OnSuccess = (payment: Payment) => void
@@ -40,6 +42,7 @@ function renderModal(overrides: {
   reservation?: Reservation | null
   reservations?: Reservation[]
   showCheckInOption?: boolean
+  showCheckOutOption?: boolean
   onSuccess?: ReturnType<typeof vi.fn<OnSuccess>>
   onClose?: ReturnType<typeof vi.fn<OnClose>>
 } = {}) {
@@ -52,6 +55,7 @@ function renderModal(overrides: {
       reservation={overrides.reservation === undefined ? reservation() : overrides.reservation}
       reservations={overrides.reservations}
       showCheckInOption={overrides.showCheckInOption}
+      showCheckOutOption={overrides.showCheckOutOption}
       onSuccess={onSuccess}
     />,
   )
@@ -65,6 +69,7 @@ describe('PaymentModal', () => {
   beforeEach(() => {
     mockMutate.mockReset()
     mockCheckIn.mockReset()
+    mockCheckOut.mockReset()
   })
 
   it('shows the reservation summary with the balance due', () => {
@@ -242,10 +247,14 @@ describe('PaymentModal', () => {
   it('resets amount and tendered to the selected reservation balance in the picker', () => {
     renderModal({
       reservation: null,
-      reservations: [reservation({ id: 2, due_amount: 100 }), reservation({ id: 3, due_amount: 250 })],
+      reservations: [
+        reservation({ id: 2, reservation_number: 'BK-2026-0002', room: { room_number: '202' } as Room, due_amount: 100 }),
+        reservation({ id: 3, reservation_number: 'BK-2026-0003', room: { room_number: '303' } as Room, due_amount: 250 }),
+      ],
     })
 
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '3' } })
+    fireEvent.click(screen.getByRole('button', { name: /Search by room, guest, or booking/ }))
+    fireEvent.click(screen.getByRole('button', { name: /#BK-2026-0003/ }))
     expect(amountInput()).toHaveValue(250)
   })
 
@@ -255,9 +264,102 @@ describe('PaymentModal', () => {
     const submit = screen.getByRole('button', { name: 'Record Payment' }) as HTMLButtonElement
     expect(submit).toBeDisabled()
 
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: '1' } })
+    fireEvent.click(screen.getByRole('button', { name: /Search by room, guest, or booking/ }))
+    fireEvent.click(screen.getByRole('button', { name: /#BK-2026-0001/ }))
     expect(screen.getByText('Balance Due')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Record Payment' })).toBeEnabled()
+  })
+
+  it('lists reservation options with room, guest, and due amount in the picker', () => {
+    renderModal({
+      reservation: null,
+      reservations: [
+        reservation({ reservation_number: 'BK-2026-0001', room: { room_number: '101', room_type: { name: 'Deluxe' } } as Room }),
+        reservation({ id: 2, reservation_number: 'BK-2026-0002', room: { room_number: '202', room_type: { name: 'Suite' } } as Room }),
+      ],
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Search by room, guest, or booking/ }))
+
+    expect(screen.getByRole('button', { name: /101· Deluxe/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /202· Suite/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /John Doe · #BK-2026-0001/ })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /₱330.00/ }).length).toBe(2)
+  })
+
+  it('filters the reservation list by room number', () => {
+    renderModal({
+      reservation: null,
+      reservations: [
+        reservation({ reservation_number: 'BK-0101', room: { room_number: '101' } as Room }),
+        reservation({ id: 2, reservation_number: 'BK-0202', room: { room_number: '202' } as Room }),
+      ],
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Search by room, guest, or booking/ }))
+    fireEvent.change(screen.getByLabelText('Search reservations'), { target: { value: '202' } })
+
+    expect(screen.getByRole('button', { name: /#BK-0202/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /#BK-0101/ })).not.toBeInTheDocument()
+  })
+
+  it('filters the reservation list by room type name', () => {
+    renderModal({
+      reservation: null,
+      reservations: [
+        reservation({ reservation_number: 'BK-2026-0001', room: { room_number: '101', room_type: { name: 'Deluxe' } } as Room }),
+        reservation({ id: 2, reservation_number: 'BK-2026-0002', room: { room_number: '202', room_type: { name: 'Suite' } } as Room }),
+      ],
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Search by room, guest, or booking/ }))
+    fireEvent.change(screen.getByLabelText('Search reservations'), { target: { value: 'suite' } })
+
+    expect(screen.getByRole('button', { name: /202· Suite/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /101· Deluxe/ })).not.toBeInTheDocument()
+  })
+
+  it('filters the reservation list by guest name and booking number', () => {
+    renderModal({
+      reservation: null,
+      reservations: [
+        reservation({ reservation_number: 'BK-2026-0001', guest: { first_name: 'John', last_name: 'Doe' } as Guest }),
+        reservation({ id: 2, reservation_number: 'BK-2026-0002', guest: { first_name: 'Maria', last_name: 'Santos' } as Guest }),
+      ],
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Search by room, guest, or booking/ }))
+    fireEvent.change(screen.getByLabelText('Search reservations'), { target: { value: 'maria' } })
+    expect(screen.getByRole('button', { name: /Maria Santos/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /John Doe/ })).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Search reservations'), { target: { value: 'BK-2026-0001' } })
+    expect(screen.getByRole('button', { name: /John Doe/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Maria Santos/ })).not.toBeInTheDocument()
+  })
+
+  it('shows an empty state when no reservation matches the search', () => {
+    renderModal({
+      reservation: null,
+      reservations: [reservation()],
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Search by room, guest, or booking/ }))
+    fireEvent.change(screen.getByLabelText('Search reservations'), { target: { value: 'zzzz' } })
+
+    expect(screen.getByText('No matching reservations')).toBeInTheDocument()
+  })
+
+  it('shows the selected reservation summary on the picker trigger', () => {
+    renderModal({
+      reservation: null,
+      reservations: [reservation()],
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /Search by room, guest, or booking/ }))
+    fireEvent.click(screen.getByRole('button', { name: /#BK-2026-0001/ }))
+
+    expect(screen.getByRole('button', { name: /#BK-2026-0001 · Room 101 · John Doe/ })).toBeInTheDocument()
   })
 
   it('keeps in-progress input when the parent re-renders with a new reservation object', async () => {
@@ -314,5 +416,70 @@ describe('PaymentModal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Record Payment' }))
 
     await waitFor(() => expect(mockCheckIn).toHaveBeenCalledWith(1))
+  })
+
+  it('does not check out when the option is not enabled', async () => {
+    const { onSuccess, onClose } = renderModal({
+      reservation: reservation({ status: 'checked_in' }),
+      showCheckOutOption: true,
+    })
+    mockMutate.mockResolvedValue({ id: 50, amount: 330, status: 'completed' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Record Payment' }))
+
+    expect(mockCheckOut).not.toHaveBeenCalled()
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+  })
+
+  it('shows the check-out option only for a checked-in reservation with the full balance covered', () => {
+    renderModal({ reservation: reservation({ status: 'checked_in' }), showCheckOutOption: true })
+    expect(screen.getByLabelText('Check out after payment')).toBeInTheDocument()
+
+    const confirmed = render(
+      <PaymentModal
+        isOpen
+        onClose={vi.fn()}
+        reservation={reservation()}
+        showCheckOutOption
+      />,
+    )
+    expect(within(confirmed.container).queryByLabelText('Check out after payment')).not.toBeInTheDocument()
+
+    const partial = render(
+      <PaymentModal
+        isOpen
+        onClose={vi.fn()}
+        reservation={reservation({ status: 'checked_in' })}
+        showCheckOutOption
+      />,
+    )
+    fireEvent.change(within(partial.container).getByLabelText('Amount to collect'), { target: { value: '100' } })
+    expect(within(partial.container).queryByLabelText('Check out after payment')).not.toBeInTheDocument()
+  })
+
+  it('checks out after a completed full payment when the box is ticked', async () => {
+    const { onSuccess, onClose } = renderModal({
+      reservation: reservation({ status: 'checked_in' }),
+      showCheckOutOption: true,
+    })
+    mockMutate.mockResolvedValue({ id: 50, amount: 330, status: 'completed' })
+    mockCheckOut.mockResolvedValue({})
+
+    fireEvent.click(screen.getByLabelText('Check out after payment'))
+    fireEvent.click(screen.getByRole('button', { name: 'Record & Check Out' }))
+
+    await waitFor(() => expect(mockCheckOut).toHaveBeenCalledWith({ id: 1 }))
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+    await waitFor(() => expect(onClose).toHaveBeenCalled())
+  })
+
+  it('does not check out when the box is unticked', async () => {
+    renderModal({ reservation: reservation({ status: 'checked_in' }), showCheckOutOption: true })
+    mockMutate.mockResolvedValue({ id: 50, amount: 330, status: 'completed' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Record Payment' }))
+
+    await waitFor(() => expect(mockCheckOut).not.toHaveBeenCalled())
   })
 })

@@ -140,6 +140,8 @@ Route::middleware(['auth:sanctum', 'role:admin,staff'])->group(function () {
         Route::get('/roles', [StaffController::class, 'roles']);
         Route::get('/staff-schedules', [StaffController::class, 'schedules']);
         Route::post('/staff-schedules', [StaffController::class, 'storeSchedule']);
+        Route::put('/staff-schedules/{schedule}', [StaffController::class, 'updateSchedule']);
+        Route::delete('/staff-schedules/{schedule}', [StaffController::class, 'destroySchedule']);
         Route::get('/leave-requests', [StaffController::class, 'leaveRequests']);
         Route::post('/leave-requests', [StaffController::class, 'storeLeaveRequest']);
         Route::put('/leave-requests/{leaveRequest}', [StaffController::class, 'updateLeaveRequest']);

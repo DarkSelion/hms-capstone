@@ -111,6 +111,8 @@ export interface Reservation {
   due_amount: number;
   payment_status: 'unpaid' | 'partial' | 'paid' | 'refunded';
   is_overdue?: boolean;
+  checked_in_at?: string;
+  checked_out_at?: string;
   price_per_night?: number;
   discount_percent?: number;
   tax_percent?: number;
@@ -153,10 +155,14 @@ export interface ContactMessage {
 export interface Payment {
   id: number;
   reservation_id: number;
+  guest_id?: number;
   amount: number;
-  payment_method: 'cash' | 'gcash';
+  payment_method: 'cash' | 'gcash' | 'online';
+  payment_type?: 'full' | 'partial';
   status: 'pending' | 'completed' | 'failed' | 'refunded';
+  transaction_id?: string;
   reference_number?: string;
+  notes?: string;
   paid_at?: string;
   created_at: string;
 }
@@ -383,7 +389,9 @@ export interface PublicReservation {
   total_amount: number
   paid_amount: number
   due_amount: number
-  payment_status: string
+payment_status: string
+  checked_in_at?: string
+  checked_out_at?: string
   special_requests?: string
   created_at: string
 }

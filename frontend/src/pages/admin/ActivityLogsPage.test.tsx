@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, within, fireEvent } from '@testing-library/react'
 import ActivityLogsPage from './ActivityLogsPage'
 import type { ActivityLog, PaginatedResponse, User } from '@/types'
 
@@ -125,5 +125,104 @@ describe('ActivityLogsPage', () => {
 
     expect(screen.getByText('Failed to load activity logs')).toBeTruthy()
     expect(screen.getByText('Retry')).toBeTruthy()
+  })
+
+  it('opens detail modal showing actor, description, and friendly change diff', () => {
+    mockUseActivityLogs.mockReturnValue({
+      data: paginated([
+        log({
+          id: 9,
+          user_id: 1,
+          user: staff(),
+          action: 'updated',
+          module: 'reservations',
+          description: 'Updated reservation #BK-2026-0001',
+          ip_address: '192.168.1.10',
+          user_agent: 'Mozilla/5.0 (Windows NT 10.0)',
+          model_type: 'App\\Models\\Reservation',
+          model_id: 42,
+          old_values: { status: 'confirmed', total_amount: 2500 },
+          new_values: { status: 'checked_in', total_amount: 2700 },
+        }),
+      ]),
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    mockUseStaffAssignable.mockReturnValue({ data: [staff()], isLoading: false, error: null })
+    render(<ActivityLogsPage />)
+
+    fireEvent.click(screen.getByTitle('View'))
+
+    expect(screen.getByRole('heading', { name: 'Activity Details' })).toBeTruthy()
+    expect(screen.getAllByText('Admin User').length).toBeGreaterThan(1)
+    expect(screen.getByText('192.168.1.10')).toBeTruthy()
+    expect(screen.getByText('Mozilla/5.0 (Windows NT 10.0)')).toBeTruthy()
+    expect(screen.getByText('Related Record')).toBeTruthy()
+    expect(screen.getByText('App\\Models\\Reservation #42')).toBeTruthy()
+
+    expect(screen.getByText('Changes')).toBeTruthy()
+    expect(screen.getByText('Status')).toBeTruthy()
+    expect(screen.getByText('Before')).toBeTruthy()
+    expect(screen.getByText('After')).toBeTruthy()
+    expect(screen.getByText('confirmed')).toBeTruthy()
+    expect(screen.getByText('checked_in')).toBeTruthy()
+    expect(screen.getByText('₱2,500.00')).toBeTruthy()
+    expect(screen.getByText('₱2,700.00')).toBeTruthy()
+
+    fireEvent.click(screen.getByText('Close'))
+    expect(screen.queryByRole('heading', { name: 'Activity Details' })).toBeNull()
+  })
+
+  it('renders Guest actor and no field-level changes when values absent', () => {
+    mockUseActivityLogs.mockReturnValue({
+      data: paginated([
+        log({
+          id: 10,
+          user_id: null,
+          description: 'Guest Maria created reservation',
+        }),
+      ]),
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    mockUseStaffAssignable.mockReturnValue({ data: [staff()], isLoading: false, error: null })
+    render(<ActivityLogsPage />)
+
+    fireEvent.click(screen.getByTitle('View'))
+
+    expect(screen.getByRole('heading', { name: 'Activity Details' })).toBeTruthy()
+    expect(screen.getByText('Portal / customer action')).toBeTruthy()
+    expect(screen.queryByText('Changes')).toBeNull()
+    fireEvent.click(screen.getByText('Close'))
+  })
+
+  it('highlights reservation codes, ids, and currency in the description', () => {
+    mockUseActivityLogs.mockReturnValue({
+      data: paginated([
+        log({
+          id: 11,
+          user_id: null,
+          module: 'maintenance',
+          description: 'Overdue reservation #BK-2026-0016-W99U flagged for No Show review',
+        }),
+      ]),
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    mockUseStaffAssignable.mockReturnValue({ data: [staff()], isLoading: false, error: null })
+    render(<ActivityLogsPage />)
+
+    fireEvent.click(screen.getByTitle('View'))
+
+    expect(screen.getByText('What Happened')).toBeTruthy()
+    const chip = screen.getByText('#BK-2026-0016-W99U')
+    expect(chip).toBeTruthy()
+    expect(chip.className).toContain('bg-gold/15')
+    expect(chip.className).toContain('font-mono')
+    expect(screen.getAllByText(/Overdue reservation/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/flagged for No Show review/).length).toBeGreaterThan(0)
   })
 })
