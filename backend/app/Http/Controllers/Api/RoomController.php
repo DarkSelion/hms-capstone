@@ -59,7 +59,7 @@ class RoomController extends Controller
             'is_active' => 'sometimes|boolean',
         ]);
 
-        $room = Room::create($data);
+        $room = Room::create($this->applyCleaningStatus($data));
 
         if (isset($data['amenities'])) {
             $room->amenities()->sync($data['amenities']);
@@ -90,7 +90,7 @@ class RoomController extends Controller
             'is_active' => 'sometimes|boolean',
         ]);
 
-        $room->update($data);
+        $room->update($this->applyCleaningStatus($data));
 
         if (isset($data['amenities'])) {
             $room->amenities()->sync($data['amenities']);
@@ -141,8 +141,26 @@ class RoomController extends Controller
             'cleaning_status' => 'sometimes|in:clean,dirty,in_progress',
         ]);
 
-        $room->update($data);
+        $room->update($this->applyCleaningStatus($data));
 
         return response()->json($room->load('roomType'));
+    }
+
+    protected function applyCleaningStatus(array $data): array
+    {
+        if (!isset($data['status']) || array_key_exists('cleaning_status', $data)) {
+            return $data;
+        }
+
+        $derived = [
+            'available' => 'clean',
+            'dirty' => 'dirty',
+        ];
+
+        if (isset($derived[$data['status']])) {
+            $data['cleaning_status'] = $derived[$data['status']];
+        }
+
+        return $data;
     }
 }

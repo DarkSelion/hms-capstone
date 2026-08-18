@@ -154,6 +154,64 @@ class AdminBugsBatchHTest extends TestCase
         ])->assertOk()->assertJsonPath('status', 'maintenance');
     }
 
+    public function test_room_update_to_available_sets_cleaning_status_clean(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $room = $this->room(null, ['status' => 'dirty', 'cleaning_status' => 'dirty']);
+
+        $this->putJson("/api/rooms/{$room->id}", [
+            'room_number' => $room->room_number,
+            'room_type_id' => $room->room_type_id,
+            'floor' => $room->floor,
+            'status' => 'available',
+        ])->assertOk()->assertJsonPath('status', 'available')->assertJsonPath('cleaning_status', 'clean');
+    }
+
+    public function test_room_update_to_dirty_sets_cleaning_status_dirty(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $room = $this->room(null, ['status' => 'available', 'cleaning_status' => 'clean']);
+
+        $this->putJson("/api/rooms/{$room->id}", [
+            'room_number' => $room->room_number,
+            'room_type_id' => $room->room_type_id,
+            'floor' => $room->floor,
+            'status' => 'dirty',
+        ])->assertOk()->assertJsonPath('status', 'dirty')->assertJsonPath('cleaning_status', 'dirty');
+    }
+
+    public function test_room_update_respects_explicit_cleaning_status(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $room = $this->room(null, ['status' => 'dirty', 'cleaning_status' => 'dirty']);
+
+        $this->putJson("/api/rooms/{$room->id}", [
+            'room_number' => $room->room_number,
+            'room_type_id' => $room->room_type_id,
+            'floor' => $room->floor,
+            'status' => 'available',
+            'cleaning_status' => 'in_progress',
+        ])->assertOk()->assertJsonPath('cleaning_status', 'in_progress');
+    }
+
+    public function test_room_status_endpoint_available_sets_cleaning_status_clean(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $room = $this->room(null, ['status' => 'dirty', 'cleaning_status' => 'in_progress']);
+
+        $this->putJson("/api/rooms/{$room->id}/status", [
+            'status' => 'available',
+        ])->assertOk()->assertJsonPath('status', 'available')->assertJsonPath('cleaning_status', 'clean');
+    }
+
     // ── Invoice index includes items ──────────────────────────
 
     public function test_invoice_index_includes_items(): void
