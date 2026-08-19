@@ -134,6 +134,68 @@ class OnlinePaymentGatewayController extends Controller
     }
 
     /**
+     * Guest-facing settlement after a checkout redirect back to the portal.
+     *
+     * The partner gateway verifies the payment and notifies us via webhook in
+     * production. This endpoint is a demo/fallback path so a guest can settle
+     * their own reservation immediately after completing the hosted checkout —
+     * it reuses the exact same settlement logic as the webhook (recordPaid),
+     * gated by guest ownership instead of the shared secret. Amount is always
+     * the reservation's own due (never client-supplied) and the call is
+     * idempotent (already-paid returns the current state without re-recording).
+     */
+    public function confirmOnline(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'reservation_id' => 'required|exists:reservations,id',
+        ]);
+
+        $guest = $request->user();
+
+        if (! $guest instanceof Guest) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        $reservation = Reservation::with(['room.roomType'])->findOrFail($data['reservation_id']);
+
+        if ($reservation->guest_id !== $guest->id) {
+            return response()->json(['message' => 'This reservation does not belong to you.'], 403);
+        }
+
+        if (in_array($reservation->status, ['cancelled', 'checked_out', 'no_show'], true)) {
+            return response()->json(['message' => 'This reservation can no longer be paid.'], 422);
+        }
+
+        $alreadyCompleted = Payment::where('reservation_id', $reservation->id)
+            ->where('payment_method', 'online')
+            ->where('status', 'completed')
+            ->exists();
+
+        if ($reservation->payment_status === 'paid' || (float) $reservation->due_amount <= 0 || $alreadyCompleted) {
+            return response()->json([
+                'message' => 'This reservation is already fully paid.',
+                'reservation' => $reservation->fresh(['room.roomType']),
+            ]);
+        }
+
+        DB::transaction(function () use ($reservation, $guest) {
+            $transactionId = 'PORTAL-'.$reservation->reservation_number.'-'.strtoupper(Str::random(6));
+
+            $this->recordPaid(
+                $reservation,
+                (float) $reservation->due_amount,
+                $transactionId,
+                'Guest confirmed online payment of ₱'.number_format((float) $reservation->due_amount, 2).' for reservation #'.$reservation->reservation_number,
+            );
+        });
+
+        return response()->json([
+            'message' => 'Payment confirmed.',
+            'reservation' => $reservation->fresh(['room.roomType', 'payments']),
+        ]);
+    }
+
+    /**
      * Server-to-server webhook from the payment gateway. Never wrapped in auth
      * middleware — authenticity is enforced with a shared secret header
      * (X-Webhook-Secret). Every status is handled idempotently so retries
@@ -275,7 +337,7 @@ class OnlinePaymentGatewayController extends Controller
         return response()->json(['received' => true]);
     }
 
-    protected function recordPaid(Reservation $reservation, float $amount, string $transactionId = ''): void
+    protected function recordPaid(Reservation $reservation, float $amount, string $transactionId = '', ?string $description = null): void
     {
         $amount = round($amount, 2);
 
@@ -365,7 +427,7 @@ class OnlinePaymentGatewayController extends Controller
             'module' => 'payments',
             'model_type' => 'Payment',
             'model_id' => $payment->id,
-            'description' => 'Guest payment of ₱'.number_format($payment->amount, 2).' via online gateway for reservation #'.$reservation->reservation_number,
+            'description' => $description ?? ('Guest payment of ₱'.number_format($payment->amount, 2).' via online gateway for reservation #'.$reservation->reservation_number),
         ]);
     }
 

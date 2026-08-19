@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { usePublicReservations, usePublicCancelReservation, usePublicInitiateOnlinePayment, usePublicSettings, usePaymentSettings, usePortalCurrency } from '@/hooks/usePublicApi'
+import { usePublicReservations, usePublicCancelReservation, usePublicInitiateOnlinePayment, usePublicConfirmOnlinePayment, usePublicSettings, usePaymentSettings, usePortalCurrency } from '@/hooks/usePublicApi'
 import { usePublicAuthStore } from '@/stores/publicAuthStore'
 import { formatCurrencyWith, formatDateDisplay, formatCheckoutTime, toLocalDateStr } from '@/lib/format'
 import type { PublicReservation } from '@/types'
@@ -80,6 +80,7 @@ export default function PublicMyReservationsPage() {
   const { data, isLoading } = usePublicReservations()
   const cancelReservation = usePublicCancelReservation()
   const initiateOnline = usePublicInitiateOnlinePayment()
+  const confirmOnline = usePublicConfirmOnlinePayment()
   const currency = usePortalCurrency()
   const fmt = (amount: number) => formatCurrencyWith(amount, currency)
   const { data: bookingSettings } = usePublicSettings('booking')
@@ -91,6 +92,7 @@ export default function PublicMyReservationsPage() {
   const [cancelTarget, setCancelTarget] = useState<PublicReservation | null>(null)
   const [cancelError, setCancelError] = useState('')
   const [paymentModal, setPaymentModal] = useState<PublicReservation | null>(null)
+  const [confirmingId, setConfirmingId] = useState<number | null>(null)
   const [filter, setFilter] = useState<FilterKey>('all')
   const today = toLocalDateStr(new Date())
 
@@ -297,6 +299,26 @@ export default function PublicMyReservationsPage() {
                                 Online Payment Unavailable
                               </span>
                             )
+                          )}
+                          {(r.payment_status === 'unpaid' || r.payment_status === 'partial') && canPayOnline(r) && onlineGatewayEnabled && (
+                            <button
+                              onClick={() => {
+                                setConfirmingId(r.id)
+                                confirmOnline.mutate(r.id, {
+                                  onSettled: () => setConfirmingId(null),
+                                })
+                              }}
+                              disabled={confirmingId === r.id || confirmOnline.isPending}
+                              className="px-4 py-2 border border-emerald-600/30 text-emerald-700 rounded-lg text-xs uppercase tracking-wider hover:bg-emerald-500/5 hover:border-emerald-600/60 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                              title="Use this after completing the online payment if you weren't redirected back"
+                            >
+                              {confirmingId === r.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <CheckCircle className="h-3.5 w-3.5" />
+                              )}
+                              {confirmingId === r.id ? 'Confirming...' : 'Confirm Payment'}
+                            </button>
                           )}
                           {(r.status === 'pending' || r.status === 'confirmed') && (
                             <button

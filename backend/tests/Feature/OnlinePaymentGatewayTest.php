@@ -736,4 +736,120 @@ class OnlinePaymentGatewayTest extends TestCase
 
         $this->assertSame(0, Payment::where('reservation_id', $reservation->id)->count());
     }
+
+    // ── Guest confirm-online (checkout redirect-back settlement) ───────
+
+    public function test_confirm_online_requires_guest_authentication(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+
+        $this->postJson('/api/public/payments/confirm-online', ['reservation_id' => $reservation->id])
+            ->assertUnauthorized();
+    }
+
+    public function test_confirm_online_marks_own_reservation_paid(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+        $guest = $reservation->guest;
+
+        Sanctum::actingAs($guest, ['guest']);
+
+        $this->postJson('/api/public/payments/confirm-online', ['reservation_id' => $reservation->id])
+            ->assertOk()
+            ->assertJsonPath('message', 'Payment confirmed.')
+            ->assertJsonPath('reservation.payment_status', 'paid');
+
+        $payment = Payment::where('reservation_id', $reservation->id)->firstOrFail();
+        $this->assertSame('online', $payment->payment_method);
+        $this->assertSame('completed', $payment->status);
+        $this->assertSame('full', $payment->payment_type);
+        $this->assertEqualsWithDelta(2000, (float) $payment->amount, 0.001);
+        $this->assertStringStartsWith('PORTAL-', $payment->reference_number);
+
+        $reservation->refresh();
+        $this->assertSame('paid', $reservation->payment_status);
+        $this->assertEqualsWithDelta(0, (float) $reservation->due_amount, 0.001);
+        $this->assertEqualsWithDelta(2000, (float) $reservation->paid_amount, 0.001);
+    }
+
+    public function test_confirm_online_rejects_another_guests_reservation(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+        $otherGuest = $this->guest();
+
+        Sanctum::actingAs($otherGuest, ['guest']);
+
+        $this->postJson('/api/public/payments/confirm-online', ['reservation_id' => $reservation->id])
+            ->assertStatus(403);
+
+        $this->assertSame(0, Payment::where('reservation_id', $reservation->id)->count());
+    }
+
+    public function test_confirm_online_rejects_dead_reservation(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+        $reservation->update(['status' => 'cancelled']);
+        $guest = $reservation->guest;
+
+        Sanctum::actingAs($guest, ['guest']);
+
+        $this->postJson('/api/public/payments/confirm-online', ['reservation_id' => $reservation->id])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'This reservation can no longer be paid.');
+
+        $this->assertSame(0, Payment::where('reservation_id', $reservation->id)->count());
+    }
+
+    public function test_confirm_online_is_idempotent(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+        $guest = $reservation->guest;
+
+        Sanctum::actingAs($guest, ['guest']);
+
+        $this->postJson('/api/public/payments/confirm-online', ['reservation_id' => $reservation->id])
+            ->assertOk();
+
+        $this->postJson('/api/public/payments/confirm-online', ['reservation_id' => $reservation->id])
+            ->assertOk()
+            ->assertJsonPath('message', 'This reservation is already fully paid.');
+
+        $this->assertSame(1, Payment::where('reservation_id', $reservation->id)->count());
+        $this->assertSame(1, Payment::where('reservation_id', $reservation->id)->where('status', 'completed')->count());
+    }
+
+    public function test_confirm_online_completes_existing_pending_payment(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+
+        Payment::create([
+            'reservation_id' => $reservation->id,
+            'guest_id' => $reservation->guest_id,
+            'amount' => 2000,
+            'payment_method' => 'online',
+            'payment_type' => 'full',
+            'status' => 'pending',
+            'reference_number' => 'ONLINE-'.$reservation->reservation_number.'-ABCDEF',
+        ]);
+
+        $guest = $reservation->guest;
+        Sanctum::actingAs($guest, ['guest']);
+
+        $this->postJson('/api/public/payments/confirm-online', ['reservation_id' => $reservation->id])
+            ->assertOk();
+
+        $this->assertSame(1, Payment::where('reservation_id', $reservation->id)->count());
+        $payment = Payment::where('reservation_id', $reservation->id)->firstOrFail();
+        $this->assertSame('completed', $payment->status);
+        $this->assertStringStartsWith('PORTAL-', $payment->reference_number);
+
+        $reservation->refresh();
+        $this->assertSame('paid', $reservation->payment_status);
+    }
 }

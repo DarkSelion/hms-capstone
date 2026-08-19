@@ -165,6 +165,20 @@ export function usePublicInitiateOnlinePayment() {
   })
 }
 
+export function usePublicConfirmOnlinePayment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (reservationId: number) =>
+      publicApi.post<{ message: string; reservation: PublicReservation }>(
+        '/public/payments/confirm-online',
+        { reservation_id: reservationId },
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['public-reservations'] })
+    },
+  })
+}
+
 // Contact
 export function usePublicSendContactMessage() {
   return useMutation({

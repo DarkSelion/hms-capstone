@@ -9,12 +9,18 @@ const {
   mockUsePublicSettings,
   mockUseBrandingSettings,
   mockUseSearchParams,
+  mockUsePublicReservations,
+  mockUsePublicConfirmOnlinePayment,
+  mockUsePublicAuthStore,
 } = vi.hoisted(() => ({
   mockUsePublicRoomTypes: vi.fn(),
   mockUseHotelName: vi.fn(),
   mockUsePublicSettings: vi.fn(),
   mockUseBrandingSettings: vi.fn(),
   mockUseSearchParams: vi.fn(),
+  mockUsePublicReservations: vi.fn(),
+  mockUsePublicConfirmOnlinePayment: vi.fn(),
+  mockUsePublicAuthStore: vi.fn(),
 }))
 
 vi.mock('@/hooks/usePublicApi', () => ({
@@ -22,6 +28,12 @@ vi.mock('@/hooks/usePublicApi', () => ({
   useHotelName: () => mockUseHotelName(),
   usePublicSettings: (group: string) => mockUsePublicSettings(group),
   useBrandingSettings: () => mockUseBrandingSettings(),
+  usePublicReservations: () => mockUsePublicReservations(),
+  usePublicConfirmOnlinePayment: () => mockUsePublicConfirmOnlinePayment(),
+}))
+
+vi.mock('@/stores/publicAuthStore', () => ({
+  usePublicAuthStore: () => mockUsePublicAuthStore(),
 }))
 
 vi.mock('react-router-dom', async () => {
@@ -34,7 +46,10 @@ vi.mock('react-router-dom', async () => {
     useNavigate: () => (to: string) => {
       window.__nav = to
     },
-    useSearchParams: () => mockUseSearchParams(),
+    useSearchParams: () => {
+      const [params] = mockUseSearchParams()
+      return [params, vi.fn()]
+    },
   }
 })
 
@@ -72,6 +87,9 @@ describe('PublicHomePage', () => {
     mockUseBrandingSettings.mockReturnValue({})
     mockUseHotelName.mockReturnValue('Pampanga Home Suites')
     mockUseSearchParams.mockReturnValue([new URLSearchParams('')])
+    mockUsePublicAuthStore.mockReturnValue({ token: null })
+    mockUsePublicReservations.mockReturnValue({ data: { data: [] }, isLoading: false, error: null })
+    mockUsePublicConfirmOnlinePayment.mockReturnValue({ mutate: vi.fn(), isPending: false, isError: false, error: null })
   })
 
   it('renders hero with default branding fallbacks', () => {
@@ -144,6 +162,57 @@ describe('PublicHomePage', () => {
     fireEvent.click(screen.getByLabelText('Dismiss notice'))
 
     expect(screen.queryByText(/Payment received for BK-2026-0001/)).not.toBeInTheDocument()
+  })
+
+  it('auto-confirms a matching unpaid reservation on success redirect when logged in', () => {
+    mockUseSearchParams.mockReturnValue([new URLSearchParams('booking_ref=BK-2026-0001&status=success')])
+    mockUsePublicAuthStore.mockReturnValue({ token: 'abc' })
+    mockUsePublicReservations.mockReturnValue({
+      data: { data: [{ id: 7, reservation_number: 'BK-2026-0001', payment_status: 'unpaid', due_amount: 165 }] },
+      isLoading: false,
+      error: null,
+    })
+    const mutate = vi.fn((_id: number, opts?: { onSuccess?: () => void }) => opts?.onSuccess?.())
+    mockUsePublicConfirmOnlinePayment.mockReturnValue({ mutate, isPending: false, isError: false, error: null })
+
+    renderHome()
+
+    expect(mutate).toHaveBeenCalledTimes(1)
+    expect(mutate).toHaveBeenCalledWith(7, expect.anything())
+    expect(screen.getByText(/Payment confirmed for BK-2026-0001/)).toBeInTheDocument()
+  })
+
+  it('does not auto-confirm an already paid booking', () => {
+    mockUseSearchParams.mockReturnValue([new URLSearchParams('booking_ref=BK-2026-0001&status=success')])
+    mockUsePublicAuthStore.mockReturnValue({ token: 'abc' })
+    mockUsePublicReservations.mockReturnValue({
+      data: { data: [{ id: 7, reservation_number: 'BK-2026-0001', payment_status: 'paid', due_amount: 0 }] },
+      isLoading: false,
+      error: null,
+    })
+    const mutate = vi.fn()
+    mockUsePublicConfirmOnlinePayment.mockReturnValue({ mutate, isPending: false, isError: false, error: null })
+
+    renderHome()
+
+    expect(mutate).not.toHaveBeenCalled()
+  })
+
+  it('does not auto-confirm when the guest is not signed in', () => {
+    mockUseSearchParams.mockReturnValue([new URLSearchParams('booking_ref=BK-2026-0001&status=success')])
+    mockUsePublicAuthStore.mockReturnValue({ token: null })
+    mockUsePublicReservations.mockReturnValue({
+      data: { data: [{ id: 7, reservation_number: 'BK-2026-0001', payment_status: 'unpaid', due_amount: 165 }] },
+      isLoading: false,
+      error: null,
+    })
+    const mutate = vi.fn()
+    mockUsePublicConfirmOnlinePayment.mockReturnValue({ mutate, isPending: false, isError: false, error: null })
+
+    renderHome()
+
+    expect(mutate).not.toHaveBeenCalled()
+    expect(screen.getByText(/Payment received for BK-2026-0001/)).toBeInTheDocument()
   })
 
   it('renders gallery section with section title and configured photo', () => {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { usePublicRoomTypes, useHotelName, usePublicSettings, useBrandingSettings } from '@/hooks/usePublicApi'
+import { usePublicRoomTypes, useHotelName, usePublicSettings, useBrandingSettings, usePublicReservations, usePublicConfirmOnlinePayment } from '@/hooks/usePublicApi'
+import { usePublicAuthStore } from '@/stores/publicAuthStore'
 import { buildHeroImages, buildGalleryPhotos, stringSetting, replaceHotelName } from '@/lib/branding'
 import { toLocalDateStr } from '@/lib/format'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
@@ -84,11 +85,17 @@ export default function PublicHomePage() {
   const [dateRange, setDateRange] = useState({ from: '', to: '' })
   const [guests, setGuests] = useState({ rooms: 1, adults: 1, children: 0 })
   const [heroSlide, setHeroSlide] = useState(0)
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [paymentNoticeDismissed, setPaymentNoticeDismissed] = useState(false)
+  const [settleAttempted, setSettleAttempted] = useState(false)
+  const [settleState, setSettleState] = useState<'idle' | 'pending' | 'done' | 'error'>('idle')
   const bookingRef = searchParams.get('booking_ref')
   const payStatus = searchParams.get('status')
   const showPaymentNotice = !!bookingRef && !!payStatus && !paymentNoticeDismissed
+  const { token } = usePublicAuthStore()
+  const { data: reservationData } = usePublicReservations()
+  const confirmOnline = usePublicConfirmOnlinePayment()
+  const myReservations = useMemo(() => reservationData?.data ?? [], [reservationData])
   const { data: roomTypes } = usePublicRoomTypes()
   const { data: bookingSettings } = usePublicSettings('booking')
 
@@ -117,26 +124,56 @@ export default function PublicHomePage() {
     return () => clearInterval(timer)
   }, [heroImages.length])
 
+  useEffect(() => {
+    if (!showPaymentNotice || payStatus !== 'success' || !bookingRef || !token || settleAttempted) return
+    if (settleState === 'pending') return
+
+    const reservation = myReservations.find((r) => r.reservation_number === bookingRef)
+    if (!reservation) return
+    if (reservation.payment_status === 'paid' || reservation.due_amount <= 0) {
+      setSettleAttempted(true)
+      setSettleState('done')
+      return
+    }
+
+    setSettleAttempted(true)
+    setSettleState('pending')
+    confirmOnline.mutate(reservation.id, {
+      onSuccess: () => {
+        setSettleState('done')
+      },
+      onError: () => {
+        setSettleState('error')
+      },
+    })
+  }, [showPaymentNotice, payStatus, bookingRef, token, settleAttempted, settleState, myReservations, confirmOnline])
+
   return (
     <div>
       {/* Payment redirect-back notice (from online payment partner) */}
       {showPaymentNotice && (
         <div className="fixed top-0 inset-x-0 z-[60] px-4 py-3 flex items-center gap-3 bg-black/95 border-b border-white/10">
-          {payStatus === 'success' ? (
+          {payStatus === 'success' && settleState === 'done' ? (
             <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
+          ) : payStatus === 'success' && settleState === 'pending' ? (
+            <Clock className="h-5 w-5 text-sky-400 shrink-0 animate-pulse" />
           ) : payStatus === 'failed' || payStatus === 'cancelled' ? (
             <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0" />
           ) : (
             <Clock className="h-5 w-5 text-sky-400 shrink-0" />
           )}
           <p className="text-sm text-white/80 flex-1">
-            {payStatus === 'success'
-              ? `Payment received for ${bookingRef}. Thank you!`
-              : payStatus === 'failed' || payStatus === 'cancelled'
-                ? `Payment for ${bookingRef} was not completed.`
-                : `Payment for ${bookingRef} is being processed.`}
+            {payStatus === 'success' && settleState === 'done'
+              ? `Payment confirmed for ${bookingRef}. Thank you!`
+              : payStatus === 'success' && settleState === 'pending'
+                ? `Payment received for ${bookingRef}. Confirming your booking...`
+                : payStatus === 'success' && settleState === 'error'
+                  ? `Payment received for ${bookingRef}. Please confirm it from My Reservations.`
+                  : payStatus === 'failed' || payStatus === 'cancelled'
+                    ? `Payment for ${bookingRef} was not completed.`
+                    : `Payment received for ${bookingRef}. Thank you!`}
           </p>
-          {payStatus === 'success' && (
+          {(payStatus === 'success' && settleState !== 'pending') && (
             <Link
               to="/public/my-reservations"
               className="shrink-0 text-xs font-semibold uppercase tracking-wider text-gold hover:text-gold/80 transition-colors"
@@ -145,7 +182,13 @@ export default function PublicHomePage() {
             </Link>
           )}
           <button
-            onClick={() => setPaymentNoticeDismissed(true)}
+            onClick={() => {
+              setPaymentNoticeDismissed(true)
+              const next = new URLSearchParams(searchParams)
+              next.delete('booking_ref')
+              next.delete('status')
+              setSearchParams(next, { replace: true })
+            }}
             className="shrink-0 rounded-lg p-1 text-white/30 hover:text-white hover:bg-white/5 transition-colors"
             aria-label="Dismiss notice"
           >
