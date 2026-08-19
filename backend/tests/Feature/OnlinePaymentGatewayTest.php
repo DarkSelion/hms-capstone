@@ -337,6 +337,54 @@ class OnlinePaymentGatewayTest extends TestCase
             ->assertJsonPath('error', 'This endpoint accepts POST only.');
     }
 
+    public function test_webhook_logs_received_and_processed_events(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+
+        Log::spy();
+
+        $this->postJson('/public/api/webhooks/payment', [
+            'event' => 'payment.paid',
+            'booking_reference' => $reservation->reservation_number,
+            'amount' => 2000,
+            'status' => 'PAID',
+        ], ['X-Webhook-Secret' => 'webhook-secret-abc'])
+            ->assertOk()->assertJsonPath('received', true);
+
+        Log::shouldHaveReceived('info')
+            ->with('Payment webhook received', \Mockery::on(fn (array $ctx) => $ctx['body'] !== '' && $ctx['secret_header'] === true));
+
+        Log::shouldHaveReceived('info')
+            ->with('Payment webhook processed', \Mockery::on(fn (array $ctx) => $ctx['status'] === 'paid' && $ctx['reservation'] === $reservation->reservation_number));
+    }
+
+    public function test_webhook_logs_rejection_reasons(): void
+    {
+        $this->enableGateway();
+
+        Log::spy();
+
+        $this->postJson('/public/api/webhooks/payment', [
+            'booking_ref' => 'BK-NOPE',
+            'status' => 'paid',
+            'amount_paid' => 100,
+        ], ['X-Webhook-Secret' => 'webhook-secret-abc'])
+            ->assertStatus(422)->assertJsonPath('message', 'Reservation not found.');
+
+        Log::shouldHaveReceived('warning')
+            ->with('Payment webhook rejected: reservation not found', \Mockery::on(fn (array $ctx) => $ctx['booking_ref'] === 'BK-NOPE'));
+
+        $this->postJson('/public/api/webhooks/payment', [
+            'booking_ref' => 'BK-NOPE',
+            'status' => 'succeeded',
+        ], ['X-Webhook-Secret' => 'webhook-secret-abc'])
+            ->assertStatus(422);
+
+        Log::shouldHaveReceived('warning')
+            ->with('Payment webhook rejected: invalid status', \Mockery::on(fn (array $ctx) => $ctx['status'] === 'succeeded'));
+    }
+
     public function test_webhook_paid_creates_completed_payment_and_reconciles(): void
     {
         $this->enableGateway();

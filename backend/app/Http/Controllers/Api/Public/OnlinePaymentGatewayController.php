@@ -149,33 +149,58 @@ class OnlinePaymentGatewayController extends Controller
 
         $provided = (string) $request->header('X-Webhook-Secret', $request->header('X-Webhook-Signature', ''));
 
+        Log::info('Payment webhook received', [
+            'ip' => $request->ip(),
+            'method' => $request->method(),
+            'path' => $request->path(),
+            'secret_header' => $provided !== '',
+            'body' => mb_substr((string) $request->getContent(), 0, 500),
+        ]);
+
         if (! hash_equals($secret, trim($provided))) {
+            Log::warning('Payment webhook rejected: invalid secret', ['ip' => $request->ip()]);
+
             return response()->json(['message' => 'Unauthorized.'], 401);
         }
 
-        $data = $request->validate([
-            'booking_ref' => 'sometimes|string|max:50',
-            'booking_reference' => 'sometimes|string|max:50',
-            'status' => 'sometimes|string|max:20',
-            'event' => 'sometimes|string|max:40',
-            'amount_paid' => 'nullable|numeric|min:0',
-            'amount' => 'nullable|numeric|min:0',
-            'currency' => 'nullable|string|max:10',
-            'reservation_id' => 'nullable|integer',
-            'transaction_id' => 'nullable|string|max:64',
-            'payment_id' => 'nullable|string|max:64',
-        ]);
+        // Manual extraction instead of $request->validate(): a framework
+        // ValidationException renders as a 302 redirect for clients that
+        // don't send Accept: application/json (e.g. PowerShell/curl), which
+        // makes partner-side debugging impossible. Every rejection below is
+        // an explicit JSON 422.
+        $data = [
+            'booking_ref' => trim((string) $request->input('booking_ref')),
+            'booking_reference' => trim((string) $request->input('booking_reference')),
+            'status' => trim((string) $request->input('status')),
+            'event' => trim((string) $request->input('event')),
+            'amount_paid' => $request->input('amount_paid'),
+            'amount' => $request->input('amount'),
+            'currency' => trim((string) $request->input('currency')),
+            'reservation_id' => $request->input('reservation_id'),
+            'transaction_id' => trim((string) $request->input('transaction_id')),
+            'payment_id' => trim((string) $request->input('payment_id')),
+        ];
 
         if (empty($data['booking_ref']) && empty($data['booking_reference']) && empty($data['reservation_id'])) {
-            throw ValidationException::withMessages(['booking_ref' => ['The booking reference field is required.']]);
+            Log::warning('Payment webhook rejected: missing booking reference', [
+                'body' => mb_substr((string) $request->getContent(), 0, 300),
+            ]);
+
+            // Explicit JSON (not a thrown ValidationException) so non-JSON
+            // clients like PowerShell/curl always get a parseable 422.
+            return response()->json(['message' => 'The booking reference field is required.'], 422);
         }
 
         if (empty($data['status']) && empty($data['event'])) {
-            throw ValidationException::withMessages(['status' => ['The status field is required.']]);
+            Log::warning('Payment webhook rejected: missing status/event', [
+                'body' => mb_substr((string) $request->getContent(), 0, 300),
+            ]);
+
+            return response()->json(['message' => 'The status field is required.'], 422);
         }
 
-        $bookingRef = trim((string) ($data['booking_reference'] ?? $data['booking_ref'] ?? ''));
-        $transactionId = trim((string) ($data['transaction_id'] ?? $data['payment_id'] ?? ''));
+        $bookingRef = trim((string) ($data['booking_reference'] ?: $data['booking_ref']));
+        $transactionId = trim((string) ($data['transaction_id'] ?: $data['payment_id']));
 
         $status = strtolower(trim((string) ($data['status'] ?? '')));
         if ($status === '') {
@@ -186,7 +211,12 @@ class OnlinePaymentGatewayController extends Controller
         }
 
         if (! in_array($status, ['pending', 'paid', 'failed', 'expired', 'refunded'], true)) {
-            throw ValidationException::withMessages(['status' => ['The selected status is invalid.']]);
+            Log::warning('Payment webhook rejected: invalid status', [
+                'status' => $status,
+                'body' => mb_substr((string) $request->getContent(), 0, 300),
+            ]);
+
+            return response()->json(['message' => 'The selected status is invalid.'], 422);
         }
 
         $amount = (float) ($data['amount_paid'] ?? $data['amount'] ?? 0);
@@ -198,6 +228,11 @@ class OnlinePaymentGatewayController extends Controller
         }
 
         if (! $reservation) {
+            Log::warning('Payment webhook rejected: reservation not found', [
+                'booking_ref' => $bookingRef,
+                'reservation_id' => $data['reservation_id'] ?? null,
+            ]);
+
             return response()->json(['message' => 'Reservation not found.'], 422);
         }
 
@@ -223,8 +258,19 @@ class OnlinePaymentGatewayController extends Controller
                 }
             });
         } catch (ValidationException $e) {
+            Log::warning('Payment webhook rejected: '.$e->validator->errors()->first(), [
+                'reservation' => $reservation->reservation_number,
+            ]);
+
             return response()->json(['message' => $e->validator->errors()->first()], 422);
         }
+
+        Log::info('Payment webhook processed', [
+            'reservation' => $reservation->reservation_number,
+            'status' => $status,
+            'amount' => $amount,
+            'transaction_id' => $transactionId,
+        ]);
 
         return response()->json(['received' => true]);
     }
@@ -234,6 +280,10 @@ class OnlinePaymentGatewayController extends Controller
         $amount = round($amount, 2);
 
         if ($amount <= 0) {
+            Log::warning('Payment webhook rejected: paid amount must be > 0', [
+                'reservation' => $reservation->reservation_number,
+                'amount' => $amount,
+            ]);
             throw ValidationException::withMessages(['amount_paid' => ['The paid amount must be greater than zero.']]);
         }
 
@@ -266,6 +316,11 @@ class OnlinePaymentGatewayController extends Controller
         }
 
         if ($amount > (float) $reservation->due_amount) {
+            Log::warning('Payment webhook rejected: amount exceeds balance', [
+                'reservation' => $reservation->reservation_number,
+                'amount' => $amount,
+                'due_amount' => $reservation->due_amount,
+            ]);
             throw ValidationException::withMessages([
                 'amount_paid' => ['The paid amount exceeds the outstanding balance of '.number_format((float) $reservation->due_amount, 2).'.'],
             ]);
