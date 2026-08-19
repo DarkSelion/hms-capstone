@@ -22,6 +22,12 @@ return Application::configure(basePath: dirname(__DIR__))
                 '/public/api/webhooks/payment',
                 [\App\Http\Controllers\Api\Public\OnlinePaymentGatewayController::class, 'webhook'],
             );
+
+            // Friendly message for anyone opening the alias URL in a browser.
+            Route::middleware('api')->get(
+                '/public/api/webhooks/payment',
+                fn () => response()->json(['error' => 'This endpoint accepts POST only.'], 405),
+            );
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

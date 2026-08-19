@@ -324,6 +324,19 @@ class OnlinePaymentGatewayTest extends TestCase
         ])->assertUnauthorized();
     }
 
+    public function test_webhook_returns_friendly_message_for_browser_get(): void
+    {
+        // GET (opening the URL in a browser) must not show the HTML 405 page —
+        // return a friendly JSON hint on both the canonical and alias paths.
+        $this->getJson('/api/webhooks/payment')
+            ->assertStatus(405)
+            ->assertJsonPath('error', 'This endpoint accepts POST only.');
+
+        $this->getJson('/public/api/webhooks/payment')
+            ->assertStatus(405)
+            ->assertJsonPath('error', 'This endpoint accepts POST only.');
+    }
+
     public function test_webhook_paid_creates_completed_payment_and_reconciles(): void
     {
         $this->enableGateway();

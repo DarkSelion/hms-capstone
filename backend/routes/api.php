@@ -32,6 +32,9 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,
 // Payment gateway webhook (server-to-server, no Sanctum — verified via shared secret header)
 Route::post('/webhooks/payment', [PublicOnlinePaymentGatewayController::class, 'webhook']);
 
+// Friendly message for anyone opening the webhook URL in a browser (GET is not a webhook call).
+Route::get('/webhooks/payment', fn () => response()->json(['error' => 'This endpoint accepts POST only.'], 405));
+
 // Protected routes (admin/staff)
 Route::middleware(['auth:sanctum', 'role:admin,staff'])->group(function () {
     // Auth
