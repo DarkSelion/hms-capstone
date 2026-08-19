@@ -29,7 +29,7 @@ class OnlinePaymentGatewayTest extends TestCase
     {
         $defaults = [
             'online_gateway_enabled' => '1',
-            'online_gateway_base_url' => 'https://hardreset.onrender.com',
+            'online_gateway_base_url' => 'https://www.hardreset.club',
             'online_gateway_api_key' => 'REDACTED_GATEWAY_KEY',
             'online_gateway_webhook_secret' => 'webhook-secret-abc',
         ];
@@ -137,24 +137,38 @@ class OnlinePaymentGatewayTest extends TestCase
 
         $reservation->load('room.roomType');
 
-        Http::fake(['*' => Http::response(['payment_url' => 'https://hardreset.onrender.com/pay/session_123'], 200)]);
+        Http::fake(['*' => Http::response(['payment_url' => 'https://www.hardreset.club/pay/session_123'], 200)]);
 
         $this->postJson('/api/public/payments/initiate-online', ['reservation_id' => $reservation->id])
             ->assertOk()
-            ->assertJsonPath('redirect_url', 'https://hardreset.onrender.com/pay/session_123');
+            ->assertJsonPath('redirect_url', 'https://www.hardreset.club/pay/session_123');
 
         Http::assertSent(function ($request) use ($reservation) {
-            return $request->url() === 'https://hardreset.onrender.com/api/initiate-payment'
+            return $request->url() === 'https://www.hardreset.club/api/initiate-payment'
                 && $request->hasHeader('X-API-KEY', 'REDACTED_GATEWAY_KEY')
                 && in_array('application/json', $request->header('Content-Type'), true)
-                && $request['booking_ref'] === $reservation->reservation_number
-                && $request['customer_name'] === 'Juan Dela Cruz'
-                && $request['customer_email'] === $reservation->guest->email
+                && $request['booking_reference'] === $reservation->reservation_number
                 && $request['total_amount'] === '2000.00'
-                && $request['reservation_id'] === $reservation->id
-                && $request['room_number'] === $reservation->room->room_number
-                && $request['room_name'] === $reservation->room->roomType->name;
+                && ! array_key_exists('booking_ref', $request->data())
+                && ! array_key_exists('customer_name', $request->data());
         });
+    }
+
+    public function test_initiate_reads_checkout_url_field(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+        Sanctum::actingAs($reservation->guest);
+
+        Http::fake(['*' => Http::response([
+            'status' => 'SUCCESS',
+            'checkout_url' => 'https://checkout.paymongo.com/session_789',
+            'booking_reference' => $reservation->reservation_number,
+        ], 200)]);
+
+        $this->postJson('/api/public/payments/initiate-online', ['reservation_id' => $reservation->id])
+            ->assertOk()
+            ->assertJsonPath('redirect_url', 'https://checkout.paymongo.com/session_789');
     }
 
     public function test_initiate_uses_due_amount_for_partial_reservations(): void
@@ -164,7 +178,7 @@ class OnlinePaymentGatewayTest extends TestCase
         $reservation->update(['due_amount' => 750.00, 'paid_amount' => 1250.00, 'payment_status' => 'partial']);
         Sanctum::actingAs($reservation->guest);
 
-        Http::fake(['*' => Http::response(['payment_url' => 'https://hardreset.onrender.com/pay/session_456'], 200)]);
+        Http::fake(['*' => Http::response(['payment_url' => 'https://www.hardreset.club/pay/session_456'], 200)]);
 
         $this->postJson('/api/public/payments/initiate-online', ['reservation_id' => $reservation->id])
             ->assertOk();
@@ -311,6 +325,112 @@ class OnlinePaymentGatewayTest extends TestCase
         $this->assertSame('paid', $reservation->payment_status);
         $this->assertEqualsWithDelta(0, (float) $reservation->due_amount, 0.001);
         $this->assertEqualsWithDelta(2000, (float) $reservation->paid_amount, 0.001);
+    }
+
+    public function test_webhook_paid_partner_format_records_and_reconciles(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+
+        $this->postJson('/api/webhooks/payment', [
+            'event' => 'payment.paid',
+            'booking_reference' => $reservation->reservation_number,
+            'amount' => 2000,
+            'status' => 'PAID',
+            'paid_at' => '2026-08-19T14:05:57Z',
+        ], ['X-Webhook-Secret' => 'webhook-secret-abc'])
+            ->assertOk()
+            ->assertJsonPath('received', true);
+
+        $payment = Payment::where('reservation_id', $reservation->id)->firstOrFail();
+        $this->assertSame('completed', $payment->status);
+        $this->assertEqualsWithDelta(2000, (float) $payment->amount, 0.001);
+
+        $reservation->refresh();
+        $this->assertSame('paid', $reservation->payment_status);
+        $this->assertEqualsWithDelta(0, (float) $reservation->due_amount, 0.001);
+    }
+
+    public function test_webhook_partner_format_event_only_maps_status(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+
+        $this->postJson('/api/webhooks/payment', [
+            'event' => 'payment.paid',
+            'booking_reference' => $reservation->reservation_number,
+            'amount' => 2000,
+        ], ['X-Webhook-Secret' => 'webhook-secret-abc'])
+            ->assertOk()
+            ->assertJsonPath('received', true);
+
+        $this->assertDatabaseHas('payments', [
+            'reservation_id' => $reservation->id,
+            'payment_method' => 'online',
+            'status' => 'completed',
+        ]);
+    }
+
+    public function test_webhook_partner_format_uppercase_status_maps(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+
+        $this->postJson('/api/webhooks/payment', [
+            'booking_reference' => $reservation->reservation_number,
+            'status' => 'PAID',
+            'amount' => 2000,
+        ], ['X-Webhook-Secret' => 'webhook-secret-abc'])
+            ->assertOk()
+            ->assertJsonPath('received', true);
+
+        $this->assertDatabaseHas('payments', [
+            'reservation_id' => $reservation->id,
+            'payment_method' => 'online',
+            'status' => 'completed',
+        ]);
+    }
+
+    public function test_webhook_partner_format_payment_failed_event_marks_pending_failed(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+
+        $this->postJson('/api/webhooks/payment', [
+            'event' => 'payment.pending',
+            'booking_reference' => $reservation->reservation_number,
+            'status' => 'PENDING',
+        ], ['X-Webhook-Secret' => 'webhook-secret-abc'])->assertOk();
+
+        $this->postJson('/api/webhooks/payment', [
+            'event' => 'payment.failed',
+            'booking_reference' => $reservation->reservation_number,
+            'status' => 'FAILED',
+        ], ['X-Webhook-Secret' => 'webhook-secret-abc'])->assertOk();
+
+        $this->assertDatabaseHas('payments', [
+            'reservation_id' => $reservation->id,
+            'payment_method' => 'online',
+            'status' => 'failed',
+        ]);
+    }
+
+    public function test_webhook_partner_format_requires_booking_or_reference(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+
+        $this->postJson('/api/webhooks/payment', [
+            'status' => 'PAID',
+            'amount' => 2000,
+        ], ['X-Webhook-Secret' => 'webhook-secret-abc'])
+            ->assertStatus(422);
+
+        $this->postJson('/api/webhooks/payment', [
+            'booking_reference' => $reservation->reservation_number,
+            'amount' => 2000,
+        ], ['X-Webhook-Secret' => 'webhook-secret-abc'])
+            ->assertStatus(422);
     }
 
     public function test_webhook_paid_is_idempotent_for_retried_callbacks(): void
@@ -470,7 +590,7 @@ class OnlinePaymentGatewayTest extends TestCase
         $response = $this->getJson('/api/public/settings/payment')
             ->assertOk()
             ->assertJsonPath('online_gateway_enabled', '1')
-            ->assertJsonPath('online_gateway_base_url', 'https://hardreset.onrender.com');
+            ->assertJsonPath('online_gateway_base_url', 'https://www.hardreset.club');
 
         $payload = $response->json();
         $this->assertArrayNotHasKey('online_gateway_api_key', $payload, 'Public settings leaked the gateway API key.');

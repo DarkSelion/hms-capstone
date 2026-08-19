@@ -67,13 +67,8 @@ class OnlinePaymentGatewayController extends Controller
         }
 
         $payload = [
-            'booking_ref' => $reservation->reservation_number,
-            'customer_name' => $reservation->guest->full_name,
-            'customer_email' => $reservation->guest->email,
+            'booking_reference' => $reservation->reservation_number,
             'total_amount' => number_format((float) $reservation->due_amount, 2, '.', ''),
-            'reservation_id' => $reservation->id,
-            'room_number' => $reservation->room?->room_number,
-            'room_name' => $reservation->room?->roomType?->name,
         ];
 
         try {
@@ -93,7 +88,10 @@ class OnlinePaymentGatewayController extends Controller
         }
 
         if ($response->successful()) {
-            $paymentUrl = (string) ($response->json('payment_url') ?? $response->json('redirect_url') ?? '');
+            $paymentUrl = (string) ($response->json('payment_url')
+                ?? $response->json('checkout_url')
+                ?? $response->json('redirect_url')
+                ?? '');
 
             if ($paymentUrl === '') {
                 return response()->json(['message' => 'The payment gateway returned an invalid response.'], 502);
@@ -147,18 +145,44 @@ class OnlinePaymentGatewayController extends Controller
         }
 
         $data = $request->validate([
-            'booking_ref' => 'required|string|max:50',
-            'status' => 'required|in:pending,paid,failed,expired,refunded',
+            'booking_ref' => 'sometimes|string|max:50',
+            'booking_reference' => 'sometimes|string|max:50',
+            'status' => 'sometimes|string|max:20',
+            'event' => 'sometimes|string|max:40',
             'amount_paid' => 'nullable|numeric|min:0',
+            'amount' => 'nullable|numeric|min:0',
             'currency' => 'nullable|string|max:10',
             'reservation_id' => 'nullable|integer',
             'transaction_id' => 'nullable|string|max:64',
             'payment_id' => 'nullable|string|max:64',
         ]);
 
+        if (empty($data['booking_ref']) && empty($data['booking_reference']) && empty($data['reservation_id'])) {
+            throw ValidationException::withMessages(['booking_ref' => ['The booking reference field is required.']]);
+        }
+
+        if (empty($data['status']) && empty($data['event'])) {
+            throw ValidationException::withMessages(['status' => ['The status field is required.']]);
+        }
+
+        $bookingRef = trim((string) ($data['booking_reference'] ?? $data['booking_ref'] ?? ''));
         $transactionId = trim((string) ($data['transaction_id'] ?? $data['payment_id'] ?? ''));
 
-        $reservation = Reservation::where('reservation_number', $data['booking_ref'])->first();
+        $status = strtolower(trim((string) ($data['status'] ?? '')));
+        if ($status === '') {
+            $status = strtolower(trim((string) ($data['event'] ?? '')));
+            if (str_starts_with($status, 'payment.')) {
+                $status = substr($status, strlen('payment.'));
+            }
+        }
+
+        if (! in_array($status, ['pending', 'paid', 'failed', 'expired', 'refunded'], true)) {
+            throw ValidationException::withMessages(['status' => ['The selected status is invalid.']]);
+        }
+
+        $amount = (float) ($data['amount_paid'] ?? $data['amount'] ?? 0);
+
+        $reservation = Reservation::where('reservation_number', $bookingRef)->first();
 
         if (! $reservation && ($data['reservation_id'] ?? null)) {
             $reservation = Reservation::find($data['reservation_id']);
@@ -169,10 +193,10 @@ class OnlinePaymentGatewayController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($reservation, $data, $transactionId) {
-                switch ($data['status']) {
+            DB::transaction(function () use ($reservation, $status, $amount, $transactionId) {
+                switch ($status) {
                     case 'paid':
-                        $this->recordPaid($reservation, (float) $data['amount_paid'], $transactionId);
+                        $this->recordPaid($reservation, $amount, $transactionId);
                         break;
 
                     case 'pending':

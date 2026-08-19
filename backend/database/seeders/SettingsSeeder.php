@@ -37,7 +37,7 @@ class SettingsSeeder extends Seeder
                 ['q' => 'What is your cancellation policy?', 'a' => 'Free cancellation is available up to 24 hours before your scheduled check-in. Cancellations within 24 hours may be subject to a one-night charge.'],
             ]), 'group' => 'contact'],
             ['key' => 'online_gateway_enabled', 'value' => '0', 'group' => 'payment'],
-            ['key' => 'online_gateway_base_url', 'value' => 'https://hardreset.onrender.com', 'group' => 'payment'],
+            ['key' => 'online_gateway_base_url', 'value' => 'https://www.hardreset.club', 'group' => 'payment'],
             ['key' => 'online_gateway_api_key', 'value' => '', 'group' => 'payment'],
             ['key' => 'online_gateway_webhook_secret', 'value' => '', 'group' => 'payment'],
             ['key' => 'theme_preset', 'value' => 'gold', 'group' => 'branding'],
