@@ -303,6 +303,27 @@ class OnlinePaymentGatewayTest extends TestCase
         ], ['X-Webhook-Secret' => 'wrong-secret'])->assertUnauthorized();
     }
 
+    public function test_webhook_accepts_partners_public_alias_url(): void
+    {
+        $this->enableGateway();
+        $reservation = $this->reservation();
+
+        // The partner's documented webhook URL is /public/api/webhooks/payment
+        // (they do NOT use /api/webhooks/payment). Both must run the same handler.
+        $this->postJson('/public/api/webhooks/payment', [
+            'booking_ref' => $reservation->reservation_number,
+            'status' => 'failed',
+        ], ['X-Webhook-Secret' => 'webhook-secret-abc'])
+            ->assertOk()
+            ->assertJsonPath('received', true);
+
+        $this->postJson('/public/api/webhooks/payment', [
+            'booking_ref' => $reservation->reservation_number,
+            'status' => 'paid',
+            'amount_paid' => 2000,
+        ])->assertUnauthorized();
+    }
+
     public function test_webhook_paid_creates_completed_payment_and_reconciles(): void
     {
         $this->enableGateway();
