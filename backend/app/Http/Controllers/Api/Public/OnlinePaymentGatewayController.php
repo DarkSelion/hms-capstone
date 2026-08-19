@@ -66,9 +66,18 @@ class OnlinePaymentGatewayController extends Controller
             return response()->json(['message' => 'This reservation is already fully paid.'], 422);
         }
 
+        // NOTE: the partner's live server requires `booking_ref` (their DB has a
+        // NOT-NULL `booking_ref` column) plus the customer/room fields — their
+        // documented spec ({ booking_reference, total_amount }) returns 500.
+        // Verified live 2026-08-19; keep this exact shape.
         $payload = [
-            'booking_reference' => $reservation->reservation_number,
+            'booking_ref' => $reservation->reservation_number,
+            'customer_name' => $reservation->guest->full_name,
+            'customer_email' => $reservation->guest->email,
             'total_amount' => number_format((float) $reservation->due_amount, 2, '.', ''),
+            'reservation_id' => $reservation->id,
+            'room_number' => $reservation->room?->room_number,
+            'room_name' => $reservation->room?->roomType?->name,
         ];
 
         try {

@@ -147,10 +147,14 @@ class OnlinePaymentGatewayTest extends TestCase
             return $request->url() === 'https://www.hardreset.club/api/initiate-payment'
                 && $request->hasHeader('X-API-KEY', 'REDACTED_GATEWAY_KEY')
                 && in_array('application/json', $request->header('Content-Type'), true)
-                && $request['booking_reference'] === $reservation->reservation_number
+                && $request['booking_ref'] === $reservation->reservation_number
                 && $request['total_amount'] === '2000.00'
-                && ! array_key_exists('booking_ref', $request->data())
-                && ! array_key_exists('customer_name', $request->data());
+                && $request['customer_name'] === $reservation->guest->full_name
+                && $request['customer_email'] === $reservation->guest->email
+                && $request['reservation_id'] === $reservation->id
+                && $request['room_number'] === $reservation->room->room_number
+                && $request['room_name'] === $reservation->room->roomType->name
+                && ! array_key_exists('booking_reference', $request->data());
         });
     }
 
