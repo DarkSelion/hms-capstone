@@ -441,6 +441,33 @@ class AdminBugsBatchHTest extends TestCase
         ]);
     }
 
+    public function test_admin_reservation_update_rejects_room_below_capacity(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $room = $this->room(null, ['capacity' => 2]);
+        $smallRoom = $this->room(null, ['capacity' => 1]);
+        $reservation = $this->reservation($room);
+        $checkIn = now()->addDays(10)->format('Y-m-d');
+        $checkOut = now()->addDays(12)->format('Y-m-d');
+
+        $response = $this->putJson("/api/reservations/{$reservation->id}", [
+            'room_id' => $smallRoom->id,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('room_id');
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'room_id' => $room->id,
+            'adults' => 2,
+        ]);
+    }
+
     public function test_admin_reservation_update_rejects_adults_over_capacity(): void
     {
         $admin = $this->admin();
