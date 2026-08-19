@@ -9,10 +9,18 @@ function Harness({ min, max }: { min?: string; max?: string }) {
 }
 
 describe('DateRangePicker range selection', () => {
-  it('shows the start-date hint and guides through both bounds', () => {
+  const now = new Date()
+  const nextMonthDay = (d: number) => new Date(now.getFullYear(), now.getMonth() + 1, d)
+  const short = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  const openNextMonth = () => {
     render(<Harness />)
-
     fireEvent.click(screen.getByRole('button', { name: /Select dates/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+  }
+
+  it('shows the start-date hint and guides through both bounds', () => {
+    openNextMonth()
+
     expect(screen.getByText('Select start date')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: '18' }))
@@ -20,13 +28,12 @@ describe('DateRangePicker range selection', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '20' }))
     expect(screen.queryByText('Select end date')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Aug 18, 2026 — Aug 20, 2026/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: `${short(nextMonthDay(18))} — ${short(nextMonthDay(20))}` })).toBeInTheDocument()
   })
 
   it('highlights the range while hovering the end bound', () => {
-    render(<Harness />)
+    openNextMonth()
 
-    fireEvent.click(screen.getByRole('button', { name: /Select dates/ }))
     fireEvent.click(screen.getByRole('button', { name: '18' }))
 
     fireEvent.mouseEnter(screen.getByRole('button', { name: '21' }))
@@ -35,9 +42,8 @@ describe('DateRangePicker range selection', () => {
   })
 
   it('closes the popup once both bounds are selected', () => {
-    render(<Harness />)
+    openNextMonth()
 
-    fireEvent.click(screen.getByRole('button', { name: /Select dates/ }))
     fireEvent.click(screen.getByRole('button', { name: '18' }))
     fireEvent.click(screen.getByRole('button', { name: '20' }))
 
