@@ -856,6 +856,31 @@ class PublicTest extends TestCase
         $response->assertStatus(201);
     }
 
+    public function test_public_reservation_rejects_children_over_max(): void
+    {
+        $this->setupSettings();
+        $type = $this->roomType('deluxe', 150);
+        $this->room($type);
+        $guest = $this->guest();
+        Sanctum::actingAs($guest);
+
+        $checkIn = now()->addDays(10)->format('Y-m-d');
+        $response = $this->postJson('/api/public/reservations', [
+            'room_type_id' => $type->id,
+            'check_in' => $checkIn,
+            'check_out' => now()->addDays(12)->format('Y-m-d'),
+            'adults' => 1,
+            'children' => 2,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('children');
+
+        $this->assertDatabaseMissing('reservations', [
+            'room_type_id' => $type->id,
+        ]);
+    }
+
     public function test_public_reservation_rejects_past_check_in_date(): void
     {
         $this->setupSettings();

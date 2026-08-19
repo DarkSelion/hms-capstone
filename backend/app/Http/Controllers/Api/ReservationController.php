@@ -107,6 +107,13 @@ class ReservationController extends Controller
                 ]);
             }
 
+            $maxChildren = (int) ($room->roomType->max_children ?? 0);
+            if ($maxChildren > 0 && (int) ($data['children'] ?? 0) > $maxChildren) {
+                throw ValidationException::withMessages([
+                    'children' => ["The number of children cannot exceed {$maxChildren} for this room type."],
+                ]);
+            }
+
             $rate = $room->price_override ?? $room->roomType->base_price;
             $nights = now()->parse($data['check_in'])->diffInDays(now()->parse($data['check_out']));
             $subtotal = $rate * $nights;
@@ -286,6 +293,13 @@ class ReservationController extends Controller
                         ]);
                     }
 
+                    $maxChildren = (int) ($newRoom->roomType->max_children ?? 0);
+                    if ($maxChildren > 0 && (int) $reservation->children > $maxChildren) {
+                        throw ValidationException::withMessages([
+                            'room_id' => ["The selected room allows a maximum of {$maxChildren} children."],
+                        ]);
+                    }
+
                     $reservation->update([
                         'price_per_night' => $newRoom->price_override ?? $newRoom->roomType->base_price,
                     ]);
@@ -298,6 +312,18 @@ class ReservationController extends Controller
                     throw ValidationException::withMessages([
                         'adults' => ["The number of adults cannot exceed the room capacity of {$room->capacity}."],
                     ]);
+                }
+            }
+
+            if (isset($data['children'])) {
+                $room = $reservation->room;
+                if ($room) {
+                    $maxChildren = (int) ($room->roomType->max_children ?? 0);
+                    if ($maxChildren > 0 && (int) $data['children'] > $maxChildren) {
+                        throw ValidationException::withMessages([
+                            'children' => ["The number of children cannot exceed {$maxChildren} for this room type."],
+                        ]);
+                    }
                 }
             }
 

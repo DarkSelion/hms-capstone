@@ -71,6 +71,13 @@ class ReservationController extends Controller
                 ]);
             }
 
+            $maxChildren = (int) ($roomType->max_children ?? 0);
+            if ($maxChildren > 0 && (int) ($data['children'] ?? 0) > $maxChildren) {
+                throw ValidationException::withMessages([
+                    'children' => ["The number of children cannot exceed {$maxChildren} for this room type."],
+                ]);
+            }
+
             $reservation = Reservation::createWithNumber([
                 'guest_id' => $guest->id,
                 'room_id' => $room->id,

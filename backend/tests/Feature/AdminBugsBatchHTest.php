@@ -488,4 +488,89 @@ class AdminBugsBatchHTest extends TestCase
             'adults' => 2,
         ]);
     }
+
+    public function test_admin_reservation_store_rejects_children_over_max(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $type = RoomType::create([
+            'name' => 'Family', 'slug' => 'family-' . (++self::$roomCounter),
+            'base_price' => 1000, 'max_children' => 1,
+        ]);
+        $room = $this->room($type);
+        $checkIn = now()->addDays(10)->format('Y-m-d');
+        $checkOut = now()->addDays(12)->format('Y-m-d');
+
+        $response = $this->postJson('/api/reservations', [
+            'guest_first_name' => 'Alice',
+            'guest_last_name' => 'Wonder',
+            'guest_phone' => '09171234567',
+            'room_id' => $room->id,
+            'check_in' => $checkIn,
+            'check_out' => $checkOut,
+            'adults' => 2,
+            'children' => 2,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('children');
+
+        $this->assertDatabaseMissing('reservations', [
+            'room_id' => $room->id,
+        ]);
+    }
+
+    public function test_admin_reservation_update_rejects_children_over_max(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $type = RoomType::create([
+            'name' => 'Family', 'slug' => 'family-' . (++self::$roomCounter),
+            'base_price' => 1000, 'max_children' => 1,
+        ]);
+        $room = $this->room($type);
+        $reservation = $this->reservation($room);
+
+        $response = $this->putJson("/api/reservations/{$reservation->id}", [
+            'children' => 2,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('children');
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'children' => 0,
+        ]);
+    }
+
+    public function test_admin_reservation_update_rejects_room_below_max_children(): void
+    {
+        $admin = $this->admin();
+        Sanctum::actingAs($admin);
+
+        $type = RoomType::create([
+            'name' => 'Family', 'slug' => 'family-' . (++self::$roomCounter),
+            'base_price' => 1000, 'max_children' => 1,
+        ]);
+        $room = $this->room(null, ['capacity' => 2]);
+        $smallRoom = $this->room($type, ['room_number' => uniqid('SM')]);
+        $reservation = $this->reservation($room);
+        $reservation->update(['children' => 2]);
+
+        $response = $this->putJson("/api/reservations/{$reservation->id}", [
+            'room_id' => $smallRoom->id,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('room_id');
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'room_id' => $room->id,
+            'children' => 2,
+        ]);
+    }
 }
