@@ -137,15 +137,20 @@ class OnlinePaymentGatewayController extends Controller
      * Guest-facing settlement after a checkout redirect back to the portal.
      *
      * The partner gateway verifies the payment and notifies us via webhook in
-     * production. This endpoint is a demo/fallback path so a guest can settle
-     * their own reservation immediately after completing the hosted checkout —
-     * it reuses the exact same settlement logic as the webhook (recordPaid),
-     * gated by guest ownership instead of the shared secret. Amount is always
-     * the reservation's own due (never client-supplied) and the call is
+     * production. This endpoint is a DEMO/fallback path — gated behind the
+     * `online_gateway_self_settle` setting (default OFF) so a guest can only
+     * self-settle when the hotel explicitly enables it. It reuses the exact
+     * same settlement logic as the webhook (recordPaid), gated by guest
+     * ownership instead of the shared secret. Amount is always the
+     * reservation's own due (never client-supplied) and the call is
      * idempotent (already-paid returns the current state without re-recording).
      */
     public function confirmOnline(Request $request): JsonResponse
     {
+        if ((string) Setting::where('key', 'online_gateway_self_settle')->value('value') !== '1') {
+            return response()->json(['message' => 'Online payment confirmation is disabled.'], 503);
+        }
+
         $data = $request->validate([
             'reservation_id' => 'required|exists:reservations,id',
         ]);

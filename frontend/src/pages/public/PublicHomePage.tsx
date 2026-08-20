@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { usePublicRoomTypes, useHotelName, usePublicSettings, useBrandingSettings, usePublicReservations, usePublicConfirmOnlinePayment } from '@/hooks/usePublicApi'
+import { usePublicRoomTypes, useHotelName, usePublicSettings, useBrandingSettings, usePublicReservations, usePublicConfirmOnlinePayment, usePaymentSettings } from '@/hooks/usePublicApi'
 import { usePublicAuthStore } from '@/stores/publicAuthStore'
 import { buildHeroImages, buildGalleryPhotos, stringSetting, replaceHotelName } from '@/lib/branding'
 import { toLocalDateStr } from '@/lib/format'
@@ -95,6 +95,8 @@ export default function PublicHomePage() {
   const { token } = usePublicAuthStore()
   const { data: reservationData } = usePublicReservations()
   const confirmOnline = usePublicConfirmOnlinePayment()
+  const paymentSettings = usePaymentSettings()
+  const selfSettleEnabled = paymentSettings['online_gateway_self_settle'] === '1' || paymentSettings['online_gateway_self_settle'] === true
   const myReservations = useMemo(() => reservationData?.data ?? [], [reservationData])
   const { data: roomTypes } = usePublicRoomTypes()
   const { data: bookingSettings } = usePublicSettings('booking')
@@ -127,6 +129,7 @@ export default function PublicHomePage() {
   useEffect(() => {
     if (!showPaymentNotice || payStatus !== 'success' || !bookingRef || !token || settleAttempted) return
     if (settleState === 'pending') return
+    if (!selfSettleEnabled) return
 
     const reservation = myReservations.find((r) => r.reservation_number === bookingRef)
     if (!reservation) return
@@ -146,7 +149,7 @@ export default function PublicHomePage() {
         setSettleState('error')
       },
     })
-  }, [showPaymentNotice, payStatus, bookingRef, token, settleAttempted, settleState, myReservations, confirmOnline])
+  }, [showPaymentNotice, payStatus, bookingRef, token, settleAttempted, settleState, selfSettleEnabled, myReservations, confirmOnline])
 
   return (
     <div>
@@ -168,7 +171,7 @@ export default function PublicHomePage() {
               : payStatus === 'success' && settleState === 'pending'
                 ? `Payment received for ${bookingRef}. Confirming your booking...`
                 : payStatus === 'success' && settleState === 'error'
-                  ? `Payment received for ${bookingRef}. Please confirm it from My Reservations.`
+                  ? `Payment received for ${bookingRef}. It will be confirmed shortly.`
                   : payStatus === 'failed' || payStatus === 'cancelled'
                     ? `Payment for ${bookingRef} was not completed.`
                     : `Payment received for ${bookingRef}. Thank you!`}

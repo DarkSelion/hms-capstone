@@ -7,7 +7,6 @@ const {
   mockUsePublicReservations,
   mockUsePublicCancelReservation,
   mockUsePublicInitiateOnlinePayment,
-  mockUsePublicConfirmOnlinePayment,
   mockUsePublicSettings,
   mockUsePaymentSettings,
   mockUsePortalCurrency,
@@ -16,7 +15,6 @@ const {
   mockUsePublicReservations: vi.fn(),
   mockUsePublicCancelReservation: vi.fn(),
   mockUsePublicInitiateOnlinePayment: vi.fn(),
-  mockUsePublicConfirmOnlinePayment: vi.fn(),
   mockUsePublicSettings: vi.fn(),
   mockUsePaymentSettings: vi.fn(),
   mockUsePortalCurrency: vi.fn(),
@@ -27,7 +25,6 @@ vi.mock('@/hooks/usePublicApi', () => ({
   usePublicReservations: () => mockUsePublicReservations(),
   usePublicCancelReservation: () => mockUsePublicCancelReservation(),
   usePublicInitiateOnlinePayment: () => mockUsePublicInitiateOnlinePayment(),
-  usePublicConfirmOnlinePayment: () => mockUsePublicConfirmOnlinePayment(),
   usePublicSettings: (group: string) => mockUsePublicSettings(group),
   usePaymentSettings: () => mockUsePaymentSettings(),
   usePortalCurrency: () => mockUsePortalCurrency(),
@@ -93,7 +90,6 @@ describe('PublicMyReservationsPage', () => {
     vi.clearAllMocks()
     mockUsePaymentSettings.mockReturnValue({ online_gateway_enabled: '1' })
     mockUsePortalCurrency.mockReturnValue('PHP')
-    mockUsePublicConfirmOnlinePayment.mockReturnValue({ mutate: vi.fn(), isPending: false, isError: false, error: null })
   })
 
   it('shows sign-in prompt when not authenticated', () => {
@@ -192,58 +188,6 @@ describe('PublicMyReservationsPage', () => {
     ])
 
     expect(screen.getByText(/Balance ₱2,300\.00/)).toBeInTheDocument()
-  })
-
-  it('confirms payment via confirm-online button', async () => {
-    const confirmMutate = vi.fn((_id: number, opts: { onSettled?: () => void }) => opts?.onSettled?.())
-    mockUsePublicConfirmOnlinePayment.mockReturnValue({
-      mutate: confirmMutate,
-      isPending: false,
-      isError: false,
-      error: null,
-    })
-
-    renderPage()
-
-    fireEvent.click(screen.getByText('Confirm Payment'))
-
-    await waitFor(() => {
-      expect(confirmMutate).toHaveBeenCalledWith(1, expect.objectContaining({ onSettled: expect.any(Function) }))
-    })
-  })
-
-  it('shows pending state on confirm button while confirming', () => {
-    const confirmMutate = vi.fn()
-    mockUsePublicConfirmOnlinePayment.mockReturnValue({
-      mutate: confirmMutate,
-      isPending: false,
-      isError: false,
-      error: null,
-    })
-
-    renderPage()
-
-    fireEvent.click(screen.getByText('Confirm Payment'))
-
-    const btn = screen.getByText('Confirming...')
-    expect(btn).toBeInTheDocument()
-    expect((btn as HTMLElement).closest('button')).toBeDisabled()
-  })
-
-  it('hides confirm-payment button when gateway disabled', () => {
-    mockUsePaymentSettings.mockReturnValue({ online_gateway_enabled: '0' })
-
-    renderPage()
-
-    expect(screen.queryByText('Confirm Payment')).not.toBeInTheDocument()
-  })
-
-  it('hides confirm-payment button for paid reservations', () => {
-    renderPage([
-      reservation({ payment_status: 'paid', paid_amount: 3300, due_amount: 0 }),
-    ])
-
-    expect(screen.queryByText('Confirm Payment')).not.toBeInTheDocument()
   })
 
   it('opens cancel modal and shows error inline when cancel fails', async () => {

@@ -96,6 +96,7 @@ export default function SettingsPage() {
     online_gateway_base_url: 'https://hardreset.onrender.com',
     online_gateway_api_key: '',
     online_gateway_webhook_secret: '',
+    online_gateway_self_settle: false,
   })
 
   const [websiteForm, setWebsiteForm] = useState({
@@ -155,6 +156,7 @@ export default function SettingsPage() {
         online_gateway_base_url: s.online_gateway_base_url ?? 'https://hardreset.onrender.com',
         online_gateway_api_key: s.online_gateway_api_key ?? '',
         online_gateway_webhook_secret: s.online_gateway_webhook_secret ?? '',
+        online_gateway_self_settle: s.online_gateway_self_settle === '1' || s.online_gateway_self_settle === true,
       })
       setWebsiteForm({
         theme_preset: stringSetting(s, 'theme_preset', DEFAULT_BRANDING_TEXT.theme_preset),
@@ -197,6 +199,7 @@ export default function SettingsPage() {
         online_gateway_base_url: paymentForm.online_gateway_base_url,
         online_gateway_api_key: paymentForm.online_gateway_api_key,
         online_gateway_webhook_secret: paymentForm.online_gateway_webhook_secret,
+        online_gateway_self_settle: paymentForm.online_gateway_self_settle ? '1' : '0',
       })
     } else if (activeTab === 'Website') {
       Object.assign(payload, websiteForm)
@@ -704,6 +707,29 @@ export default function SettingsPage() {
                       <span
                         className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-card shadow ring-0 transition duration-200 ease-in-out ${
                           paymentForm.online_gateway_enabled ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-between rounded-lg border border-border p-4">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Allow Guest Self-Settlement</p>
+                      <p className="text-xs text-muted mt-0.5">
+                        Lets the owning guest mark their own booking as paid after the checkout redirect (demo/testing only).
+                        Recommended OFF in production — the webhook is the trusted settlement path.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentForm((p) => ({ ...p, online_gateway_self_settle: !p.online_gateway_self_settle }))}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 ${
+                        paymentForm.online_gateway_self_settle ? 'bg-primary' : 'bg-border'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-card shadow ring-0 transition duration-200 ease-in-out ${
+                          paymentForm.online_gateway_self_settle ? 'translate-x-5' : 'translate-x-0'
                         }`}
                       />
                     </button>

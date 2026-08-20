@@ -32,6 +32,7 @@ class OnlinePaymentGatewayTest extends TestCase
             'online_gateway_base_url' => 'https://www.hardreset.club',
             'online_gateway_api_key' => 'REDACTED_GATEWAY_KEY',
             'online_gateway_webhook_secret' => 'webhook-secret-abc',
+            'online_gateway_self_settle' => '1',
         ];
 
         foreach (array_merge($defaults, $overrides) as $key => $value) {
@@ -746,6 +747,21 @@ class OnlinePaymentGatewayTest extends TestCase
 
         $this->postJson('/api/public/payments/confirm-online', ['reservation_id' => $reservation->id])
             ->assertUnauthorized();
+    }
+
+    public function test_confirm_online_is_disabled_when_flag_is_off(): void
+    {
+        $this->enableGateway(['online_gateway_self_settle' => '0']);
+        $reservation = $this->reservation();
+        $guest = $reservation->guest;
+
+        Sanctum::actingAs($guest, ['guest']);
+
+        $this->postJson('/api/public/payments/confirm-online', ['reservation_id' => $reservation->id])
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'Online payment confirmation is disabled.');
+
+        $this->assertSame(0, Payment::where('reservation_id', $reservation->id)->count());
     }
 
     public function test_confirm_online_marks_own_reservation_paid(): void

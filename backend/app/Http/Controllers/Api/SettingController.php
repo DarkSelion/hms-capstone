@@ -39,6 +39,7 @@ class SettingController extends Controller
         'online_gateway_base_url',
         'online_gateway_api_key',
         'online_gateway_webhook_secret',
+        'online_gateway_self_settle',
         'password_min_length',
         'session_timeout',
         'max_login_attempts',

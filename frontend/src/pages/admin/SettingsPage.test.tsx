@@ -194,6 +194,7 @@ describe('SettingsPage', () => {
         online_gateway_base_url: 'https://hardreset.onrender.com',
         online_gateway_api_key: 'sk_test_123',
         online_gateway_webhook_secret: 'whsec_456',
+        online_gateway_self_settle: '1',
       },
       isLoading: false,
       error: null,
@@ -207,6 +208,8 @@ describe('SettingsPage', () => {
     expect(screen.getByLabelText('Gateway Base URL')).toHaveValue('https://hardreset.onrender.com')
     expect(screen.getByLabelText('API Key')).toHaveValue('sk_test_123')
     expect(screen.getByLabelText('Webhook Secret')).toHaveValue('whsec_456')
+    expect(screen.getByText('Allow Guest Self-Settlement')).toBeInTheDocument()
+    expect(screen.getByText(/Lets the owning guest mark their own booking as paid/)).toBeInTheDocument()
     expect(screen.queryByText('Enable Online Payments')).not.toBeInTheDocument()
     expect(screen.queryByText('GCash Account Number')).not.toBeInTheDocument()
     expect(screen.queryByText('GCash QR Code')).not.toBeInTheDocument()

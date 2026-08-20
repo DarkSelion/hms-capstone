@@ -40,6 +40,7 @@ class SettingsSeeder extends Seeder
             ['key' => 'online_gateway_base_url', 'value' => 'https://www.hardreset.club', 'group' => 'payment'],
             ['key' => 'online_gateway_api_key', 'value' => '', 'group' => 'payment'],
             ['key' => 'online_gateway_webhook_secret', 'value' => '', 'group' => 'payment'],
+            ['key' => 'online_gateway_self_settle', 'value' => '0', 'group' => 'payment'],
             ['key' => 'theme_preset', 'value' => 'gold', 'group' => 'branding'],
             ['key' => 'hero_badge', 'value' => 'Welcome to Pampanga Home Suites', 'group' => 'branding'],
             ['key' => 'hero_title', 'value' => 'Comfortable Stays, Warm Smiles', 'group' => 'branding'],
