@@ -139,8 +139,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   ? 'justify-center px-3 py-3 hover:bg-[var(--color-sidebar-hover-bg)]'
                   : 'hover:bg-[var(--color-sidebar-hover-bg)]',
                 isChildActive
-                  ? 'bg-[var(--color-sidebar-active-bg)] text-[var(--color-sidebar-active-text)] font-semibold border-l-[3px] border-[var(--color-primary)] rounded-l-none [&_svg]:text-[var(--color-sidebar-active-text)]'
-                  : 'text-[var(--color-sidebar-text)] hover:text-[var(--color-sidebar-active-text)]',
+                  ? 'bg-[var(--color-sidebar-active-bg)] text-[var(--color-sidebar-active-text)] font-semibold shadow-[0_2px_10px_rgba(200,155,108,0.35)] [&_svg]:text-[var(--color-sidebar-active-text)]'
+                  : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover-bg)] hover:text-white',
               )}
               aria-expanded={!collapsed && isOpen}
               aria-label={item.label}
@@ -174,9 +174,9 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-150'
 
     const activeClasses =
-      'bg-[var(--color-sidebar-active-bg)] text-[var(--color-sidebar-active-text)] font-semibold border-l-[3px] border-[var(--color-primary)] rounded-l-none [&_svg]:text-[var(--color-sidebar-active-text)]'
+      'bg-[var(--color-sidebar-active-bg)] text-[var(--color-sidebar-active-text)] font-semibold shadow-[0_2px_10px_rgba(200,155,108,0.35)] [&_svg]:text-[var(--color-sidebar-active-text)]'
     const inactiveClasses =
-      'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover-bg)] hover:text-[var(--color-sidebar-active-text)]'
+      'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover-bg)] hover:text-white'
 
     return (
       <Tooltip key={item.path ?? item.label} content={item.label} side="right" align="start">
@@ -209,7 +209,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[var(--color-sidebar-border)] bg-[var(--color-sidebar-bg)]',
+        'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-[var(--color-sidebar-border)] bg-[var(--color-sidebar-bg)] sidebar-dark',
         'transition-all duration-300 ease-in-out',
         isMobile
           ? cn(
@@ -229,9 +229,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </div>
         {!collapsed && (
           <div className="flex flex-col leading-tight">
-            <span className="text-sm font-bold text-[var(--color-sidebar-active-text)]">
-              {hotelName}
-            </span>
+            <span className="text-sm font-bold text-white">{hotelName}</span>
             <span className="text-xs text-[var(--color-sidebar-muted)]">Hotel Management System</span>
           </div>
         )}
@@ -265,8 +263,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                             cn(
                               'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors duration-150',
                               isActive
-                                ? 'bg-[var(--color-sidebar-active-bg)] text-[var(--color-sidebar-active-text)] font-semibold border-l-[3px] border-[var(--color-primary)] rounded-l-none [&_svg]:text-[var(--color-sidebar-active-text)]'
-                                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover-bg)] hover:text-[var(--color-sidebar-active-text)]',
+                                ? 'bg-[var(--color-sidebar-active-bg)] text-[var(--color-sidebar-active-text)] font-semibold shadow-[0_2px_10px_rgba(200,155,108,0.35)] [&_svg]:text-[var(--color-sidebar-active-text)]'
+                                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover-bg)] hover:text-white',
                             )
                           }
                         >
