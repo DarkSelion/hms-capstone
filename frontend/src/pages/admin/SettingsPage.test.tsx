@@ -62,9 +62,9 @@ describe('SettingsPage', () => {
     })
     render(<SettingsPage />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Website' }))
+    fireEvent.click(screen.getByRole('button', { name: /Website/ }))
 
-    expect(screen.getAllByRole('combobox')[0]).toHaveValue('navy')
+    expect(screen.getByRole('button', { name: /Navy & Gold/ })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByLabelText('Headline')).toHaveValue('Our Cozy Haven')
     expect(screen.getByDisplayValue('Welcome home.')).toBeInTheDocument()
   })
@@ -84,7 +84,7 @@ describe('SettingsPage', () => {
     })
     render(<SettingsPage />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Website' }))
+    fireEvent.click(screen.getByRole('button', { name: /Website/ }))
     fireEvent.change(screen.getByLabelText('Headline'), { target: { value: 'Stay Awhile' } })
     fireEvent.click(screen.getByRole('button', { name: /save settings/i }))
 
@@ -114,7 +114,7 @@ describe('SettingsPage', () => {
     })
     render(<SettingsPage />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Booking' }))
+    fireEvent.click(screen.getByRole('button', { name: /Booking/ }))
 
     expect(screen.getByLabelText('Late Check-out Fee')).toHaveValue(500)
     expect(screen.getByLabelText('Check-out hour')).toHaveValue('2')
@@ -125,7 +125,7 @@ describe('SettingsPage', () => {
   it('defaults the check-out time and saves it in the booking payload', () => {
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Booking' }))
+    fireEvent.click(screen.getByRole('button', { name: /Booking/ }))
 
     expect(screen.getByLabelText('Check-out hour')).toHaveValue('11')
     expect(screen.getByLabelText('Check-out minute')).toHaveValue('00')
@@ -154,9 +154,9 @@ describe('SettingsPage', () => {
     })
     render(<SettingsPage />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Website' }))
+    fireEvent.click(screen.getByRole('button', { name: /Website/ }))
 
-    expect(screen.getAllByRole('combobox')[0]).toHaveValue('gold')
+    expect(screen.getByRole('button', { name: /^Gold/ })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByLabelText('Headline')).toHaveValue('Comfortable Stays, Warm Smiles')
     expect(screen.getByDisplayValue('Cozy stays, warm smiles — right here in Pampanga.')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Deluxe King Room')).toBeInTheDocument()
@@ -179,7 +179,7 @@ describe('SettingsPage', () => {
     })
     render(<SettingsPage />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Website' }))
+    fireEvent.click(screen.getByRole('button', { name: /Website/ }))
 
     expect(screen.getByLabelText('Headline')).toHaveValue('Comfortable Stays, Warm Smiles')
     expect(screen.getByDisplayValue('Cozy stays, warm smiles — right here in Pampanga.')).toBeInTheDocument()
@@ -202,7 +202,7 @@ describe('SettingsPage', () => {
     })
     render(<SettingsPage />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Payments' }))
+    fireEvent.click(screen.getByRole('button', { name: /Payments/ }))
 
     expect(screen.getByText('Online Payment Gateway')).toBeInTheDocument()
     expect(screen.getByLabelText('Gateway Base URL')).toHaveValue('https://hardreset.onrender.com')
@@ -227,7 +227,7 @@ describe('SettingsPage', () => {
     })
     render(<SettingsPage />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Security' }))
+    fireEvent.click(screen.getByRole('button', { name: /Security/ }))
 
     expect(screen.getByLabelText('Enable Two-Factor Authentication')).not.toBeChecked()
   })
@@ -241,7 +241,7 @@ describe('SettingsPage', () => {
     })
     render(<SettingsPage />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Security' }))
+    fireEvent.click(screen.getByRole('button', { name: /Security/ }))
     fireEvent.click(screen.getByLabelText('Enable Two-Factor Authentication'))
     fireEvent.click(screen.getByRole('button', { name: /save settings/i }))
 
