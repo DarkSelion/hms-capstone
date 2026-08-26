@@ -18,7 +18,7 @@ interface RowActionsProps {
 
 export function RowActions({ children }: RowActionsProps) {
   return (
-    <div className="inline-flex h-8 items-stretch overflow-hidden rounded-lg border border-border divide-x divide-border">
+    <div className="inline-flex h-8 items-stretch rounded-lg border border-border divide-x divide-border">
       {children}
     </div>
   )
@@ -33,6 +33,11 @@ interface RowActionButtonProps {
 }
 
 export function RowActionButton({ tone = 'neutral', title, onClick, icon, label }: RowActionButtonProps) {
+  // Ensure icon is accessible-hidden if present
+  const accessibleIcon = icon ? (
+    <span aria-hidden="true">{icon}</span>
+  ) : null
+
   return (
     <Button
       variant="ghost"
@@ -40,9 +45,10 @@ export function RowActionButton({ tone = 'neutral', title, onClick, icon, label 
       square={!label}
       className={cn('rounded-none border-0', label && 'px-2.5 text-xs', TONES[tone])}
       title={title}
+      aria-label={label || title}
       onClick={onClick}
     >
-      {icon}
+      {accessibleIcon}
       {label && <span>{label}</span>}
     </Button>
   )

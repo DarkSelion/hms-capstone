@@ -21,5 +21,10 @@ dev-server.log
 lint_out.txt
 $
 
+# Test artifacts
+frontend/test_output*.txt
+frontend/po.txt
+tools/
+
 # Secrets / keys
 *.pem

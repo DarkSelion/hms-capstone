@@ -41,15 +41,7 @@ const TAB_DATA = [
     heading: 'Perfect for Families',
     featured: 'Family Room',
     description: 'Plenty of space for the whole family. Easy to unwind after a day out exploring Pampanga.',
-    filterFn: (name: string) => name.includes('suite'),
-  },
-  {
-    key: 'villas',
-    label: 'Premier',
-    heading: 'Our Best Room',
-    featured: 'Premier Suite',
-    description: 'Extra space and added comforts for a truly memorable stay.',
-    filterFn: (name: string) => name.includes('villa'),
+    filterFn: (name: string) => name.includes('suite') || name.includes('family'),
   },
 ]
 
@@ -341,7 +333,7 @@ export default function PublicHomePage() {
               <img
                 src={featuredRoom
                   ? (featuredRoom.image_url || getRoomImage(featuredRoom.name, 0))
-                  : ROOM_IMAGES[activeTab === 0 ? 'rooms' : activeTab === 1 ? 'suites' : 'villas'][0]
+                  : ROOM_IMAGES[activeTab === 0 ? 'rooms' : 'suites'][0]
                 }
                 alt={currentTab.featured}
                 className="w-full h-[480px] lg:h-[600px] object-cover transition-transform duration-700 hover:scale-[1.03]"

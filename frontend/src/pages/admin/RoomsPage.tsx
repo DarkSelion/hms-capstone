@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useRooms, useRoomTypes, useUpdateRoom } from '@/hooks/useApi'
-import type { Room } from '@/types'
+import type { Room, RoomImage } from '@/types'
 import { formatCurrency } from '@/lib/format'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable, type Column } from '@/components/shared/DataTable'
@@ -11,11 +11,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Modal } from '@/components/ui/modal'
+import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/stores/authStore'
 import { isAdminRole } from '@/lib/permissions'
 import { useToast } from '@/components/ui/toast'
 import {
-  Search, Users,
+  Search, Users, X,
   Edit, Save, MapPin, BedDouble, Tag, Radio, StickyNote, Loader2
 } from 'lucide-react'
 
@@ -87,6 +88,7 @@ export default function RoomsPage() {
   }
 
   const { data: roomsData, isLoading: roomsLoading, error: roomsError, refetch: refetchRooms } = useRooms(params)
+
   const { data: roomTypesData } = useRoomTypes(undefined, { enabled: isAdmin })
   const updateRoom = useUpdateRoom()
 
@@ -184,18 +186,35 @@ export default function RoomsPage() {
 
   const isMutating = updateRoom.isPending
 
+  // Helper to get primary image for a room
+  function getPrimaryImage(room: Room): RoomImage | undefined {
+    return room.images?.find(img => img.is_primary) ?? room.images?.[0]
+  }
+
   const listColumns: Column<Room>[] = [
     {
       key: 'room_number',
       label: 'Room',
-      render: (r) => (
-        <span className="font-semibold text-foreground">{r.room_number}</span>
-      ),
-    },
-    {
-      key: 'room_type',
-      label: 'Room Type',
-      render: (r) => <span className="text-muted">{getRoomTypeName(r)}</span>,
+      render: (r) => {
+        const img = getPrimaryImage(r)
+        return (
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-primary/10">
+              {img ? (
+                <img src={img.image_url} alt={`Room ${r.room_number}`} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-primary">
+                  <BedDouble className="h-5 w-5" />
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <span className="font-semibold text-foreground block truncate">Room {r.room_number}</span>
+              <span className="text-xs text-muted truncate block">{getRoomTypeName(r)}</span>
+            </div>
+          </div>
+        )
+      },
     },
     {
       key: 'floor',
@@ -219,8 +238,9 @@ export default function RoomsPage() {
     {
       key: 'price',
       label: 'Price',
+      className: 'text-right font-semibold',
       render: (r) => (
-        <span className="font-medium text-foreground">{formatCurrency(getPrice(r))}</span>
+        <span className="text-foreground">{formatCurrency(getPrice(r))}</span>
       ),
     },
     {
@@ -301,6 +321,48 @@ export default function RoomsPage() {
             )}
           </div>
 
+          {/* Active Filter Bar */}
+          {(search || statusFilter || floorFilter || roomTypeFilter) && (
+            <div className="mb-4 flex items-center gap-2 text-sm text-muted">
+              <span>Active filters:</span>
+              {search && (
+                <Badge variant="secondary" className="gap-1">
+                  Search: {search}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setSearch(''); setCurrentPage(1) }}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              {statusFilter && (
+                <Badge variant="secondary" className="gap-1">
+                  Status: {ROOM_STATUS_OPTIONS.find(o => o.value === statusFilter)?.label}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setStatusFilter(''); setCurrentPage(1) }}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              {floorFilter && (
+                <Badge variant="secondary" className="gap-1">
+                  Floor: {floorFilter}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setFloorFilter(''); setCurrentPage(1) }}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              {roomTypeFilter && (
+                <Badge variant="secondary" className="gap-1">
+                  Type: {roomTypesList.find(rt => rt.id === Number(roomTypeFilter))?.name}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setRoomTypeFilter(''); setCurrentPage(1) }}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => { setSearch(''); setStatusFilter(''); setFloorFilter(''); setRoomTypeFilter(''); setCurrentPage(1) }}>
+                Clear all
+              </Button>
+            </div>
+          )}
+
           <DataTable
             columns={listColumns}
             data={rooms}
@@ -309,6 +371,18 @@ export default function RoomsPage() {
             onSearch={undefined}
             onRetry={() => refetchRooms()}
             keyExtractor={(r) => r.id}
+            emptyState={
+              <div className="flex flex-col items-center justify-center py-12">
+                <BedDouble className="mb-3 h-10 w-10 text-muted/50" />
+                <p className="text-sm font-medium text-foreground">No rooms match your filters</p>
+                <p className="text-sm text-muted">Try adjusting your search or filters.</p>
+                {(search || statusFilter || floorFilter || roomTypeFilter) && (
+                  <Button variant="outline" className="mt-4" onClick={() => { setSearch(''); setStatusFilter(''); setFloorFilter(''); setRoomTypeFilter(''); setCurrentPage(1) }}>
+                    Clear all filters
+                  </Button>
+                )}
+              </div>
+            }
             pagination={paginationInfo ? {
               currentPage: paginationInfo.currentPage,
               lastPage: paginationInfo.lastPage,

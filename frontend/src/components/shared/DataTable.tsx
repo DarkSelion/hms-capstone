@@ -33,6 +33,7 @@ interface DataTableProps<T> {
   }
   onRetry?: () => void
   keyExtractor: (row: T) => string | number
+  emptyState?: React.ReactNode
 }
 
 export function DataTable<T>({
@@ -46,6 +47,7 @@ export function DataTable<T>({
   pagination,
   onRetry,
   keyExtractor,
+  emptyState,
 }: DataTableProps<T>) {
   const [localSearch, setLocalSearch] = useState('')
 
@@ -146,11 +148,15 @@ export function DataTable<T>({
             ) : data.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length}>
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <Inbox className="mb-3 h-10 w-10 text-muted/50" />
-                    <p className="text-sm font-medium text-foreground">No data found</p>
-                    <p className="text-sm text-muted">Try adjusting your search or filters.</p>
-                  </div>
+                  {emptyState ? (
+                    emptyState
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <Inbox className="mb-3 h-10 w-10 text-muted/50" />
+                      <p className="text-sm font-medium text-foreground">No data found</p>
+                      <p className="text-sm text-muted">Try adjusting your search or filters.</p>
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             ) : (

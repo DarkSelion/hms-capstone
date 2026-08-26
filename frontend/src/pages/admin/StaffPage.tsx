@@ -23,13 +23,37 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
 import {
   Plus, Edit, Search, Eye, Calendar, Save, Check, X, AlertCircle, Inbox, Loader2,
-  UserPlus, UserCog, UserRound, CalendarPlus, CalendarOff, Trash2, Mail, Phone, ShieldCheck, Building2, Lock,
+  UserPlus, UserCog, UserRound, CalendarPlus, CalendarOff, Trash2, Mail, Phone, ShieldCheck, Building2, Lock, Users,
 } from 'lucide-react'
 
 const ASSIGNABLE_ROLES: Record<string, string[]> = {
   super_admin: ['super_admin', 'admin', 'hotel_manager', 'receptionist', 'housekeeping', 'cashier', 'staff'],
   admin: ['admin', 'hotel_manager', 'receptionist', 'housekeeping', 'cashier', 'staff'],
   hotel_manager: ['receptionist', 'housekeeping', 'cashier', 'staff'],
+}
+
+const ROLE_BADGE_VARIANT: Record<string, 'danger' | 'gold' | 'info' | 'success' | 'warning' | 'default'> = {
+  super_admin: 'danger',
+  admin: 'gold',
+  hotel_manager: 'info',
+  receptionist: 'success',
+  housekeeping: 'warning',
+  cashier: 'default',
+  staff: 'default',
+}
+
+function StaffAvatar({ name }: { name: string }) {
+  const initials = (name || '?')
+    .split(' ')
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+  return (
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+      {initials}
+    </div>
+  )
 }
 
 const STAFF_TABS = ['All Staff', 'Schedules', 'Leave Requests'] as const
@@ -62,6 +86,7 @@ export default function StaffPage() {
   const currentUserRole = useAuthStore((s) => s.user?.role ?? '')
 
   const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
 
   const [viewStaffId, setViewStaffId] = useState<number | null>(null)
   const [editStaff, setEditStaff] = useState<User | null>(null)
@@ -107,25 +132,39 @@ export default function StaffPage() {
   const filteredStaff = staff.filter((s) => {
     const q = search.toLowerCase()
     if (q && !s.name.toLowerCase().includes(q) && !s.email.toLowerCase().includes(q)) return false
+    if (roleFilter && String(s.role?.id ?? '') !== roleFilter) return false
     return true
   })
+
+  const staffHasActiveFilters = Boolean(search || roleFilter)
+
+  function clearStaffFilters() {
+    setSearch('')
+    setRoleFilter('')
+  }
 
   const staffColumns: Column<User>[] = [
     {
       key: 'name',
       label: 'Name',
       sortable: true,
-      render: (s) => <span className="font-medium text-foreground">{s.name}</span>,
-    },
-    {
-      key: 'email',
-      label: 'Email',
-      render: (s) => <span className="text-muted">{s.email}</span>,
+      render: (s) => (
+        <div className="flex items-center gap-2.5">
+          <StaffAvatar name={s.name} />
+          <div className="min-w-0">
+            <span className="block truncate text-sm font-medium text-foreground">{s.name}</span>
+            <span className="block truncate text-xs text-muted">{s.email}</span>
+          </div>
+        </div>
+      ),
     },
     {
       key: 'role',
       label: 'Role',
-      render: (s) => <Badge variant="info">{s.role?.name ?? '-'}</Badge>,
+      render: (s) => {
+        const variant = ROLE_BADGE_VARIANT[s.role?.slug ?? ''] ?? 'info'
+        return <Badge variant={variant}>{s.role?.name ?? '-'}</Badge>
+      },
     },
     {
       key: 'phone',
@@ -387,7 +426,12 @@ export default function StaffPage() {
     {
       key: 'staff_name',
       label: 'Staff Name',
-      render: (l) => <span className="font-medium text-foreground">{l.user?.name ?? '-'}</span>,
+      render: (l) => (
+        <div className="flex items-center gap-2.5">
+          <StaffAvatar name={l.user?.name ?? '?'} />
+          <span className="truncate text-sm font-medium text-foreground">{l.user?.name ?? '-'}</span>
+        </div>
+      ),
     },
     {
       key: 'type',
@@ -399,13 +443,17 @@ export default function StaffPage() {
     },
     {
       key: 'start_date',
-      label: 'Start Date',
-      render: (l) => <span>{formatDate(l.start_date)}</span>,
-    },
-    {
-      key: 'end_date',
-      label: 'End Date',
-      render: (l) => <span>{formatDate(l.end_date)}</span>,
+      label: 'Dates',
+      className: 'whitespace-nowrap',
+      render: (l) => {
+        const days = Math.round((new Date(l.end_date).getTime() - new Date(l.start_date).getTime()) / 86400000) + 1
+        return (
+          <div>
+            <span className="font-medium text-foreground">{formatDate(l.start_date)} <span className="text-muted">→</span> {formatDate(l.end_date)}</span>
+            <span className="block text-xs text-muted">{days} day{days !== 1 ? 's' : ''}</span>
+          </div>
+        )
+      },
     },
     {
       key: 'status',
@@ -450,22 +498,23 @@ export default function StaffPage() {
     {
       key: 'staff_name',
       label: 'Staff Name',
-      render: (s) => <span className="font-medium text-foreground">{s.user?.name ?? '-'}</span>,
+      render: (s) => (
+        <div className="flex items-center gap-2.5">
+          <StaffAvatar name={s.user?.name ?? '?'} />
+          <span className="truncate text-sm font-medium text-foreground">{s.user?.name ?? '-'}</span>
+        </div>
+      ),
     },
     {
       key: 'date',
-      label: 'Date',
-      render: (s) => <span>{formatDate(s.date)}</span>,
-    },
-    {
-      key: 'start_time',
-      label: 'Start Time',
-      render: (s) => <span>{s.start_time || '-'}</span>,
-    },
-    {
-      key: 'end_time',
-      label: 'End Time',
-      render: (s) => <span>{s.end_time || '-'}</span>,
+      label: 'Shift',
+      className: 'whitespace-nowrap',
+      render: (s) => (
+        <div>
+          <span className="font-medium text-foreground">{formatDate(s.date)}</span>
+          <span className="block text-xs text-muted">{s.start_time || '-'} – {s.end_time || '-'}</span>
+        </div>
+      ),
     },
     {
       key: 'notes',
@@ -528,6 +577,16 @@ export default function StaffPage() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
+              <Select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className="w-[160px]"
+              >
+                <option value="">All Roles</option>
+                {roles.map((r) => (
+                  <option key={r.id} value={String(r.id)}>{r.name}</option>
+                ))}
+              </Select>
               {canAddStaff && (
                 <Button variant="primary" className="ml-auto" onClick={() => setShowAddStaff(true)}>
                   <UserPlus className="mr-2 h-4 w-4" />
@@ -536,6 +595,32 @@ export default function StaffPage() {
               )}
             </div>
 
+            {/* Active Filter Bar */}
+            {staffHasActiveFilters && (
+              <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted">
+                <span>Active filters:</span>
+                {search && (
+                  <Badge variant="secondary" className="gap-1">
+                    Search: {search}
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setSearch('')}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                {roleFilter && (
+                  <Badge variant="secondary" className="gap-1">
+                    Role: {roles.find((r) => String(r.id) === roleFilter)?.name}
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setRoleFilter('')}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                )}
+                <Button variant="ghost" size="sm" onClick={clearStaffFilters}>
+                  Clear all
+                </Button>
+              </div>
+            )}
+
             <DataTable
               columns={staffColumns}
               data={filteredStaff}
@@ -543,6 +628,18 @@ export default function StaffPage() {
               error={staffError ? (staffError as Error).message : null}
               onRetry={() => refetchStaff()}
               keyExtractor={(s) => s.id}
+              emptyState={
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Users className="mb-3 h-10 w-10 text-muted/50" />
+                  <p className="text-sm font-medium text-foreground">No staff match your filters</p>
+                  <p className="text-sm text-muted">Try adjusting your search or role filter.</p>
+                  {staffHasActiveFilters && (
+                    <Button variant="outline" className="mt-4" onClick={clearStaffFilters}>
+                      Clear all filters
+                    </Button>
+                  )}
+                </div>
+              }
             />
           </CardContent>
         </Card>

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { usePublicRoomTypes, usePortalCurrency } from '@/hooks/usePublicApi'
 import { formatCurrencyWith } from '@/lib/format'
-import { Users, Maximize, ArrowRight, Calendar, BedDouble, Building2, Sofa } from 'lucide-react'
+import { Users, Maximize, ArrowRight, Calendar, BedDouble, Sofa } from 'lucide-react'
 
 const ROOM_IMAGES: Record<string, string[]> = {
   rooms: [
@@ -26,7 +26,6 @@ const TABS = [
   { value: 'all', label: 'All', heading: 'Our Rooms\n& Suites' },
   { value: 'rooms', label: 'Rooms', heading: 'Cozy\nRooms', icon: BedDouble },
   { value: 'suites', label: 'Suites', heading: 'Spacious\nSuites', icon: Sofa },
-  { value: 'villas', label: 'Villas', heading: 'Charming\nVillas', icon: Building2 },
 ]
 
 function getRoomImage(name: string, index: number): string {
@@ -58,7 +57,6 @@ export default function PublicRoomsPage() {
       const name = (rt.name || '').toLowerCase()
       if (filter === 'rooms') return name.includes('room') || name.includes('deluxe')
       if (filter === 'suites') return name.includes('suite')
-      if (filter === 'villas') return name.includes('villa')
       return true
     })
   }, [roomTypes, filter])

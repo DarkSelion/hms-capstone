@@ -13,8 +13,16 @@ import { ReservationFormModal } from '@/components/shared/ReservationFormModal'
 import { ReservationCheckInOutModal } from '@/components/shared/ReservationCheckInOutModal'
 import { ExtendStayModal } from '@/components/shared/ExtendStayModal'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { CheckCircle2, DoorOpen } from 'lucide-react'
 import type { Reservation } from '@/types'
+
+function nightsBetween(checkIn?: string, checkOut?: string): number {
+  if (!checkIn || !checkOut) return 0
+  const diff = Math.floor((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000)
+  return Number.isNaN(diff) ? 0 : Math.max(diff, 0)
+}
 
 export default function CheckOutPage() {
   const [search, setSearch] = useState('')
@@ -110,47 +118,75 @@ export default function CheckOutPage() {
       label: 'Guest',
       sortable: false,
       className: 'truncate max-w-[300px]',
-      render: (r) => (
-        <span>{r.guest?.first_name} {r.guest?.last_name}</span>
-      ),
+      render: (r) => {
+        const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
+        const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
+        return (
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <span className="block truncate text-sm font-medium text-foreground">{name}</span>
+              <span className="block truncate text-xs text-muted">{r.guest?.email}</span>
+            </div>
+          </div>
+        )
+      },
     },
     {
       key: 'room',
       label: 'Room',
       sortable: false,
-      render: (r) => <span>{r.room?.room_number ?? '-'}</span>,
+      render: (r) => (
+        <div className="min-w-0">
+          <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
+          <span className="block truncate text-xs text-muted">{r.room?.room_type?.name ?? '\u00A0'}</span>
+        </div>
+      ),
     },
     {
       key: 'check_out',
-      label: 'Check Out',
+      label: 'Departure',
       sortable: true,
       className: 'whitespace-nowrap',
-      render: (r) => <span>{formatDateDisplay(r.check_out)}</span>,
-    },
-    {
-      key: 'payment_status',
-      label: 'Payment',
-      sortable: true,
-      className: 'whitespace-nowrap',
-      render: (r) => <StatusBadge status={r.payment_status} />,
+      render: (r) => {
+        const nights = nightsBetween(r.check_in, r.check_out)
+        return (
+          <div>
+            <span className="whitespace-nowrap font-medium text-foreground">{formatDateDisplay(r.check_out)}</span>
+            <span className="block text-xs text-muted">
+              arrived {formatDateDisplay(r.check_in)} · {nights} night{nights !== 1 ? 's' : ''}
+            </span>
+          </div>
+        )
+      },
     },
     {
       key: 'total_amount',
-      label: 'Total',
+      label: 'Billing',
       sortable: true,
-      className: 'whitespace-nowrap tabular-nums',
-      render: (r) => <span className="font-medium">{formatCurrency(r.total_amount)}</span>,
-    },
-    {
-      key: 'due_amount',
-      label: 'Due',
-      sortable: true,
-      className: 'whitespace-nowrap tabular-nums',
-      render: (r) => (
-        <span className={r.due_amount > 0 ? 'font-medium text-danger' : 'text-success'}>
-          {formatCurrency(r.due_amount)}
-        </span>
-      ),
+      className: 'whitespace-nowrap',
+      render: (r) => {
+        const due = Number(r.due_amount ?? 0)
+        return (
+          <div className="whitespace-nowrap">
+            <div className="flex items-center gap-1.5">
+              <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
+              <StatusBadge status={r.payment_status} />
+            </div>
+            {due > 0 ? (
+              <span className="block text-xs font-semibold tabular-nums text-danger">
+                Due {formatCurrency(due)}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-xs font-medium text-success">
+                <CheckCircle2 className="h-3 w-3" /> Settled
+              </span>
+            )}
+          </div>
+        )
+      },
     },
     {
       key: 'actions',
@@ -194,6 +230,18 @@ export default function CheckOutPage() {
             error={error ? 'Failed to load reservations' : null}
             sortBy={sortBy}
             onSort={handleSort}
+            emptyState={
+              <div className="flex flex-col items-center justify-center py-12">
+                <DoorOpen className="mb-3 h-10 w-10 text-muted/50" />
+                <p className="text-sm font-medium text-foreground">No departures match your search</p>
+                <p className="text-sm text-muted">Try adjusting your search.</p>
+                {search && (
+                  <Button variant="outline" className="mt-4" onClick={() => handleSearchChange('')}>
+                    Clear search
+                  </Button>
+                )}
+              </div>
+            }
             pagination={reservationsData ? {
               currentPage: page,
               lastPage: totalPages,

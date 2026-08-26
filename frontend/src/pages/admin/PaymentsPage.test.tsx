@@ -189,4 +189,55 @@ describe('PaymentsPage', () => {
     expect(screen.getByText('Payment Type')).toBeInTheDocument()
     expect(screen.getByText('Transaction ID')).toBeInTheDocument()
   })
+
+  it('renders merged guest identity cell with avatar initials and booking number', () => {
+    renderPage()
+
+    expect(screen.getAllByText('John Doe').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('BK-2026-0001').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('JD').length).toBeGreaterThan(0)
+  })
+
+  it('shows payment type subline under amount when recorded', () => {
+    mockUsePayments.mockReturnValue({
+      data: {
+        data: [payment({ payment_type: 'full' })],
+        current_page: 1,
+        last_page: 1,
+        per_page: 10,
+        total: 1,
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    mockUseReservations.mockReturnValue({ data: { data: [] }, isLoading: false })
+    render(<PaymentsPage />)
+
+    expect(screen.getByText('full')).toBeInTheDocument()
+  })
+
+  it('shows active filter bar with clear all after filtering', () => {
+    renderPage()
+
+    const combos = screen.getAllByRole('combobox')
+    fireEvent.change(combos[0], { target: { value: 'cash' } })
+
+    expect(screen.getByText('Active filters:')).toBeInTheDocument()
+    expect(screen.getByText('Method: Cash')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Clear all/ })).toBeInTheDocument()
+  })
+
+  it('shows custom empty state when no payments match', () => {
+    mockUsePayments.mockReturnValue({
+      data: { data: [], current_page: 1, last_page: 1, per_page: 10, total: 0 },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    mockUseReservations.mockReturnValue({ data: { data: [] }, isLoading: false })
+    render(<PaymentsPage />)
+
+    expect(screen.getByText('No payments match your filters')).toBeInTheDocument()
+  })
 })

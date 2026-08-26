@@ -4,6 +4,7 @@ import {
 } from '@/hooks/useApi'
 import { useCheckInOutModal } from '@/hooks/useCheckInOutModal'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { ReservationRowActions } from '@/components/shared/ReservationRowActions'
@@ -15,8 +16,9 @@ import { ReservationFormModal } from '@/components/shared/ReservationFormModal'
 import { ReservationCheckInOutModal } from '@/components/shared/ReservationCheckInOutModal'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Luggage } from 'lucide-react'
 import type { Reservation } from '@/types'
 
 export default function CheckInPage() {
@@ -124,30 +126,50 @@ export default function CheckInPage() {
       label: 'Guest',
       sortable: false,
       className: 'truncate max-w-[300px]',
-      render: (r) => (
-        <span>{r.guest?.first_name} {r.guest?.last_name}</span>
-      ),
+      render: (r) => {
+        const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
+        const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
+        return (
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <span className="block truncate text-sm font-medium text-foreground">{name}</span>
+              <span className="block truncate text-xs text-muted">{r.guest?.email}</span>
+            </div>
+          </div>
+        )
+      },
     },
     {
       key: 'room',
       label: 'Room',
       sortable: false,
-      render: (r) => <span>{r.room?.room_number ?? '-'}</span>,
+      render: (r) => (
+        <div className="min-w-0">
+          <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
+          <span className="block truncate text-xs text-muted">{r.room?.room_type?.name ?? '\u00A0'}</span>
+        </div>
+      ),
     },
     {
       key: 'check_in',
-      label: 'Check In',
+      label: 'Arrival',
       sortable: true,
       className: 'whitespace-nowrap',
       render: (r) => (
-        <div className="flex items-center gap-1.5">
-          <span>{formatDateDisplay(r.check_in)}</span>
-          {r.is_overdue && (
-            <Badge variant="warning">
-              <AlertTriangle className="h-3 w-3" />
-              Overdue
-            </Badge>
-          )}
+        <div>
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
+            <span>{formatDateDisplay(r.check_in)}</span>
+            {r.is_overdue && (
+              <Badge variant="warning">
+                <AlertTriangle className="h-3 w-3" />
+                Overdue
+              </Badge>
+            )}
+          </div>
+          <span className="block text-xs text-muted">departs {formatDateDisplay(r.check_out)}</span>
         </div>
       ),
     },
@@ -161,18 +183,24 @@ export default function CheckInPage() {
       ),
     },
     {
-      key: 'payment_status',
-      label: 'Payment',
+      key: 'total_amount',
+      label: 'Billing',
       sortable: true,
       className: 'whitespace-nowrap',
-      render: (r) => <StatusBadge status={r.payment_status} />,
-    },
-    {
-      key: 'total_amount',
-      label: 'Total',
-      sortable: true,
-      className: 'whitespace-nowrap tabular-nums',
-      render: (r) => <span className="font-medium">{formatCurrency(r.total_amount)}</span>,
+      render: (r) => {
+        const due = Number(r.due_amount ?? 0)
+        return (
+          <div className="whitespace-nowrap">
+            <div className="flex items-center gap-1.5">
+              <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
+              <StatusBadge status={r.payment_status} />
+            </div>
+            <span className={cn('block text-xs tabular-nums', due > 0 ? 'text-amber-600' : 'text-emerald-600')}>
+              {due > 0 ? `Due ${formatCurrency(due)}` : 'Fully paid'}
+            </span>
+          </div>
+        )
+      },
     },
     {
       key: 'actions',
@@ -217,6 +245,18 @@ export default function CheckInPage() {
             error={error ? 'Failed to load reservations' : null}
             sortBy={sortBy}
             onSort={handleSort}
+            emptyState={
+              <div className="flex flex-col items-center justify-center py-12">
+                <Luggage className="mb-3 h-10 w-10 text-muted/50" />
+                <p className="text-sm font-medium text-foreground">No arrivals match your search</p>
+                <p className="text-sm text-muted">Try adjusting your search.</p>
+                {search && (
+                  <Button variant="outline" className="mt-4" onClick={() => handleSearchChange('')}>
+                    Clear search
+                  </Button>
+                )}
+              </div>
+            }
             pagination={reservationsData ? {
               currentPage: page,
               lastPage: totalPages,

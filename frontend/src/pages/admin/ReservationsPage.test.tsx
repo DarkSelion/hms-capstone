@@ -187,10 +187,65 @@ describe('ReservationsPage', () => {
     expect(screen.getByText('Failed to load reservations')).toBeInTheDocument()
   })
 
-  it('shows empty state when no reservations', () => {
+  it('shows custom empty state when no reservations', () => {
     renderPage(paginated([]))
 
-    expect(screen.getByText('No data found')).toBeInTheDocument()
+    expect(screen.getByText('No reservations match your filters')).toBeInTheDocument()
+  })
+
+  it('updates the status URL param when the status dropdown changes', () => {
+    const setParams = vi.fn()
+    mockUseSearchParams.mockReturnValue([new URLSearchParams(''), setParams])
+    mockUseReservations.mockReturnValue({
+      data: paginated([reservation()]),
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    })
+    mockUseCancelReservation.mockReturnValue({ mutateAsync: vi.fn() })
+    mockUseMarkNoShow.mockReturnValue({ mutateAsync: vi.fn() })
+    mockUseExtendStay.mockReturnValue({ mutateAsync: vi.fn() })
+    mockUseCheckInOutModal.mockReturnValue({
+      target: null, error: null, isLoading: false, isOpen: false,
+      open: vi.fn(), close: vi.fn(), confirm: vi.fn(), confirmAfterPayment: vi.fn(),
+    })
+
+    render(<ReservationsPage />)
+
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'confirmed' } })
+
+    expect(setParams).toHaveBeenCalledWith(expect.any(Function))
+  })
+
+  it('renders stay range with nights count', () => {
+    renderPage()
+
+    expect(screen.getByText('1 Aug 2026')).toBeInTheDocument()
+    expect(screen.getByText('3 Aug 2026')).toBeInTheDocument()
+    expect(screen.getByText('2 nights')).toBeInTheDocument()
+  })
+
+  it('shows due amount under total for unpaid reservations', () => {
+    renderPage()
+
+    expect(screen.getByText('Due ₱3,300.00')).toBeInTheDocument()
+  })
+
+  it('shows Fully paid under total for settled reservations', () => {
+    renderPage(paginated([reservation({ payment_status: 'paid', paid_amount: 3300, due_amount: 0 })]))
+
+    expect(screen.getByText('Fully paid')).toBeInTheDocument()
+  })
+
+  it('shows active filter bar with clear all after searching', () => {
+    renderPage()
+
+    fireEvent.change(screen.getByPlaceholderText(/Search by reservation/), {
+      target: { value: 'juan' },
+    })
+
+    expect(screen.getByText('Active filters:')).toBeInTheDocument()
+    expect(screen.getByText(/Clear all/)).toBeInTheDocument()
   })
 
   it('passes status filter from URL to the query', () => {

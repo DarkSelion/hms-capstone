@@ -135,6 +135,12 @@ export default function PublicBookingPage() {
     [roomGroups, selectedTypeId],
   )
 
+  // Party-size limits come from the selected room type; oversized picks clamp automatically.
+  const maxAdults = Math.max(1, Number(selectedGroup?.roomType.max_adults ?? 6))
+  const maxChildren = Math.max(0, Number(selectedGroup?.roomType.max_children ?? 4))
+  const adultsSafe = Math.min(adults, maxAdults)
+  const childrenSafe = Math.min(childrenCount, maxChildren)
+
   const nights = useMemo(() => {
     if (!checkIn || !checkOut) return 0
     return Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24))
@@ -166,8 +172,8 @@ export default function PublicBookingPage() {
         room_type_id: selectedTypeId,
         check_in: checkIn,
         check_out: checkOut,
-        adults,
-        children: childrenCount,
+        adults: adultsSafe,
+        children: childrenSafe,
         special_requests: specialRequests || undefined,
       })
       navigate('/public/my-reservations')
@@ -240,16 +246,21 @@ export default function PublicBookingPage() {
                   </div>
                   <div>
                     <label htmlFor="booking_adults" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Adults</label>
-                    <select id="booking_adults" value={adults} onChange={(e) => setAdults(Number(e.target.value))} className="input-public">
-                      {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
+                    <select id="booking_adults" value={adultsSafe} onChange={(e) => setAdults(Number(e.target.value))} className="input-public">
+                      {Array.from({ length: maxAdults }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
                   </div>
                   <div>
                     <label htmlFor="booking_children" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Children</label>
-                    <select id="booking_children" value={childrenCount} onChange={(e) => setChildrenCount(Number(e.target.value))} className="input-public">
-                      {[0, 1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
+                    <select id="booking_children" value={childrenSafe} onChange={(e) => setChildrenCount(Number(e.target.value))} className="input-public">
+                      {Array.from({ length: maxChildren + 1 }, (_, i) => i).map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
                   </div>
+                  {selectedGroup && (
+                    <p className="col-span-full text-xs text-white/30">
+                      {selectedGroup.roomType.name} fits up to {maxAdults} adult{maxAdults > 1 ? 's' : ''}{maxChildren > 0 ? ` + ${maxChildren} child${maxChildren !== 1 ? 'ren' : ''}` : ''}.
+                    </p>
+                  )}
                 </div>
 
                 {datesValid && (
@@ -261,7 +272,7 @@ export default function PublicBookingPage() {
                       <p className="text-white/70 text-sm font-medium truncate">
                         {formatDate(checkIn)} — {formatDate(checkOut)}
                       </p>
-                      <p className="text-white/25 text-xs mt-0.5">{nights} night{nights > 1 ? 's' : ''} · {adults} adult{adults > 1 ? 's' : ''}{childrenCount > 0 ? `, ${childrenCount} child${childrenCount > 1 ? 'ren' : ''}` : ''}</p>
+                      <p className="text-white/25 text-xs mt-0.5">{nights} night{nights > 1 ? 's' : ''} · {adultsSafe} adult{adultsSafe > 1 ? 's' : ''}{childrenSafe > 0 ? `, ${childrenSafe} child${childrenSafe > 1 ? 'ren' : ''}` : ''}</p>
                     </div>
                   </div>
                 )}
@@ -463,7 +474,7 @@ export default function PublicBookingPage() {
                       { label: 'Check Out', value: formatDate(checkOut) },
                       { label: 'Check-out Time', value: checkoutTimeLabel },
                       { label: 'Nights', value: String(nights) },
-                      { label: 'Guests', value: `${adults} adult${adults > 1 ? 's' : ''}${childrenCount > 0 ? `, ${childrenCount} child${childrenCount > 1 ? 'ren' : ''}` : ''}` },
+                      { label: 'Guests', value: `${adultsSafe} adult${adultsSafe > 1 ? 's' : ''}${childrenSafe > 0 ? `, ${childrenSafe} child${childrenSafe > 1 ? 'ren' : ''}` : ''}` },
                     ].map((row) => (
                       <div key={row.label} className="flex justify-between py-2.5 border-b border-white/5 last:border-0">
                         <span className="text-white/30 text-sm">{row.label}</span>

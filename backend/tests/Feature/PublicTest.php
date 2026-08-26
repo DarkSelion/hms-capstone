@@ -665,7 +665,8 @@ class PublicTest extends TestCase
     {
         $this->setupSettings();
         $type = $this->roomType('deluxe', 150);
-        $room = $this->room($type);
+        // 2 adults + 1 child = 3 total, so the room must fit 3 guests.
+        $room = $this->room($type, ['capacity' => 3]);
         $guest = $this->guest();
         Sanctum::actingAs($guest);
 

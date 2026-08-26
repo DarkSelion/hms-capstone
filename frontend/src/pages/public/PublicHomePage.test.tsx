@@ -133,7 +133,6 @@ describe('PublicHomePage', () => {
     expect(screen.getByText('Discover Our World')).toBeInTheDocument()
     expect(screen.getByText('Rooms')).toBeInTheDocument()
     expect(screen.getByText('Family Rooms')).toBeInTheDocument()
-    expect(screen.getByText('Premier')).toBeInTheDocument()
   })
 
   it('navigates to rooms via hero CTA', () => {

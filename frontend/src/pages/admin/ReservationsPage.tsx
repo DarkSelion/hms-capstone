@@ -5,6 +5,7 @@ import {
 } from '@/hooks/useApi'
 import { useCheckInOutModal } from '@/hooks/useCheckInOutModal'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { StatusBadge } from '@/components/shared/StatusBadge'
@@ -23,11 +24,17 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { Select } from '@/components/ui/select'
 import type { Reservation } from '@/types'
 import {
-  Plus, AlertTriangle,
+  Plus, AlertTriangle, X, ArrowRight, CalendarX2,
 } from 'lucide-react'
 
 function formatDate(dateStr: string) {
   return formatDateDisplay(dateStr)
+}
+
+function nightsBetween(checkIn?: string, checkOut?: string): number {
+  if (!checkIn || !checkOut) return 0
+  const diff = Math.floor((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000)
+  return Number.isNaN(diff) ? 0 : Math.max(diff, 0)
 }
 
 const STATUS_OPTIONS = [
@@ -90,8 +97,7 @@ export default function ReservationsPage() {
     setPage(1)
   }, [])
 
-  const handleStatusFilterChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value
+  const handleStatusFilterValue = useCallback((value: string) => {
     setPage(1)
     setSearchParams((prev) => {
       if (value) {
@@ -99,6 +105,23 @@ export default function ReservationsPage() {
       } else {
         prev.delete('status')
       }
+      return prev
+    })
+  }, [setSearchParams])
+
+  const handleStatusFilterChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    handleStatusFilterValue(e.target.value)
+  }, [handleStatusFilterValue])
+
+  const hasActiveFilters = Boolean(search || statusFilter || dateFrom || dateTo)
+
+  const clearAllFilters = useCallback(() => {
+    setSearch('')
+    setDateFrom('')
+    setDateTo('')
+    setPage(1)
+    setSearchParams((prev) => {
+      prev.delete('status')
       return prev
     })
   }, [setSearchParams])
@@ -186,36 +209,68 @@ export default function ReservationsPage() {
       label: 'Guest',
       sortable: true,
       className: 'truncate max-w-[300px]',
-      render: (r) => (
-        <span>{r.guest?.first_name} {r.guest?.last_name}</span>
-      ),
+      render: (r) => {
+        const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
+        const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
+        return (
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <span className="block truncate text-sm font-medium text-foreground">{name}</span>
+              <span className="block truncate text-xs text-muted">{r.guest?.email}</span>
+            </div>
+          </div>
+        )
+      },
     },
     {
       key: 'room',
       label: 'Room',
       sortable: true,
-      render: (r) => <span>{r.room?.room_number ?? '-'}</span>,
+      render: (r) => (
+        <div className="min-w-0">
+          <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
+          <span className="block truncate text-xs text-muted">{r.room?.room_type?.name ?? '\u00A0'}</span>
+        </div>
+      ),
     },
     {
       key: 'check_in',
-      label: 'Check In',
+      label: 'Stay',
       sortable: true,
       className: 'whitespace-nowrap',
-      render: (r) => <span>{formatDate(r.check_in)}</span>,
-    },
-    {
-      key: 'check_out',
-      label: 'Check Out',
-      sortable: true,
-      className: 'whitespace-nowrap',
-      render: (r) => <span>{formatDate(r.check_out)}</span>,
+      render: (r) => {
+        const nights = nightsBetween(r.check_in, r.check_out)
+        return (
+          <div>
+            <div className="flex items-center gap-1 whitespace-nowrap text-sm">
+              <span>{formatDate(r.check_in)}</span>
+              <ArrowRight className="h-3 w-3 text-muted" />
+              <span>{formatDate(r.check_out)}</span>
+            </div>
+            <span className="text-xs text-muted">{nights} night{nights !== 1 ? 's' : ''}</span>
+          </div>
+        )
+      },
     },
     {
       key: 'total_amount',
       label: 'Total',
       sortable: true,
-      className: 'whitespace-nowrap tabular-nums',
-      render: (r) => <span className="font-medium">{formatCurrency(r.total_amount)}</span>,
+      className: 'whitespace-nowrap',
+      render: (r) => {
+        const due = Number(r.due_amount ?? 0)
+        return (
+          <div className="whitespace-nowrap">
+            <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
+            <span className={cn('block text-xs tabular-nums', due > 0 ? 'text-amber-600' : 'text-emerald-600')}>
+              {due > 0 ? `Due ${formatCurrency(due)}` : 'Fully paid'}
+            </span>
+          </div>
+        )
+      },
     },
     {
       key: 'status',
@@ -310,6 +365,48 @@ export default function ReservationsPage() {
             </div>
           </div>
 
+          {/* Active Filter Bar */}
+          {hasActiveFilters && (
+            <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted">
+              <span>Active filters:</span>
+              {search && (
+                <Badge variant="secondary" className="gap-1">
+                  Search: {search}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => handleSearchChange('')}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              {statusFilter && (
+                <Badge variant="secondary" className="gap-1">
+                  Status: {STATUS_OPTIONS.find(o => o.value === statusFilter)?.label}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => handleStatusFilterValue('')}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              {dateFrom && (
+                <Badge variant="secondary" className="gap-1">
+                  From: {dateFrom}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setDateFrom(''); setPage(1) }}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              {dateTo && (
+                <Badge variant="secondary" className="gap-1">
+                  To: {dateTo}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setDateTo(''); setPage(1) }}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+                Clear all
+              </Button>
+            </div>
+          )}
+
           <DataTable
             columns={columns}
             data={reservations}
@@ -317,6 +414,18 @@ export default function ReservationsPage() {
             error={error ? 'Failed to load reservations' : null}
             sortBy={sortBy}
             onSort={handleSort}
+            emptyState={
+              <div className="flex flex-col items-center justify-center py-12">
+                <CalendarX2 className="mb-3 h-10 w-10 text-muted/50" />
+                <p className="text-sm font-medium text-foreground">No reservations match your filters</p>
+                <p className="text-sm text-muted">Try adjusting your search or filters.</p>
+                {hasActiveFilters && (
+                  <Button variant="outline" className="mt-4" onClick={clearAllFilters}>
+                    Clear all filters
+                  </Button>
+                )}
+              </div>
+            }
             pagination={reservationsData ? {
               currentPage: page,
               lastPage: totalPages,

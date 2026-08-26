@@ -315,4 +315,40 @@ describe('StaffPage', () => {
     const payload = (mockApi.put.mock.calls[0] as unknown[])[1] as Record<string, unknown>
     expect(payload).not.toHaveProperty('password')
   })
+
+  it('renders merged identity cell with avatar, name and email together', () => {
+    renderPage()
+
+    expect(screen.getAllByText('Jane Doe').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('jane@hotel.com').length).toBeGreaterThan(0)
+    // Initials avatar
+    expect(screen.getAllByText('JD').length).toBeGreaterThan(0)
+  })
+
+  it('filters staff by role via the role dropdown and shows the filter bar', () => {
+    renderPage()
+
+    const roleSelect = screen.getAllByRole('combobox').find((s) => (s as HTMLSelectElement).textContent?.includes('All Roles')) as HTMLSelectElement
+    fireEvent.change(roleSelect, { target: { value: '1' } }) // Admin — Jane is Receptionist, so row disappears
+
+    expect(screen.queryByText('Jane Doe')).not.toBeInTheDocument()
+    expect(screen.getByText('Active filters:')).toBeInTheDocument()
+    expect(screen.getByText('Role: Admin')).toBeInTheDocument()
+  })
+
+  it('shows merged shift column with time range on schedules tab', () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Schedules' }))
+
+    expect(screen.getByText('15 Aug 2026')).toBeInTheDocument()
+    expect(screen.getByText(/08:00 – 16:00/)).toBeInTheDocument()
+  })
+
+  it('shows merged dates column with day count on leave requests tab', () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Leave Requests' }))
+
+    expect(screen.getByText(/1 Dec 2026/)).toBeInTheDocument()
+    expect(screen.getByText('2 days')).toBeInTheDocument()
+  })
 })

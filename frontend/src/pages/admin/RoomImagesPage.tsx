@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import {
   useRooms, useRoomImages, useUploadRoomImage, useUpdateRoomImage,
   useDeleteRoomImage, useRoomTypes, useUpdateRoom, useDeleteRoom,
@@ -22,13 +22,44 @@ export default function RoomImagesPage() {
   const [editRoomId, setEditRoomId] = useState<number | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const { addToast } = useToast()
 
-  const { data: roomsData, isLoading, error } = useRooms({ search: search || undefined, page, per_page: pageSize })
-  const rooms = roomsData?.data ?? []
+  // All rooms fetched once — type filter + type-name search run client-side.
+  const { data: roomsData, isLoading, error } = useRooms({ all: 'true' })
+  const { data: roomTypesData } = useRoomTypes({ per_page: 100 })
+  const roomTypes = roomTypesData?.data ?? []
   const deleteRoom = useDeleteRoom()
+
+  const hasActiveFilters = Boolean(search || typeFilter)
+
+  function clearAllFilters() {
+    setSearch('')
+    setTypeFilter('')
+    setPage(1)
+  }
+
+  const filteredRooms = useMemo(() => {
+    const list = roomsData?.data ?? []
+    const q = search.trim().toLowerCase()
+    return list.filter((r) => {
+      if (typeFilter && String(r.room_type?.id ?? '') !== typeFilter) return false
+      if (!q) return true
+      const numberMatch = r.room_number.toLowerCase().includes(q)
+      const typeMatch = (r.room_type?.name ?? '').toLowerCase().includes(q)
+      return numberMatch || typeMatch
+    })
+  }, [roomsData, search, typeFilter])
+
+  // Client-side pagination over the filtered list.
+  const lastPage = Math.max(1, Math.ceil(filteredRooms.length / pageSize))
+  const currentPage = Math.min(page, lastPage)
+  const rooms = useMemo(
+    () => filteredRooms.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [filteredRooms, currentPage, pageSize],
+  )
 
   const editRoom = editRoomId ? rooms.find(r => r.id === editRoomId) : null
 
@@ -114,12 +145,22 @@ export default function RoomImagesPage() {
           <div className="mb-4 flex flex-wrap items-center gap-4">
             <div className="relative max-w-xs flex-1">
               <Input
-                placeholder="Search by room number..."
+                placeholder="Search by room number or type..."
                 icon={<Search className="h-4 w-4" />}
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1) }}
               />
             </div>
+            <Select
+              value={typeFilter}
+              onChange={(e) => { setTypeFilter(e.target.value); setPage(1) }}
+              className="w-[170px]"
+            >
+              <option value="">All Types</option>
+              {roomTypes.map((rt) => (
+                <option key={rt.id} value={String(rt.id)}>{rt.name}</option>
+              ))}
+            </Select>
             <Select
               value={pageSize}
               onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1) }}
@@ -129,7 +170,6 @@ export default function RoomImagesPage() {
               <option value={10}>10 entries</option>
               <option value={25}>25 entries</option>
               <option value={50}>50 entries</option>
-              <option value={100}>100 entries</option>
             </Select>
           </div>
 
@@ -139,14 +179,26 @@ export default function RoomImagesPage() {
             loading={isLoading}
             error={error ? 'Failed to load rooms' : null}
             keyExtractor={(r) => r.id}
-            pagination={roomsData ? {
-              currentPage: roomsData.current_page,
-              lastPage: roomsData.last_page,
-              total: roomsData.total,
-            from: roomsData.total ? (roomsData.current_page - 1) * roomsData.per_page + 1 : 0,
-            to: roomsData.total ? Math.min(roomsData.current_page * roomsData.per_page, roomsData.total) : 0,
+            pagination={{
+              currentPage,
+              lastPage,
+              total: filteredRooms.length,
+              from: filteredRooms.length ? (currentPage - 1) * pageSize + 1 : 0,
+              to: Math.min(currentPage * pageSize, filteredRooms.length),
               onPageChange: setPage,
-            } : undefined}
+            }}
+            emptyState={
+              <div className="flex flex-col items-center justify-center py-12">
+                <ImageIcon className="mb-3 h-10 w-10 text-muted/50" />
+                <p className="text-sm font-medium text-foreground">No rooms match your filters</p>
+                <p className="text-sm text-muted">Try adjusting your search or type filter.</p>
+                {hasActiveFilters && (
+                  <Button variant="outline" className="mt-4" onClick={clearAllFilters}>
+                    Clear filters
+                  </Button>
+                )}
+              </div>
+            }
           />
         </CardContent>
       </Card>

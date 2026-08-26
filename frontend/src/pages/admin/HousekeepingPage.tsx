@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import {
   useHousekeepingTasks, useCreateHousekeepingTask, useUpdateHousekeepingStatus,
   useAssignHousekeepingTask, useUpdateHousekeepingTask, useDeleteHousekeepingTask,
@@ -18,11 +18,10 @@ import { Select } from '@/components/ui/select'
 import { Modal } from '@/components/ui/modal'
 import { Badge } from '@/components/ui/badge'
 import { DatePicker } from '@/components/ui/date-picker'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/stores/authStore'
 import { isAdminRole } from '@/lib/permissions'
-import { Plus, List, LayoutGrid, Search, SprayCan, RotateCcw, AlertCircle, Clock, User, Edit, Trash2, Loader2, BedDouble, UserRound, MessageSquareText } from 'lucide-react'
+import { Plus, Search, SprayCan, User, Edit, Trash2, Loader2, BedDouble, UserRound, MessageSquareText, X, Play, Check, ClipboardCheck } from 'lucide-react'
 
 const TASK_TYPES = [
   { value: 'Daily Cleaning', label: 'Daily Cleaning' },
@@ -49,12 +48,6 @@ const STATUS_OPTIONS = [
   { value: 'inspected', label: 'Inspected' },
 ]
 
-const STATUS_BOARD_COLUMNS = [
-  { key: 'pending', label: 'Pending', color: 'border-t-yellow-500' },
-  { key: 'in_progress', label: 'In Progress', color: 'border-t-blue-500' },
-  { key: 'completed', label: 'Completed', color: 'border-t-green-500' },
-]
-
 function getTimeSince(dateStr: string): string {
   if (!dateStr) return ''
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -69,7 +62,6 @@ function getTimeSince(dateStr: string): string {
 
 export default function HousekeepingPage() {
   const [search, setSearch] = useState('')
-  const [viewMode, setViewMode] = useState<'board' | 'list'>('board')
   const [statusFilter, setStatusFilter] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('')
   const [dateFilter, setDateFilter] = useState('')
@@ -124,14 +116,14 @@ export default function HousekeepingPage() {
   const selectedPriorityLabel = PRIORITY_OPTIONS.find(o => o.value === taskForm.priority)?.label ?? ''
   const selectedStaffName = staff.find(s => s.id === Number(taskForm.assigned_to))?.name ?? ''
 
-  const tasksByStatus = useMemo(() => {
-    const map: Record<string, HousekeepingTask[]> = { pending: [], in_progress: [], completed: [] }
-    tasks.forEach(t => {
-      if (map[t.status]) map[t.status].push(t)
-      else if (t.status === 'inspected') map.completed.push(t)
-    })
-    return map
-  }, [tasks])
+  const hasActiveFilters = Boolean(search || statusFilter || priorityFilter || dateFilter)
+
+  function clearAllFilters() {
+    setSearch('')
+    setStatusFilter('')
+    setPriorityFilter('')
+    setDateFilter('')
+  }
 
   function openNewTaskModal() {
     setTaskForm({ room_id: '', task_type: '', priority: 'normal', scheduled_date: '', assigned_to: '', notes: '' })
@@ -219,16 +211,16 @@ export default function HousekeepingPage() {
     })
   }
 
-  const boardColumns: Column<HousekeepingTask>[] = [
+  const listColumns: Column<HousekeepingTask>[] = [
     {
       key: 'room_number',
-      label: 'Room #',
-      render: (t) => <span className="font-semibold">{t.room ? t.room.room_number : '—'}</span>,
-    },
-    {
-      key: 'task_type',
-      label: 'Task Type',
-      render: (t) => <Badge variant="default">{t.task_type}</Badge>,
+      label: 'Room / Task',
+      render: (t) => (
+        <div className="min-w-0">
+          <span className="font-semibold text-foreground">{t.room ? t.room.room_number : 'General'}</span>
+          <span className="block truncate text-xs text-muted">{t.task_type}</span>
+        </div>
+      ),
     },
     {
       key: 'priority',
@@ -238,17 +230,31 @@ export default function HousekeepingPage() {
     {
       key: 'assigned_to',
       label: 'Assigned To',
-      render: (t) => (
-        <span className="text-muted">{t.assigned_to ? t.assigned_to.name : '—'}</span>
-      ),
+      render: (t) => {
+        if (!t.assigned_to) return <span className="text-muted">—</span>
+        const initials = t.assigned_to.name.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()
+        return (
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
+              {initials}
+            </div>
+            <span className="truncate text-sm text-foreground">{t.assigned_to.name}</span>
+          </div>
+        )
+      },
     },
     {
       key: 'scheduled_date',
-      label: 'Scheduled Date',
-      render: (t) => {
-        const d = t.scheduled_date ? formatDateDisplay(t.scheduled_date) : '—'
-        return <span>{d}</span>
-      },
+      label: 'Scheduled',
+      className: 'whitespace-nowrap',
+      render: (t) => (
+        <div>
+          <span className="font-medium text-foreground">{t.scheduled_date ? formatDateDisplay(t.scheduled_date) : '—'}</span>
+          {t.scheduled_date && (
+            <span className="block text-xs text-muted">{getTimeSince(t.scheduled_date)}</span>
+          )}
+        </div>
+      ),
     },
     {
       key: 'status',
@@ -265,14 +271,13 @@ export default function HousekeepingPage() {
               <RowActionButton
                 tone="info"
                 title="Assign"
-                label="Assign"
                 icon={<User className="h-4 w-4" />}
                 onClick={() => openAssignModal(t)}
               />
               <RowActionButton
                 tone="success"
                 title="Start"
-                label="Start"
+                icon={<Play className="h-4 w-4" />}
                 onClick={() => handleQuickAction(t.id, 'in_progress')}
               />
             </>
@@ -281,7 +286,7 @@ export default function HousekeepingPage() {
             <RowActionButton
               tone="success"
               title="Complete"
-              label="Complete"
+              icon={<Check className="h-4 w-4" />}
               onClick={() => handleQuickAction(t.id, 'completed')}
             />
           )}
@@ -289,7 +294,7 @@ export default function HousekeepingPage() {
             <RowActionButton
               tone="info"
               title="Inspect"
-              label="Inspect"
+              icon={<ClipboardCheck className="h-4 w-4" />}
               onClick={() => handleQuickAction(t.id, 'inspected')}
             />
           )}
@@ -312,154 +317,16 @@ export default function HousekeepingPage() {
     },
   ]
 
-  function renderBoard() {
-    if (isLoading) {
-      return (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, ci) => (
-            <div key={ci} className="space-y-3">
-              <Skeleton className="h-6 w-24" />
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Card key={i}>
-                  <CardContent className="p-4">
-                    <Skeleton className="mb-2 h-5 w-16" />
-                    <Skeleton className="mb-1 h-4 w-24" />
-                    <Skeleton className="mb-1 h-4 w-20" />
-                    <Skeleton className="h-4 w-28" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ))}
-        </div>
-      )
-    }
-
-    if (error) {
-      return (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border py-12">
-          <AlertCircle className="mb-3 h-10 w-10 text-danger" />
-          <p className="mb-2 text-sm font-medium text-foreground">Something went wrong</p>
-          <p className="mb-4 text-sm text-muted">{(error as Error).message}</p>
-          <Button variant="outline" onClick={() => refetch()}>
-            <RotateCcw className="h-4 w-4" /> Retry
-          </Button>
-        </div>
-      )
-    }
-
-    if (tasks.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-border py-12">
-          <SprayCan className="mb-3 h-10 w-10 text-muted/50" />
-          <p className="mb-1 text-sm font-medium text-foreground">No tasks found for this date</p>
-          <p className="text-sm text-muted">Try adjusting your search or filters.</p>
-        </div>
-      )
-    }
-
-    return (
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        {STATUS_BOARD_COLUMNS.map(col => (
-          <div key={col.key}>
-            <h3 className={`mb-3 border-t-4 pt-2 text-sm font-semibold text-foreground ${col.color}`}>
-              {col.label}
-              <span className="ml-2 text-muted">({tasksByStatus[col.key]?.length ?? 0})</span>
-            </h3>
-            <div className="space-y-3">
-              {(tasksByStatus[col.key] ?? []).map(task => (
-                <Card key={task.id}>
-                  <CardContent className="p-4">
-                    <div className="mb-2 flex items-start justify-between">
-                      <div>
-                        <p className="text-lg font-bold text-foreground">{task.room ? task.room.room_number : 'General Task'}</p>
-                        <Badge variant="default" size="sm">{task.task_type}</Badge>
-                      </div>
-                      <StatusBadge status={task.priority} />
-                    </div>
-                    {task.assigned_to && (
-                      <div className="mb-1 flex items-center gap-1 text-xs text-muted">
-                        <User className="h-3 w-3" />
-                        {task.assigned_to.name}
-                      </div>
-                    )}
-                    <div className="mb-1 text-xs text-muted">
-                      {task.scheduled_date ? formatDateDisplay(task.scheduled_date) : '—'}
-                    </div>
-                    <div className="mb-3 flex items-center gap-1 text-xs text-muted">
-                      <Clock className="h-3 w-3" />
-                      {getTimeSince(task.scheduled_date)}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1">
-                      {task.status === 'pending' && (
-                        <>
-                          <Button variant="ghost" size="sm" onClick={() => openAssignModal(task)}>
-                            <User className="h-3.5 w-3.5" /> Assign
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleQuickAction(task.id, 'in_progress')}>
-                            Start
-                          </Button>
-                        </>
-                      )}
-                      {task.status === 'in_progress' && (
-                        <Button variant="ghost" size="sm" onClick={() => handleQuickAction(task.id, 'completed')}>
-                          Complete
-                        </Button>
-                      )}
-                      {task.status === 'completed' && (
-                        <Button variant="ghost" size="sm" onClick={() => handleQuickAction(task.id, 'inspected')}>
-                          Inspect
-                        </Button>
-                      )}
-                      <Button variant="ghost" size="sm" square onClick={() => openEditModal(task)}>
-                        <Edit className="h-3.5 w-3.5" />
-                      </Button>
-                      {isAdmin && task.status === 'pending' && (
-                        <Button variant="ghost" size="sm" square onClick={() => setDeleteConfirmId(task.id)} className="text-danger hover:text-danger">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    )
-  }
-
   return (
     <div>
       <PageHeader
         title="Housekeeping"
         description="Manage housekeeping tasks and room cleaning schedules."
         actions={
-          <div className="flex items-center gap-2">
-            <div className="flex overflow-hidden rounded-lg border border-border">
-              <Button
-                variant={viewMode === 'board' ? 'default' : 'ghost'}
-                size="sm"
-                square
-                onClick={() => setViewMode('board')}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                square
-                onClick={() => setViewMode('list')}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
-            <Button variant="gold" onClick={openNewTaskModal}>
-              <Plus className="h-4 w-4" />
-              New Task
-            </Button>
-          </div>
+          <Button variant="gold" onClick={openNewTaskModal}>
+            <Plus className="h-4 w-4" />
+            New Task
+          </Button>
         }
       />
 
@@ -489,16 +356,68 @@ export default function HousekeepingPage() {
             </div>
           </div>
 
-          {viewMode === 'board' ? renderBoard() : (
-            <DataTable
-              columns={boardColumns}
-              data={tasks}
-              loading={isLoading}
-              error={error ? (error as Error).message : null}
-              onRetry={() => refetch()}
-              keyExtractor={(t) => t.id}
-            />
+          {/* Active Filter Bar */}
+          {hasActiveFilters && (
+            <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted">
+              <span>Active filters:</span>
+              {search && (
+                <Badge variant="secondary" className="gap-1">
+                  Search: {search}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setSearch('')}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              {statusFilter && (
+                <Badge variant="secondary" className="gap-1">
+                  Status: {STATUS_OPTIONS.find(o => o.value === statusFilter)?.label}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setStatusFilter('')}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              {priorityFilter && (
+                <Badge variant="secondary" className="gap-1">
+                  Priority: {PRIORITY_OPTIONS.find(o => o.value === priorityFilter)?.label}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setPriorityFilter('')}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              {dateFilter && (
+                <Badge variant="secondary" className="gap-1">
+                  Date: {dateFilter}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setDateFilter('')}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+                Clear all
+              </Button>
+            </div>
           )}
+
+          <DataTable
+            columns={listColumns}
+            data={tasks}
+            loading={isLoading}
+            error={error ? (error as Error).message : null}
+            onRetry={() => refetch()}
+            keyExtractor={(t) => t.id}
+            emptyState={
+              <div className="flex flex-col items-center justify-center py-12">
+                <SprayCan className="mb-3 h-10 w-10 text-muted/50" />
+                <p className="text-sm font-medium text-foreground">No tasks match your filters</p>
+                <p className="text-sm text-muted">Try adjusting your search or filters.</p>
+                {hasActiveFilters && (
+                  <Button variant="outline" className="mt-4" onClick={clearAllFilters}>
+                    Clear all filters
+                  </Button>
+                )}
+              </div>
+            }
+          />
         </CardContent>
       </Card>
 

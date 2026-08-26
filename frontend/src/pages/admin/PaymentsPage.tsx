@@ -18,7 +18,7 @@ import { useToast } from '@/components/ui/toast'
 import { PAYMENT_METHODS } from '@/lib/constants'
 import {
   Plus, Eye, Banknote, Smartphone, CreditCard,
-  AlertCircle, Loader2, UserRound, BedDouble, CalendarDays, ReceiptText, Hash, Wallet,
+  AlertCircle, Loader2, UserRound, BedDouble, CalendarDays, ReceiptText, Hash, Wallet, X,
 } from 'lucide-react'
 
 interface PaymentExtended extends Payment {
@@ -147,12 +147,28 @@ export default function PaymentsPage() {
     setSortBy(prev => prev === key ? `-${key}` : prev === `-${key}` ? key : key)
   }
 
+  const hasActiveFilters = Boolean(search || methodFilter || statusFilter || dateFrom || dateTo)
+
+  function clearAllFilters() {
+    setSearch('')
+    setMethodFilter('')
+    setStatusFilter('')
+    setDateFrom('')
+    setDateTo('')
+    setPage(1)
+  }
+
+  function getGuestInitials(payment: PaymentExtended) {
+    const name = getGuestName(payment)
+    if (name === '-') return '?'
+    return name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
+  }
+
   const columns: Column<PaymentExtended>[] = [
     {
       key: 'reference_number',
       label: 'Reference #',
       sortable: true,
-      className: 'font-medium',
       render: (r) => (
         <button onClick={() => openDetailModal(r)} className="text-primary hover:underline">
           {r.reference_number ?? `PAY-${r.id}`}
@@ -163,27 +179,44 @@ export default function PaymentsPage() {
       key: 'guest',
       label: 'Guest',
       sortable: true,
-      render: (r) => <span>{getGuestName(r)}</span>,
-    },
-    {
-      key: 'reservation_id',
-      label: 'Reservation #',
-      render: (r) => <span>{r.reservation?.reservation_number ?? `#${r.reservation_id}`}</span>,
+      render: (r) => (
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+            {getGuestInitials(r)}
+          </div>
+          <div className="min-w-0">
+            <span className="block truncate text-sm font-medium text-foreground">{getGuestName(r)}</span>
+            <span className="block truncate text-xs text-muted">
+              {r.reservation?.reservation_number ?? `#${r.reservation_id}`}
+            </span>
+          </div>
+        </div>
+      ),
     },
     {
       key: 'amount',
       label: 'Amount',
       sortable: true,
-      render: (r) => <span className="font-medium">{formatCurrency(r.amount)}</span>,
+      className: 'whitespace-nowrap',
+      render: (r) => (
+        <div className="whitespace-nowrap">
+          <span className="text-base font-semibold tabular-nums text-foreground">{formatCurrency(r.amount)}</span>
+          {r.payment_type && (
+            <span className="block text-xs capitalize text-muted">{r.payment_type}</span>
+          )}
+        </div>
+      ),
     },
     {
       key: 'payment_method',
       label: 'Method',
       sortable: true,
       render: (r) => (
-        <div className="flex items-center gap-1.5">
-          {METHOD_ICONS[r.payment_method] ?? null}
-          <span>{getMethodLabel(r.payment_method)}</span>
+        <div className="flex items-center gap-2">
+          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${methodTileClass(r.payment_method)}`}>
+            {METHOD_ICONS[r.payment_method] ?? <Wallet className="h-4 w-4" />}
+          </div>
+          <span className="text-sm">{getMethodLabel(r.payment_method)}</span>
         </div>
       ),
     },
@@ -197,7 +230,19 @@ export default function PaymentsPage() {
       key: 'paid_at',
       label: 'Date',
       sortable: true,
-      render: (r) => <span>{formatDate(r.paid_at ?? r.created_at)}</span>,
+      className: 'whitespace-nowrap',
+      render: (r) => {
+        const d = r.paid_at ?? r.created_at
+        const time = d && !isNaN(new Date(d).getTime())
+          ? new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+          : ''
+        return (
+          <div className="whitespace-nowrap">
+            <span className="font-medium text-foreground">{formatDate(d)}</span>
+            {time && <span className="block text-xs text-muted">{time}</span>}
+          </div>
+        )
+      },
     },
     {
       key: 'actions',
@@ -261,6 +306,56 @@ export default function PaymentsPage() {
             </div>
           </div>
 
+          {/* Active Filter Bar */}
+          {hasActiveFilters && (
+            <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted">
+              <span>Active filters:</span>
+              {search && (
+                <Badge variant="secondary" className="gap-1">
+                  Search: {search}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setSearch(''); setPage(1) }}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              {methodFilter && (
+                <Badge variant="secondary" className="gap-1">
+                  Method: {getMethodLabel(methodFilter)}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setMethodFilter(''); setPage(1) }}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              {statusFilter && (
+                <Badge variant="secondary" className="gap-1">
+                  Status: {PAYMENT_STATUS_OPTIONS.find(o => o.value === statusFilter)?.label}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setStatusFilter(''); setPage(1) }}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              {dateFrom && (
+                <Badge variant="secondary" className="gap-1">
+                  From: {dateFrom}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setDateFrom(''); setPage(1) }}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              {dateTo && (
+                <Badge variant="secondary" className="gap-1">
+                  To: {dateTo}
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setDateTo(''); setPage(1) }}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+                Clear all
+              </Button>
+            </div>
+          )}
+
           <DataTable
             columns={columns}
             data={payments}
@@ -268,6 +363,18 @@ export default function PaymentsPage() {
             error={error ? 'Failed to load payments' : null}
             sortBy={sortBy}
             onSort={handleSort}
+            emptyState={
+              <div className="flex flex-col items-center justify-center py-12">
+                <Banknote className="mb-3 h-10 w-10 text-muted/50" />
+                <p className="text-sm font-medium text-foreground">No payments match your filters</p>
+                <p className="text-sm text-muted">Try adjusting your search or filters.</p>
+                {hasActiveFilters && (
+                  <Button variant="outline" className="mt-4" onClick={clearAllFilters}>
+                    Clear all filters
+                  </Button>
+                )}
+              </div>
+            }
             pagination={paymentsData ? {
               currentPage: page,
               lastPage: totalPages,
