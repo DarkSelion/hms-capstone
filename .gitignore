@@ -28,3 +28,7 @@ tools/
 
 # Secrets / keys
 *.pem
+
+# Laptop bundle
+laptop_bundle.zip
+laptop_bundle/

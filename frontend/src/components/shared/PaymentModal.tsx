@@ -20,6 +20,7 @@ interface PaymentModalProps {
   showCheckOutOption?: boolean
   actualCheckOut?: string
   onSuccess?: (payment: Payment) => void
+  paymentType?: 'full' | 'partial' | 'deposit'
 }
 
 function dueOf(reservation: Reservation | null): number {
@@ -186,6 +187,7 @@ export function PaymentModal({
   showCheckOutOption = false,
   actualCheckOut,
   onSuccess,
+  paymentType = 'full',
 }: PaymentModalProps) {
   const createPayment = useCreatePayment()
   const checkIn = useCheckIn()
@@ -197,6 +199,7 @@ export function PaymentModal({
   const [error, setError] = useState<string | null>(null)
   const [checkInAfter, setCheckInAfter] = useState(false)
   const [checkOutAfter, setCheckOutAfter] = useState(false)
+  const [internalPaymentType, setPaymentType] = useState<'full' | 'partial' | 'deposit'>(paymentType)
 
   const activeReservation = reservation ?? selectedReservation
   const due = dueOf(activeReservation)
@@ -264,7 +267,7 @@ export function PaymentModal({
         reservation_id: activeReservation.id,
         amount,
         payment_method: 'cash',
-        payment_type: amount >= due ? 'full' : 'partial',
+        payment_type: internalPaymentType,
         reference_number: reference.trim() || undefined,
         status: 'completed',
         ...(actualCheckOut ? { actual_check_out: actualCheckOut } : {}),
@@ -284,7 +287,7 @@ export function PaymentModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Record Payment" size="lg">
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/15 text-gold-dark">
             <Banknote className="h-5 w-5" />
@@ -347,22 +350,37 @@ export function PaymentModal({
           </div>
         )}
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Banknote className="h-4 w-4" />
-            </div>
-            <h4 className="text-sm font-semibold text-foreground">Cash Details</h4>
+        <div className="space-y-1.5">
+          <p className="text-sm font-medium text-foreground">Payment Type</p>
+          <div className="grid grid-cols-3 rounded-xl bg-bg p-1">
+            {(['full', 'partial', 'deposit'] as const).map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setPaymentType(type)}
+                className={cn(
+                  'rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200',
+                  internalPaymentType === type
+                    ? 'bg-white text-foreground shadow-sm'
+                    : 'text-muted hover:text-foreground',
+                )}
+              >
+                <span className="capitalize">{type}</span>
+              </button>
+            ))}
           </div>
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
           <div className="space-y-3">
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-foreground">Amount to collect</span>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   <button
                     type="button"
                     onClick={() => handleAmountChange(due)}
-                    className="rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground shadow-sm hover:bg-bg"
+                    className="rounded-md border border-border bg-card px-2 py-0.5 text-xs font-medium text-muted transition-colors hover:bg-bg hover:text-foreground"
                   >
                     Full
                   </button>
@@ -370,7 +388,7 @@ export function PaymentModal({
                     <button
                       type="button"
                       onClick={() => handleAmountChange(Math.round(due / 2))}
-                      className="rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground shadow-sm hover:bg-bg"
+                      className="rounded-md border border-border bg-card px-2 py-0.5 text-xs font-medium text-muted transition-colors hover:bg-bg hover:text-foreground"
                     >
                       Half
                     </button>

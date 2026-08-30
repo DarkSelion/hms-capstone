@@ -57,6 +57,15 @@ function renderPage() {
   return render(<ActivityLogsPage />)
 }
 
+/** Click the activity feed row that contains the given text. */
+function clickRowByText(text: string | RegExp) {
+  const el = screen.getByText(text)
+  // Walk up to the <button> row (the activity feed row)
+  const row = el.closest('button[type="button"]') ?? el.closest('button')
+  if (!row) throw new Error(`No button ancestor found for element with text: ${text}`)
+  fireEvent.click(row)
+}
+
 describe('ActivityLogsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -73,7 +82,9 @@ describe('ActivityLogsPage', () => {
     render(<ActivityLogsPage />)
 
     expect(screen.getAllByText('Admin User').length).toBeGreaterThan(0)
-    expect(screen.getByText('Created reservation #BK-2026-0001')).toBeTruthy()
+    // Description is tokenized — "Created reservation" is plain text, "#BK-2026-0001" is a chip
+    expect(screen.getByText(/Created reservation/)).toBeTruthy()
+    expect(screen.getByText('#BK-2026-0001')).toBeTruthy()
     expect(screen.getAllByText('Reservations').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Created').length).toBeGreaterThan(0)
   })
@@ -88,7 +99,7 @@ describe('ActivityLogsPage', () => {
     mockUseStaffAssignable.mockReturnValue({ data: [staff()], isLoading: false, error: null })
     render(<ActivityLogsPage />)
 
-    expect(screen.getByText('Guest Maria created reservation')).toBeTruthy()
+    expect(screen.getByText(/Guest Maria created reservation/)).toBeTruthy()
     expect(screen.getAllByText('Guest').length).toBeGreaterThan(0)
   })
 
@@ -110,7 +121,7 @@ describe('ActivityLogsPage', () => {
     mockUseStaffAssignable.mockReturnValue({ data: [staff()], isLoading: false, error: null })
     render(<ActivityLogsPage />)
 
-    expect(screen.getByText('No data found')).toBeTruthy()
+    expect(screen.getByText('No activity found')).toBeTruthy()
   })
 
   it('renders error state and retry', () => {
@@ -152,7 +163,8 @@ describe('ActivityLogsPage', () => {
     mockUseStaffAssignable.mockReturnValue({ data: [staff()], isLoading: false, error: null })
     render(<ActivityLogsPage />)
 
-    fireEvent.click(screen.getByTitle('View'))
+    // Click the activity row (the button containing the description)
+    clickRowByText(/Updated reservation/)
 
     expect(screen.getByRole('heading', { name: 'Activity Details' })).toBeTruthy()
     expect(screen.getAllByText('Admin User').length).toBeGreaterThan(1)
@@ -190,7 +202,7 @@ describe('ActivityLogsPage', () => {
     mockUseStaffAssignable.mockReturnValue({ data: [staff()], isLoading: false, error: null })
     render(<ActivityLogsPage />)
 
-    fireEvent.click(screen.getByTitle('View'))
+    clickRowByText(/Guest Maria created reservation/)
 
     expect(screen.getByRole('heading', { name: 'Activity Details' })).toBeTruthy()
     expect(screen.getByText('Portal / customer action')).toBeTruthy()
@@ -215,13 +227,15 @@ describe('ActivityLogsPage', () => {
     mockUseStaffAssignable.mockReturnValue({ data: [staff()], isLoading: false, error: null })
     render(<ActivityLogsPage />)
 
-    fireEvent.click(screen.getByTitle('View'))
+    clickRowByText(/Overdue reservation/)
 
     expect(screen.getByText('What Happened')).toBeTruthy()
-    const chip = screen.getByText('#BK-2026-0016-W99U')
-    expect(chip).toBeTruthy()
-    expect(chip.className).toContain('bg-gold/15')
-    expect(chip.className).toContain('font-mono')
+    // The chip appears in both the feed row and the modal — grab both, assert on the modal one
+    const chips = screen.getAllByText('#BK-2026-0016-W99U')
+    expect(chips.length).toBeGreaterThanOrEqual(2)
+    const modalChip = chips[chips.length - 1]
+    expect(modalChip.className).toContain('bg-gold/15')
+    expect(modalChip.className).toContain('font-mono')
     expect(screen.getAllByText(/Overdue reservation/).length).toBeGreaterThan(0)
     expect(screen.getAllByText(/flagged for No Show review/).length).toBeGreaterThan(0)
   })

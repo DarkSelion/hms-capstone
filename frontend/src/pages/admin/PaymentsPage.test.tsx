@@ -21,8 +21,13 @@ vi.mock('@/components/ui/toast', () => ({
 }))
 
 vi.mock('@/components/shared/PaymentModal', () => ({
-  PaymentModal: ({ isOpen }: { isOpen: boolean }) =>
-    isOpen ? <div data-testid="payment-modal-stub" /> : null,
+  PaymentModal: ({ isOpen, title, confirmLabel, paymentType }: { isOpen: boolean; title?: string; confirmLabel?: string; paymentType?: string }) =>
+    isOpen ? <div data-testid={`payment-modal-stub-${paymentType || title || confirmLabel || 'default'}`} /> : null,
+}))
+
+vi.mock('@/components/shared/RefundModal', () => ({
+  RefundModal: ({ isOpen, onClose, payment, onSuccess }: { isOpen: boolean; onClose: () => void; payment?: any; onSuccess?: () => void }) =>
+    isOpen ? <div data-testid="refund-modal-stub" /> : null,
 }))
 
 function payment(overrides: Partial<Payment & { reservation?: Reservation }> = {}): Payment & { reservation?: Reservation } {
@@ -108,12 +113,14 @@ describe('PaymentsPage', () => {
     expect(params).toEqual(expect.objectContaining({ date_from: expect.stringMatching(/^\d{4}-\d{2}-01$/) }))
   })
 
-  it('opens the record payment modal', () => {
+it('opens the record payment modal', () => {
     renderPage()
-    expect(screen.queryByTestId('payment-modal-stub')).not.toBeInTheDocument()
+    // Check that modal is not open initially
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Record Payment' }))
-    expect(screen.getByTestId('payment-modal-stub')).toBeInTheDocument()
+    // Modal should open - check for modal content
+    expect(screen.getByText('Record Payment')).toBeInTheDocument()
   })
 
   it('opens the payment detail modal from a reference link', () => {

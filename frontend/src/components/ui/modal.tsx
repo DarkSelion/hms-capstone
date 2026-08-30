@@ -19,9 +19,10 @@ export interface ModalProps {
   children: ReactNode
   size?: keyof typeof sizeClasses
   footer?: ReactNode
+  className?: string
 }
 
-export function Modal({ isOpen, onClose, title, children, size = 'md', footer }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, size = 'md', footer, className }: ModalProps) {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -43,7 +44,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer }:
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true">
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
         onClick={onClose}
@@ -52,6 +53,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer }:
         className={cn(
           'relative z-50 flex w-full max-h-[90vh] flex-col rounded-xl bg-card shadow-xl transition-all',
           sizeClasses[size],
+          className,
         )}
       >
         {title && (

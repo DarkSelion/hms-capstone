@@ -126,6 +126,9 @@ describe('PaymentModal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Half' }))
     expect(amountInput()).toHaveValue(165)
 
+    // Select 'partial' payment type since amount is half of due
+    fireEvent.click(screen.getByRole('button', { name: /Partial/i }))
+
     mockMutate.mockResolvedValue({ id: 51, amount: 165, status: 'completed' })
     fireEvent.click(screen.getByRole('button', { name: 'Record Payment' }))
 

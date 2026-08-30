@@ -70,6 +70,8 @@ Route::middleware(['auth:sanctum', 'role:admin,staff'])->group(function () {
 
     // Payments
     Route::apiResource('payments', PaymentController::class);
+    Route::post('/payments/{payment}/refund', [PaymentController::class, 'refund'])
+        ->middleware(['role:admin,cashier']);
 
     // Invoices
     Route::apiResource('invoices', InvoiceController::class);

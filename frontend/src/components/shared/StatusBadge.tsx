@@ -1,43 +1,96 @@
-import { Badge } from '../ui/badge'
+import { cn } from '../../lib/utils'
 
-const statusConfig: Record<string, { variant: 'success' | 'warning' | 'danger' | 'info' | 'default' | 'gold'; label: string }> = {
-  pending: { variant: 'warning', label: 'Pending' },
-  confirmed: { variant: 'info', label: 'Confirmed' },
-  checked_in: { variant: 'success', label: 'Checked In' },
-  checked_out: { variant: 'default', label: 'Checked Out' },
-  cancelled: { variant: 'danger', label: 'Cancelled' },
-  no_show: { variant: 'danger', label: 'No Show' },
-  unpaid: { variant: 'warning', label: 'Unpaid' },
-  partial: { variant: 'gold', label: 'Partial' },
-  paid: { variant: 'success', label: 'Paid' },
-  refunded: { variant: 'info', label: 'Refunded' },
-  available: { variant: 'success', label: 'Available' },
-  occupied: { variant: 'danger', label: 'Occupied' },
-  maintenance: { variant: 'warning', label: 'Maintenance' },
-  reserved: { variant: 'info', label: 'Reserved' },
-  cleaning: { variant: 'default', label: 'Cleaning' },
-  clean: { variant: 'success', label: 'Clean' },
-  dirty: { variant: 'warning', label: 'Dirty' },
-  in_progress: { variant: 'info', label: 'In Progress' },
-  inspected: { variant: 'gold', label: 'Inspected' },
-  draft: { variant: 'default', label: 'Draft' },
-  sent: { variant: 'info', label: 'Sent' },
-  overdue: { variant: 'danger', label: 'Overdue' },
-  failed: { variant: 'danger', label: 'Failed' },
-  completed: { variant: 'success', label: 'Completed' },
-  assigned: { variant: 'info', label: 'Assigned' },
-  reported: { variant: 'warning', label: 'Reported' },
-  low: { variant: 'default', label: 'Low' },
-  medium: { variant: 'info', label: 'Medium' },
-  normal: { variant: 'info', label: 'Normal' },
-  high: { variant: 'warning', label: 'High' },
-  urgent: { variant: 'danger', label: 'Urgent' },
-  critical: { variant: 'danger', label: 'Critical' },
-  active: { variant: 'success', label: 'Active' },
-  inactive: { variant: 'default', label: 'Inactive' },
+const textColorMap: Record<string, string> = {
+  success: 'text-emerald-600',
+  warning: 'text-amber-600',
+  danger: 'text-red-600',
+  info: 'text-sky-600',
+  gold: 'text-amber-700',
+  default: 'text-muted',
+}
+
+const variantMap: Record<string, string> = {
+  pending: 'warning',
+  confirmed: 'info',
+  checked_in: 'success',
+  checked_out: 'default',
+  cancelled: 'danger',
+  no_show: 'danger',
+  unpaid: 'warning',
+  partial: 'gold',
+  paid: 'success',
+  refunded: 'info',
+  available: 'success',
+  occupied: 'danger',
+  maintenance: 'warning',
+  reserved: 'info',
+  cleaning: 'default',
+  clean: 'success',
+  dirty: 'warning',
+  in_progress: 'info',
+  inspected: 'gold',
+  draft: 'default',
+  sent: 'info',
+  overdue: 'danger',
+  failed: 'danger',
+  completed: 'success',
+  assigned: 'info',
+  reported: 'warning',
+  low: 'default',
+  medium: 'info',
+  normal: 'info',
+  high: 'warning',
+  urgent: 'danger',
+  critical: 'danger',
+  active: 'success',
+  inactive: 'default',
+}
+
+const labelMap: Record<string, string> = {
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  checked_in: 'Checked In',
+  checked_out: 'Checked Out',
+  cancelled: 'Cancelled',
+  no_show: 'No Show',
+  unpaid: 'Unpaid',
+  partial: 'Partial',
+  paid: 'Paid',
+  refunded: 'Refunded',
+  available: 'Available',
+  occupied: 'Occupied',
+  maintenance: 'Maintenance',
+  reserved: 'Reserved',
+  cleaning: 'Cleaning',
+  clean: 'Clean',
+  dirty: 'Dirty',
+  in_progress: 'In Progress',
+  inspected: 'Inspected',
+  draft: 'Draft',
+  sent: 'Sent',
+  overdue: 'Overdue',
+  failed: 'Failed',
+  completed: 'Completed',
+  assigned: 'Assigned',
+  reported: 'Reported',
+  low: 'Low',
+  medium: 'Medium',
+  normal: 'Normal',
+  high: 'High',
+  urgent: 'Urgent',
+  critical: 'Critical',
+  active: 'Active',
+  inactive: 'Inactive',
 }
 
 export function StatusBadge({ status }: { status: string }) {
-  const config = statusConfig[status] ?? { variant: 'default' as const, label: status }
-  return <Badge variant={config.variant}>{config.label}</Badge>
+  const variant = variantMap[status] ?? 'default'
+  const label = labelMap[status] ?? status
+  const colorClass = textColorMap[variant] ?? textColorMap.default
+
+  return (
+    <span className={cn('whitespace-nowrap text-sm font-medium', colorClass)}>
+      {label}
+    </span>
+  )
 }

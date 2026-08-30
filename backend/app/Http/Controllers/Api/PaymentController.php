@@ -6,8 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Payment;
 use App\Models\Reservation;
+use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class PaymentController extends Controller
@@ -63,7 +67,7 @@ class PaymentController extends Controller
             'reservation_id' => 'required|exists:reservations,id',
             'amount' => 'required|numeric|min:0.01',
             'payment_method' => 'required|in:cash,gcash,online',
-            'payment_type' => 'required|in:full,partial,deposit',
+            'payment_type' => 'required|in:full,partial,deposit,refund',
             'status' => 'sometimes|in:pending,completed,failed,refunded',
             'reference_number' => 'nullable|string|max:100',
             'notes' => 'nullable|string',
@@ -73,27 +77,61 @@ class PaymentController extends Controller
         $payment = DB::transaction(function () use ($data, $request) {
             $reservation = Reservation::whereKey($data['reservation_id'])->lockForUpdate()->firstOrFail();
 
-            if (in_array($reservation->status, ['cancelled', 'checked_out', 'no_show'])) {
-                throw ValidationException::withMessages([
-                    'reservation_id' => ['Payments cannot be recorded on a '.$reservation->status.' reservation.'],
-                ]);
-            }
+            // Refunds can only be processed on reservations with completed payments
+            if ($data['payment_type'] === 'refund') {
+                if (!in_array($reservation->status, ['confirmed', 'checked_in', 'checked_out'])) {
+                    throw ValidationException::withMessages([
+                        'reservation_id' => ['Refunds can only be processed for active or completed reservations.'],
+                    ]);
+                }
 
-            // The check-out collect flow collects the PROJECTED balance (extra
-            // nights from a changed departure and/or the same-day late fee),
-            // which has not been persisted to the reservation yet. When the
-            // caller supplies the actual departure date, cap the amount at the
-            // projected balance due; otherwise keep the stored balance cap.
-            $maxAmount = (float) $reservation->due_amount;
-            if (! empty($data['actual_check_out'])) {
-                $projected = $reservation->projectedCheckoutTotal($data['actual_check_out']);
-                $maxAmount = max($maxAmount, (float) $projected['due_amount']);
-            }
+                // Check if there's a completed payment to refund
+                $completedPayments = $reservation->payments()->where('status', 'completed')->get();
+                if ($completedPayments->isEmpty()) {
+                    throw ValidationException::withMessages([
+                        'amount' => ['No completed payments found to refund.'],
+                    ]);
+                }
 
-            if ($data['amount'] > $maxAmount) {
-                throw ValidationException::withMessages([
-                    'amount' => ['The amount cannot exceed the outstanding balance of '.number_format($maxAmount, 2).'.'],
-                ]);
+                // Calculate max refundable amount (total paid - already refunded)
+                $totalPaid = $completedPayments->sum('amount');
+                $totalRefunded = $reservation->payments()->where('payment_type', 'refund')->where('status', 'completed')->sum('amount');
+                $maxRefundable = $totalPaid - $totalRefunded;
+
+                if ($data['amount'] > $maxRefundable) {
+                    throw ValidationException::withMessages([
+                        'amount' => ['Refund amount cannot exceed the refundable balance of ' . number_format($maxRefundable, 2) . '.'],
+                    ]);
+                }
+
+                // For refunds, we don't need a room assignment check
+                // Use the original payment's method or default to cash
+                $originalPayment = $completedPayments->first();
+                $data['payment_method'] = $data['payment_method'] ?? $originalPayment->payment_method;
+            } else {
+                // Regular payment validation
+                if (in_array($reservation->status, ['cancelled', 'checked_out', 'no_show'])) {
+                    throw ValidationException::withMessages([
+                        'reservation_id' => ['Payments cannot be recorded on a '.$reservation->status.' reservation.'],
+                    ]);
+                }
+
+                // The check-out collect flow collects the PROJECTED balance (extra
+                // nights from a changed departure and/or the same-day late fee),
+                // which has not been persisted to the reservation yet. When the
+                // caller supplies the actual departure date, cap the amount at the
+                // projected balance due; otherwise keep the stored balance cap.
+                $maxAmount = (float) $reservation->due_amount;
+                if (! empty($data['actual_check_out'])) {
+                    $projected = $reservation->projectedCheckoutTotal($data['actual_check_out']);
+                    $maxAmount = max($maxAmount, (float) $projected['due_amount']);
+                }
+
+                if ($data['amount'] > $maxAmount) {
+                    throw ValidationException::withMessages([
+                        'amount' => ['The amount cannot exceed the outstanding balance of '.number_format($maxAmount, 2).'.'],
+                    ]);
+                }
             }
 
             $data['guest_id'] = $reservation->guest_id;
@@ -104,14 +142,16 @@ class PaymentController extends Controller
             }
 
             if (empty($data['reference_number'])) {
-                $data['reference_number'] = 'PAY-' . now()->format('Ymd') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
+                $prefix = $data['payment_type'] === 'refund' ? 'REF' : 'PAY';
+                $data['reference_number'] = $prefix . '-' . now()->format('Ymd') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
             }
 
             unset($data['actual_check_out']);
 
             $payment = Payment::create($data);
 
-            if ($data['status'] === 'completed' && $reservation->status === 'pending') {
+            // For refunds, we don't change reservation status to confirmed
+            if ($data['payment_type'] !== 'refund' && $data['status'] === 'completed' && $reservation->status === 'pending') {
                 $reservation->update(['status' => 'confirmed']);
             }
 
@@ -126,7 +166,7 @@ class PaymentController extends Controller
             'module' => 'payments',
             'model_type' => 'Payment',
             'model_id' => $payment->id,
-            'description' => "Recorded payment of ₱" . number_format($payment->amount, 2) . " for reservation #" . $payment->reservation->reservation_number,
+            'description' => "Recorded " . ($data['payment_type'] === 'refund' ? 'refund' : 'payment') . " of ₱" . number_format($payment->amount, 2) . " for reservation #" . $payment->reservation->reservation_number,
         ]);
 
         return response()->json($payment->load(['reservation.guest', 'reservation.room.roomType']), 201);
@@ -172,6 +212,147 @@ class PaymentController extends Controller
         ]);
 
         return response()->json($payment->load(['reservation.guest', 'reservation.room.roomType']));
+    }
+
+    public function refund(Request $request, Payment $payment)
+    {
+        $data = $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'reason' => 'required|string|max:255',
+        ]);
+
+        // Only completed payments can be refunded
+        if ($payment->status !== 'completed') {
+            return response()->json(['message' => 'Only completed payments can be refunded.'], 422);
+        }
+
+        // Calculate max refundable amount
+        $completedRefunds = $payment->reservation->payments()
+            ->where('payment_type', 'refund')
+            ->where('status', 'completed')
+            ->get();
+
+        $totalRefundedSoFar = $completedRefunds->sum('amount');
+        $maxRefundable = $payment->amount - $totalRefundedSoFar;
+
+        if ($data['amount'] > $maxRefundable) {
+            return response()->json(['message' => 'Refund amount cannot exceed ₱' . number_format($maxRefundable, 2) . '.'], 422);
+        }
+
+        // ── Local refund (cash / gcash) — no gateway call ──
+        if ($payment->payment_method !== 'online') {
+            DB::transaction(function () use ($payment, $data) {
+                $payment->update([
+                    'payment_type' => 'refund',
+                    'status' => 'refunded',
+                    'notes' => 'Refund: ' . ($data['reason'] ?? ''),
+                ]);
+
+                $payment->reservation->reconcileBalances();
+            });
+
+            ActivityLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'refunded',
+                'module' => 'payments',
+                'model_type' => 'Payment',
+                'model_id' => $payment->id,
+                'description' => "Refunded {$payment->payment_method} payment #{$payment->id} — ₱" . number_format($data['amount'], 2),
+            ]);
+
+            return response()->json([
+                'message' => 'Refund recorded successfully.',
+                'amount' => $data['amount'],
+                'reservation' => $payment->reservation->fresh(['room.roomType', 'guest']),
+            ]);
+        }
+
+        // ── Online refund — call the payment gateway ──
+        $baseUrl = rtrim((string) Setting::where('key', 'online_gateway_base_url')->value('value'), '/');
+        $apiKey = (string) Setting::where('key', 'online_gateway_api_key')->value('value');
+
+        if ($baseUrl === '' || $apiKey === '') {
+            return response()->json(['message' => 'The online payment gateway is not configured.'], 503);
+        }
+
+        // Build refund payload per gateway spec (colab JSON format)
+        $payload = [
+            'booking_ref' => $payment->reservation->reservation_number,
+            'paymongo_payment_id' => $payment->reference_number,
+            'customer_name' => $payment->reservation->guest->full_name,
+            'customer_email' => $payment->reservation->guest->email,
+            'amount' => number_format($data['amount'], 2, '.', ''),
+            'refund_status' => 'initiated',
+            'reason' => $data['reason'],
+        ];
+
+        try {
+            $response = Http::withHeaders(['X-API-KEY' => $apiKey])
+                ->acceptJson()
+                ->asJson()
+                ->timeout(30)
+                ->post($baseUrl.'/api/refund', $payload);
+        } catch (ConnectionException $e) {
+            Log::warning('Online gateway unreachable for refund', [
+                'base_url' => $baseUrl,
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['message' => 'The payment gateway is temporarily unavailable. Please try again later.'], 502);
+        }
+
+        if ($response->successful()) {
+            $gatewayResponse = $response->json();
+
+            // Update payment record with gateway response
+            DB::transaction(function () use ($payment, $data, $gatewayResponse) {
+                $payment->update([
+                    'payment_type' => 'refund',
+                    'status' => 'refunded',
+                    'reference_number' => $gatewayResponse['refund_id'] ?? $payment->reference_number,
+                    'notes' => 'Gateway refund: ' . ($data['reason'] ?? ''),
+                    'transaction_id' => $gatewayResponse['paymongo_refund_id'] ?? '',
+                ]);
+
+                // Reconcile reservation balances
+                $payment->reservation->reconcileBalances();
+            });
+
+            ActivityLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'refunded',
+                'module' => 'payments',
+                'model_type' => 'Payment',
+                'model_id' => $payment->id,
+                'description' => "Refunded online payment #{$payment->id} via gateway — ₱" . number_format($data['amount'], 2),
+            ]);
+
+            return response()->json([
+                'message' => 'Refund processed successfully via gateway.',
+                'refund_id' => $gatewayResponse['refund_id'] ?? null,
+                'amount' => $data['amount'],
+                'reservation' => $payment->reservation->fresh(['room.roomType', 'guest']),
+            ]);
+        }
+
+        if ($response->status() === 400 || $response->status() === 422) {
+            $message = (string) ($response->json('message') ?? $response->json('error') ?? '');
+            return response()->json(['message' => $message !== '' ? 'Gateway rejected: ' . mb_substr($message, 0, 200) : 'The payment provider rejected the refund request.'], 422);
+        }
+
+        if ($response->status() === 401 || $response->status() === 403) {
+            return response()->json(['message' => 'Online payment authorization failed.'], 502);
+        }
+
+        Log::warning('Online gateway upstream error for refund', [
+            'base_url' => $baseUrl,
+            'payment_id' => $payment->id,
+            'status' => $response->status(),
+            'body' => mb_substr((string) $response->body(), 0, 500),
+        ]);
+
+        return response()->json(['message' => 'The payment gateway is temporarily unavailable.'], 502);
     }
 
     public function destroy(Payment $payment)

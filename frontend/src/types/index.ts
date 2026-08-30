@@ -158,7 +158,7 @@ export interface Payment {
   guest_id?: number;
   amount: number;
   payment_method: 'cash' | 'gcash' | 'online';
-  payment_type?: 'full' | 'partial';
+  payment_type?: 'full' | 'partial' | 'deposit' | 'refund';
   status: 'pending' | 'completed' | 'failed' | 'refunded';
   transaction_id?: string;
   reference_number?: string;

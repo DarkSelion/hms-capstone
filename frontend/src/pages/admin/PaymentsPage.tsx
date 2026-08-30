@@ -7,6 +7,7 @@ import { DataTable, type Column } from '@/components/shared/DataTable'
 import { RowActions, RowActionButton } from '@/components/shared/RowActions'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { PaymentModal } from '@/components/shared/PaymentModal'
+import { RefundModal } from '@/components/shared/RefundModal'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,7 +19,7 @@ import { useToast } from '@/components/ui/toast'
 import { PAYMENT_METHODS } from '@/lib/constants'
 import {
   Plus, Eye, Banknote, Smartphone, CreditCard,
-  AlertCircle, Loader2, UserRound, BedDouble, CalendarDays, ReceiptText, Hash, Wallet, X,
+  AlertCircle, Loader2, UserRound, BedDouble, CalendarDays, ReceiptText, Hash, Wallet, X, RotateCcw,
 } from 'lucide-react'
 
 interface PaymentExtended extends Payment {
@@ -77,8 +78,11 @@ export default function PaymentsPage() {
   const [sortBy, setSortBy] = useState('-paid_at')
   const [page, setPage] = useState(1)
 
-  const [showFormModal, setShowFormModal] = useState(false)
+const [showFormModal, setShowFormModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
+  const { data: refundablePaymentsData } = usePayments({ per_page: 100, status: 'completed' })
+  const refundablePayments = (refundablePaymentsData?.data ?? []) as PaymentExtended[]
+  const [showRefundModal, setShowRefundModal] = useState(false)
   const [selectedPayment, setSelectedPayment] = useState<PaymentExtended | null>(null)
 
   const queryParams = useMemo(() => {
@@ -266,10 +270,16 @@ export default function PaymentsPage() {
         title="Payments"
         description="Track and manage all payments."
         actions={
-          <Button variant="gold" onClick={openNewForm}>
-            <Plus className="h-4 w-4" />
-            Record Payment
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="gold" onClick={() => setShowRefundModal(true)}>
+              <RotateCcw className="h-4 w-4" />
+              Record Refund
+            </Button>
+            <Button variant="gold" onClick={openNewForm}>
+              <Plus className="h-4 w-4" />
+              Record Payment
+            </Button>
+          </div>
         }
       />
 
@@ -567,6 +577,25 @@ export default function PaymentsPage() {
           </div>
         )}
       </Modal>
+
+      <PaymentModal
+        isOpen={showFormModal}
+        onClose={closeFormModal}
+        reservations={reservations}
+        showCheckInOption
+        showCheckOutOption
+      />
+
+      <RefundModal
+        isOpen={showRefundModal}
+        onClose={() => setShowRefundModal(false)}
+        payments={refundablePayments}
+        onSuccess={(_payment) => {
+          setShowRefundModal(false)
+          addToast('Refund processed successfully', 'success')
+          refetch()
+        }}
+      />
 
       <PaymentModal
         isOpen={showFormModal}
