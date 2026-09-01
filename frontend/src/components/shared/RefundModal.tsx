@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/shared/StatusBadge'
-import { Badge } from '@/components/ui/badge'
 import { RotateCcw, Loader2, AlertCircle, UserRound, BedDouble, CalendarDays, CreditCard, ChevronDown, Search, ReceiptText, Info } from 'lucide-react'
 import type { Payment } from '@/types'
 

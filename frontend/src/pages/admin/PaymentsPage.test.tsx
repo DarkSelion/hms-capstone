@@ -26,7 +26,7 @@ vi.mock('@/components/shared/PaymentModal', () => ({
 }))
 
 vi.mock('@/components/shared/RefundModal', () => ({
-  RefundModal: ({ isOpen, onClose, payment, onSuccess }: { isOpen: boolean; onClose: () => void; payment?: any; onSuccess?: () => void }) =>
+  RefundModal: ({ isOpen }: { isOpen: boolean; onClose: () => void; payment?: any; onSuccess?: () => void }) =>
     isOpen ? <div data-testid="refund-modal-stub" /> : null,
 }))
 

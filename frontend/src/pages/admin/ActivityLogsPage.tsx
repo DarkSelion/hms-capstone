@@ -10,7 +10,7 @@ import { Modal } from '@/components/ui/modal'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Eye, AlertCircle, UserX, Clock, Server, MonitorSmartphone, GitCompareArrows,
+  Eye, AlertCircle, Clock, Server, MonitorSmartphone, GitCompareArrows,
   BedDouble, CreditCard, ReceiptText, UserRound, Sparkles, Wrench, Wallet,
   DoorOpen, Users, Lock, Settings, Inbox, ChevronLeft, ChevronRight, X,
 } from 'lucide-react'
