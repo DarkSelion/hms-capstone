@@ -246,6 +246,8 @@ class OnlinePaymentGatewayController extends Controller
             'reservation_id' => $request->input('reservation_id'),
             'transaction_id' => trim((string) $request->input('transaction_id')),
             'payment_id' => trim((string) $request->input('payment_id')),
+            'refund_id' => trim((string) $request->input('refund_id')),
+            'paid_at' => $request->input('paid_at'),
         ];
 
         if (empty($data['booking_ref']) && empty($data['booking_reference']) && empty($data['reservation_id'])) {
@@ -304,10 +306,10 @@ class OnlinePaymentGatewayController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($reservation, $status, $amount, $transactionId) {
+            DB::transaction(function () use ($reservation, $status, $amount, $transactionId, $data) {
                 switch ($status) {
                     case 'paid':
-                        $this->recordPaid($reservation, $amount, $transactionId);
+                        $this->recordPaid($reservation, $amount, $transactionId, null, $data['paid_at'] ?? null);
                         break;
 
                     case 'pending':
@@ -320,7 +322,7 @@ class OnlinePaymentGatewayController extends Controller
                         break;
 
                     case 'refunded':
-                        $this->recordRefund($reservation);
+                        $this->recordRefund($reservation, $data['refund_id'] ?? '');
                         break;
                 }
             });
@@ -342,7 +344,7 @@ class OnlinePaymentGatewayController extends Controller
         return response()->json(['received' => true]);
     }
 
-    protected function recordPaid(Reservation $reservation, float $amount, string $transactionId = '', ?string $description = null): void
+    protected function recordPaid(Reservation $reservation, float $amount, string $transactionId = '', ?string $description = null, ?string $gatewayPaidAt = null): void
     {
         $amount = round($amount, 2);
 
@@ -403,13 +405,15 @@ class OnlinePaymentGatewayController extends Controller
             ? $transactionId
             : 'ONLINE-'.$reservation->reservation_number.'-'.strtoupper(Str::random(6));
 
+        $paidAt = $gatewayPaidAt && $gatewayPaidAt !== '' ? $gatewayPaidAt : now();
+
         if ($payment) {
             $payment->update([
                 'amount' => $amount,
                 'payment_type' => $amount >= (float) $reservation->due_amount ? 'full' : 'partial',
                 'status' => 'completed',
                 'reference_number' => $referenceNumber,
-                'paid_at' => now(),
+                'paid_at' => $paidAt,
             ]);
         } else {
             $payment = Payment::create([
@@ -420,7 +424,7 @@ class OnlinePaymentGatewayController extends Controller
                 'payment_type' => $amount >= (float) $reservation->due_amount ? 'full' : 'partial',
                 'status' => 'completed',
                 'reference_number' => $referenceNumber,
-                'paid_at' => now(),
+                'paid_at' => $paidAt,
             ]);
         }
 
@@ -474,7 +478,7 @@ class OnlinePaymentGatewayController extends Controller
             ->update(['status' => 'failed']);
     }
 
-    protected function recordRefund(Reservation $reservation): void
+    protected function recordRefund(Reservation $reservation, string $refundId = ''): void
     {
         $payment = Payment::where('reservation_id', $reservation->id)
             ->where('payment_method', 'online')
@@ -486,7 +490,10 @@ class OnlinePaymentGatewayController extends Controller
             return;
         }
 
-        $payment->update(['status' => 'refunded']);
+        $payment->update([
+            'status' => 'refunded',
+            'refund_gateway_id' => $refundId !== '' ? $refundId : null,
+        ]);
         $reservation->reconcileBalances();
 
         ActivityLog::create([

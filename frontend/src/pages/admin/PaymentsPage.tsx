@@ -497,6 +497,14 @@ const [showFormModal, setShowFormModal] = useState(false)
                   </p>
                   <p className="break-words text-sm font-semibold text-foreground">{selectedPayment.transaction_id || '—'}</p>
                 </div>
+                {selectedPayment.status === 'refunded' && selectedPayment.refund_gateway_id && (
+                  <div className="rounded-xl bg-bg p-3">
+                    <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                      <Hash className="h-3.5 w-3.5" /> Refund ID
+                    </p>
+                    <p className="break-words text-sm font-semibold text-foreground">{selectedPayment.refund_gateway_id}</p>
+                  </div>
+                )}
                 <div className="rounded-xl bg-bg p-3">
                   <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
                     <CalendarDays className="h-3.5 w-3.5" /> Date

@@ -19,6 +19,7 @@ class PaymentResource extends JsonResource
             'status' => $this->status,
             'transaction_id' => $this->transaction_id,
             'reference_number' => $this->reference_number,
+            'refund_gateway_id' => $this->refund_gateway_id,
             'notes' => $this->notes,
             'processed_by' => $this->processed_by,
             'paid_at' => $this->paid_at,

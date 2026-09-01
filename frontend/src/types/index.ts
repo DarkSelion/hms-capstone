@@ -162,6 +162,7 @@ export interface Payment {
   status: 'pending' | 'completed' | 'failed' | 'refunded';
   transaction_id?: string;
   reference_number?: string;
+  refund_gateway_id?: string;
   notes?: string;
   paid_at?: string;
   created_at: string;

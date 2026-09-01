@@ -19,6 +19,7 @@ class Payment extends Model
         'status',
         'transaction_id',
         'reference_number',
+        'refund_gateway_id',
         'notes',
         'processed_by',
         'paid_at',
