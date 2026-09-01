@@ -83,7 +83,8 @@ export default function StaffPage() {
   const [activeTab, setActiveTab] = useState<string>('All Staff')
   const queryClient = useQueryClient()
   const { addToast } = useToast()
-  const currentUserRole = useAuthStore((s) => s.user?.role ?? '')
+  const { user: authUser, token: authToken, setAuth } = useAuthStore()
+  const currentUserRole = authUser?.role ?? ''
 
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
@@ -247,6 +248,9 @@ export default function StaffPage() {
     }
     api.put(`/staff/${editStaff.id}`, payload).then(() => {
       queryClient.invalidateQueries({ queryKey: ['staff'] })
+      if (editStaff.id === authUser?.id && authToken) {
+        setAuth(authToken, { ...authUser, name: payload.name as string })
+      }
       closeEditModal()
       addToast('Staff updated successfully', 'success')
     }).catch(() => {

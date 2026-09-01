@@ -36,9 +36,12 @@ vi.mock('@tanstack/react-query', () => ({
   useQueryClient: () => mockUseQueryClient(),
 }))
 
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: (selector: (state: unknown) => unknown) => selector({ user: { role: 'admin' } }),
-}))
+vi.mock('@/stores/authStore', () => {
+  const state = { user: { id: 1, name: 'Admin User', email: 'admin@hotel.com', role: 'admin' }, token: 'test-token', setAuth: vi.fn(), logout: vi.fn() }
+  const useAuthStore = (selector?: (state: unknown) => unknown) => selector ? selector(state) : state
+  useAuthStore.getState = () => state
+  return { useAuthStore }
+})
 
 vi.mock('@/components/ui/toast', () => ({
   useToast: () => mockUseToast(),
