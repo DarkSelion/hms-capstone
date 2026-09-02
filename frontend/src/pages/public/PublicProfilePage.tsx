@@ -390,7 +390,6 @@ export default function PublicProfilePage() {
                         value={form.date_of_birth}
                         onChange={(v) => update('date_of_birth', v)}
                         max={toLocalDateStr(new Date())}
-                        portal
                       />
                     </div>
                     <SelectField
