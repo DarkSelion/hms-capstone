@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useAvailableRooms, useCreateReservation, useUpdateReservation, useSettings } from '@/hooks/useApi'
 import { formatCurrency, formatDateDisplay, toLocalDateStr } from '@/lib/format'
+import { isValidPHPhone, stripPhoneInput } from '@/lib/phone'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -120,6 +121,7 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
       if (!form.guest_first_name.trim()) errors.guest_first_name = 'First name is required'
       if (!form.guest_last_name.trim()) errors.guest_last_name = 'Last name is required'
       if (!form.guest_phone.trim()) errors.guest_phone = 'Phone is required'
+      else if (!isValidPHPhone(form.guest_phone)) errors.guest_phone = 'Enter a valid PH phone (e.g. 09171234567)'
       if (!form.check_in) errors.check_in = 'Check-in date is required'
       if (!form.check_out) errors.check_out = 'Check-out date is required'
       if (form.check_in && form.check_out && new Date(form.check_out) <= new Date(form.check_in)) {
@@ -290,10 +292,11 @@ export function ReservationFormModal({ isOpen, onClose, reservation }: Reservati
                 <label className="text-sm font-medium text-foreground">Phone *</label>
                 <Input
                   value={form.guest_phone}
-                  onChange={(e) => handleFormChange('guest_phone', e.target.value)}
+                  onChange={(e) => handleFormChange('guest_phone', stripPhoneInput(e.target.value))}
                   error={formErrors.guest_phone}
                   placeholder="09171234567"
                   icon={<Phone className="h-4 w-4" />}
+                  maxLength={15}
                 />
               </div>
               <div className="space-y-1">

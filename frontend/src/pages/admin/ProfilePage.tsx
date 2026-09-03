@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { formatDateDisplay } from '@/lib/format'
+import { stripPhoneInput } from '@/lib/phone'
 import {
   Save, Loader2, UserCircle, Mail, Phone, Shield, Calendar, Key,
 } from 'lucide-react'
@@ -184,8 +185,9 @@ export default function ProfilePage() {
                 <Input
                   label="Phone"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Optional"
+                  onChange={(e) => setPhone(stripPhoneInput(e.target.value))}
+                  placeholder="0917 123 4567 (optional)"
+                  maxLength={15}
                 />
                 <div className="flex justify-end">
                   <Button type="submit" disabled={updateProfile.isPending}>

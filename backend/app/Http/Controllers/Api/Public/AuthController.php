@@ -17,7 +17,7 @@ class AuthController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|unique:guests,email',
-            'phone' => 'required|string|max:20',
+            'phone' => 'required|string|max:20|regex:/^(\+63\s?|0)\d{8,13}$/',
             'password' => 'required|string|min:8|confirmed',
             'gender' => 'nullable|string|max:20',
         ]);
@@ -86,7 +86,7 @@ class AuthController extends Controller
             'first_name' => 'sometimes|string|max:255',
             'last_name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:guests,email,'.$guest->id,
-            'phone' => 'nullable|string|max:20',
+            'phone' => 'nullable|string|max:20|regex:/^(\+63\s?|0)\d{8,13}$/',
             'address' => 'nullable|string',
             'city' => 'nullable|string|max:100',
             'country' => 'nullable|string|max:100',

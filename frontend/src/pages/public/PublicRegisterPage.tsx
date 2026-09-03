@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { usePublicRegister, useHotelName } from '@/hooks/usePublicApi'
 import { Loader2 } from 'lucide-react'
+import { isValidPHPhone, stripPhoneInput } from '@/lib/phone'
 
 export default function PublicRegisterPage() {
   const navigate = useNavigate()
@@ -22,6 +23,10 @@ export default function PublicRegisterPage() {
     setError('')
     if (form.password !== form.password_confirmation) {
       setError('Passwords do not match')
+      return
+    }
+    if (!isValidPHPhone(form.phone)) {
+      setError('Enter a valid Philippine phone number (e.g. 09171234567 or +63 9171234567)')
       return
     }
     try {
@@ -87,7 +92,7 @@ export default function PublicRegisterPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="reg_phone" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Phone</label>
-                  <input id="reg_phone" type="tel" value={form.phone} onChange={(e) => update('phone', e.target.value)} required className="input-public" placeholder="09171234567" />
+                  <input id="reg_phone" type="tel" value={form.phone} onChange={(e) => update('phone', stripPhoneInput(e.target.value))} required className="input-public" placeholder="09171234567" maxLength={15} pattern="(\+63\s?|0)\d{8,13}" />
                 </div>
                 <div>
                   <label htmlFor="reg_gender" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Gender <span className="text-white/15">(optional)</span></label>

@@ -6,6 +6,7 @@ import {
 import { usePublicAuthStore } from '@/stores/publicAuthStore'
 import { publicApi } from '@/lib/publicApi'
 import { formatDateDisplay, toLocalDateStr } from '@/lib/format'
+import { isValidPHPhone, stripPhoneInput } from '@/lib/phone'
 import { DatePicker } from '@/components/ui/date-picker'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { useToast } from '@/components/ui/toast'
@@ -149,6 +150,10 @@ export default function PublicProfilePage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setErrorMessage(null)
+    if (form.phone && !isValidPHPhone(form.phone)) {
+      setErrorMessage('Enter a valid Philippine phone number (e.g. 09171234567 or +63 9171234567)')
+      return
+    }
     try {
       await updateProfile.mutateAsync(form)
       setSavedSnapshot(form)
@@ -237,8 +242,8 @@ export default function PublicProfilePage() {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.15em] text-dark/40 font-medium">My Bookings</p>
-                      <p className="font-serif text-dark text-3xl font-light mt-1">{reservations.length}</p>
+                      <p className="text-xs uppercase tracking-[0.15em] text-dark/55 font-semibold">My Bookings</p>
+                      <p className="font-serif text-dark text-3xl font-normal mt-1">{reservations.length}</p>
                     </div>
                     <div className="h-10 w-10 rounded-full bg-gold/10 flex items-center justify-center text-gold">
                       <CalendarDays className="h-4.5 w-4.5" />
@@ -255,8 +260,8 @@ export default function PublicProfilePage() {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.15em] text-dark/40 font-medium">Browse</p>
-                      <p className="font-serif text-dark text-base font-light mt-1">Our Rooms</p>
+                      <p className="text-xs uppercase tracking-[0.15em] text-dark/55 font-semibold">Browse</p>
+                      <p className="font-serif text-dark text-base font-normal mt-1">Our Rooms</p>
                     </div>
                     <div className="h-10 w-10 rounded-full bg-gold/10 flex items-center justify-center text-gold">
                       <Globe2 className="h-4.5 w-4.5" />
@@ -273,8 +278,8 @@ export default function PublicProfilePage() {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.15em] text-dark/40 font-medium">Need Help?</p>
-                      <p className="font-serif text-dark text-base font-light mt-1">Contact Us</p>
+                      <p className="text-xs uppercase tracking-[0.15em] text-dark/55 font-semibold">Need Help?</p>
+                      <p className="font-serif text-dark text-base font-normal mt-1">Contact Us</p>
                     </div>
                     <div className="h-10 w-10 rounded-full bg-gold/10 flex items-center justify-center text-gold">
                       <HelpCircle className="h-4.5 w-4.5" />
@@ -339,6 +344,9 @@ export default function PublicProfilePage() {
                     value={form.phone}
                     onChange={(v) => update('phone', v)}
                     icon={Phone}
+                    maxLength={15}
+                    pattern="(\+63\s?|0)\d{8,13}"
+                    format={stripPhoneInput}
                   />
                 </Card>
 
@@ -472,7 +480,7 @@ export default function PublicProfilePage() {
                       <Lock className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-serif text-lg text-dark font-light">Delete Account</h3>
+                      <h3 className="font-serif text-lg text-dark font-normal">Delete Account</h3>
                       <p className="text-sm text-dark/50 mt-1 leading-relaxed">
                         Permanently delete your account and all associated data. Active reservations will block this action. This cannot be undone.
                       </p>
@@ -527,8 +535,8 @@ function Card({
           <Icon className="h-4.5 w-4.5" />
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="font-serif text-lg text-dark font-light">{title}</h2>
-          <p className="text-xs text-dark/40 mt-0.5">{description}</p>
+          <h2 className="font-serif text-lg text-dark font-medium">{title}</h2>
+          <p className="text-xs text-dark/55 mt-0.5">{description}</p>
         </div>
       </div>
       <div className="space-y-4">{children}</div>
@@ -543,6 +551,9 @@ function Field({
   onChange,
   type = 'text',
   icon: Icon,
+  maxLength,
+  pattern,
+  format,
 }: {
   id: string
   label: string
@@ -550,6 +561,9 @@ function Field({
   onChange: (v: string) => void
   type?: string
   icon?: React.ComponentType<{ className?: string }>
+  maxLength?: number
+  pattern?: string
+  format?: (v: string) => string
 }) {
   return (
     <div>
@@ -564,8 +578,10 @@ function Field({
           id={id}
           type={type}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(format ? format(e.target.value) : e.target.value)}
           className={`input-light ${Icon ? 'pl-10' : ''}`}
+          maxLength={maxLength}
+          pattern={pattern}
         />
       </div>
     </div>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useGuests, useGuest, useGuestHistory, useCreateGuest, useUpdateGuest, useDeleteGuest } from '@/hooks/useApi'
 import type { Guest, Reservation } from '@/types'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
+import { isValidPHPhone, stripPhoneInput } from '@/lib/phone'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { RowActions, RowActionButton } from '@/components/shared/RowActions'
@@ -165,6 +166,7 @@ export default function GuestsPage() {
     if (!formData.last_name.trim()) errors.last_name = 'Last name is required'
     if (formData.email.trim() && !/^\S+@\S+\.\S+$/.test(formData.email.trim())) errors.email = 'Enter a valid email'
     if (!formData.phone.trim()) errors.phone = 'Phone is required'
+    else if (!isValidPHPhone(formData.phone)) errors.phone = 'Enter a valid PH phone (e.g. 09171234567)'
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -417,11 +419,12 @@ export default function GuestsPage() {
             />
             <Input
               label="Phone"
-              placeholder="+1 234 567 890"
+              placeholder="0917 123 4567"
               icon={<Phone className="h-4 w-4" />}
               value={formData.phone}
-              onChange={(e) => updateField('phone', e.target.value)}
+              onChange={(e) => updateField('phone', stripPhoneInput(e.target.value))}
               error={formErrors.phone}
+              maxLength={15}
             />
           </div>
 

@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import { useQueryClient } from '@tanstack/react-query'
 import type { User, Role, StaffSchedule, LeaveRequest } from '@/types'
 import { formatDateDisplay } from '@/lib/format'
+import { stripPhoneInput } from '@/lib/phone'
 import { useAuthStore } from '@/stores/authStore'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable, type Column } from '@/components/shared/DataTable'
@@ -906,9 +907,10 @@ export default function StaffPage() {
               </Select>
               <Input
                 label="Phone"
-                placeholder="Optional"
+                placeholder="0917 123 4567 (optional)"
                 value={addForm.phone}
-                onChange={(e) => setAddForm((p) => ({ ...p, phone: e.target.value }))}
+                onChange={(e) => setAddForm((p) => ({ ...p, phone: stripPhoneInput(e.target.value) }))}
+                maxLength={15}
               />
             </div>
             <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm font-medium text-foreground">
@@ -989,8 +991,10 @@ export default function StaffPage() {
               />
               <Input
                 label="Phone"
+                placeholder="0917 123 4567 (optional)"
                 value={editForm.phone}
-                onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
+                onChange={(e) => setEditForm((p) => ({ ...p, phone: stripPhoneInput(e.target.value) }))}
+                maxLength={15}
               />
               <Select
                 label="Role"

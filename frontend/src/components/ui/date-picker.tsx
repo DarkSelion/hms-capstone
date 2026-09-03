@@ -323,7 +323,7 @@ export function DatePicker({ value, onChange, min, max, placeholder = 'Select da
           type="button"
           onClick={() => setOpen(!open)}
           className={cn(
-            'flex h-10 w-full items-center rounded-lg border bg-card px-3 py-2 text-sm text-left ring-offset-card transition-colors',
+            'flex w-full items-center rounded-lg border bg-card px-4 py-3 text-sm text-left ring-offset-card transition-colors',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary',
             portal
               ? 'border-zinc-800 bg-zinc-900/60 text-white focus-visible:ring-gold/40 focus-visible:border-gold/50'

@@ -11,6 +11,7 @@ import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
 import { CHECKOUT_HOUR_OPTIONS, CHECKOUT_MINUTE_OPTIONS, parseCheckoutTime, buildCheckoutTime } from '@/lib/format'
+import { stripPhoneInput } from '@/lib/phone'
 import {
   AlertCircle, BadgePercent, Building2, CalendarCheck2, CheckCircle2, CircleOff, Clock, CreditCard,
   FileText, Globe, HelpCircle, Image as ImageIcon, Images, KeyRound, Loader2, Lock, Mail,
@@ -805,7 +806,9 @@ export default function SettingsPage() {
                         <Input
                           label="Phone"
                           value={contactForm.hotel_phone}
-                          onChange={(e) => setContactForm((p) => ({ ...p, hotel_phone: e.target.value }))}
+                          onChange={(e) => setContactForm((p) => ({ ...p, hotel_phone: stripPhoneInput(e.target.value) }))}
+                          placeholder="+63 912 345 6789"
+                          maxLength={15}
                         />
                         <Input
                           label="Email"

@@ -69,7 +69,7 @@ class ReservationController extends Controller
             'guest_first_name' => 'required|string|max:255',
             'guest_last_name' => 'required|string|max:255',
             'guest_email' => 'nullable|email|max:255',
-            'guest_phone' => 'required|string|max:50',
+            'guest_phone' => 'required|string|max:50|regex:/^(\+63\s?|0)\d{8,13}$/',
             'room_id' => 'required|exists:rooms,id',
             'check_in' => 'required|date|after_or_equal:today',
             'check_out' => 'required|date|after:check_in',

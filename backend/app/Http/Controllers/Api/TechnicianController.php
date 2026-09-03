@@ -20,7 +20,7 @@ class TechnicianController extends Controller
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:30',
+            'phone' => 'nullable|string|max:30|regex:/^(\+63\s?|0)\d{8,13}$/',
             'specialty' => 'nullable|string|max:100',
             'is_active' => 'sometimes|boolean',
         ]);
@@ -43,7 +43,7 @@ class TechnicianController extends Controller
     {
         $data = $request->validate([
             'name' => 'sometimes|string|max:255',
-            'phone' => 'nullable|string|max:30',
+            'phone' => 'nullable|string|max:30|regex:/^(\+63\s?|0)\d{8,13}$/',
             'specialty' => 'nullable|string|max:100',
             'is_active' => 'sometimes|boolean',
         ]);

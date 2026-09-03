@@ -54,7 +54,7 @@ class StaffController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'role_id' => 'required|exists:roles,id',
-            'phone' => 'nullable|string|max:20',
+            'phone' => 'nullable|string|max:20|regex:/^(\+63\s?|0)\d{8,13}$/',
             'is_active' => 'sometimes|boolean',
         ]);
 
@@ -99,7 +99,7 @@ class StaffController extends Controller
         $data = $request->validate([
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
-            'phone' => 'nullable|string|max:20',
+            'phone' => 'nullable|string|max:20|regex:/^(\+63\s?|0)\d{8,13}$/',
             'role_id' => 'sometimes|exists:roles,id',
             'is_active' => 'sometimes|boolean',
             'password' => 'sometimes|nullable|string|min:8|confirmed',

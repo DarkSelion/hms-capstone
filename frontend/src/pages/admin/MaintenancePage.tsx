@@ -6,6 +6,7 @@ import {
 } from '@/hooks/useApi'
 import type { MaintenanceRequest, Technician } from '@/types'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
+import { stripPhoneInput } from '@/lib/phone'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { RowActions, RowActionButton } from '@/components/shared/RowActions'
@@ -762,9 +763,10 @@ export default function MaintenancePage() {
               />
               <Input
                 label="Phone"
-                placeholder="Optional"
+                placeholder="0917 123 4567 (optional)"
                 value={technicianForm.phone}
-                onChange={(e) => setTechnicianForm((f) => ({ ...f, phone: e.target.value }))}
+                onChange={(e) => setTechnicianForm((f) => ({ ...f, phone: stripPhoneInput(e.target.value) }))}
+                maxLength={15}
               />
               <Input
                 label="Specialty"
