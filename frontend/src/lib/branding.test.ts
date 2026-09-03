@@ -117,7 +117,7 @@ describe('replaceHotelName', () => {
 
 describe('DEFAULT_BRANDING_TEXT', () => {
   it('holds the current website default copy', () => {
-    expect(DEFAULT_BRANDING_TEXT.theme_preset).toBe('gold')
+    expect(DEFAULT_BRANDING_TEXT.theme_preset).toBe('navy')
     expect(DEFAULT_BRANDING_TEXT.hero_title).toBe('Comfortable Stays, Warm Smiles')
     expect(DEFAULT_BRANDING_TEXT.footer_tagline).toBe('Cozy stays, warm smiles — right here in Pampanga.')
   })

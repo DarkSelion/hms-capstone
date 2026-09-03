@@ -15,7 +15,7 @@ import { stripPhoneInput } from '@/lib/phone'
 import {
   AlertCircle, BadgePercent, Building2, CalendarCheck2, CheckCircle2, CircleOff, Clock, CreditCard,
   FileText, Globe, HelpCircle, Image as ImageIcon, Images, KeyRound, Loader2, Lock, Mail,
-  Map as MapIcon, MapPin, Palette, PanelBottom, Percent, Plus, RotateCcw, Save, Share2, ShieldCheck,
+  Map as MapIcon, MapPin, PanelBottom, Percent, Plus, RotateCcw, Save, Share2, ShieldCheck,
   Sparkles, Trash2, Type, Upload,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -49,12 +49,7 @@ const TAB_GROUP: Record<TabName, string> = {
   Website: 'branding',
 }
 
-const THEME_SWATCHES = [
-  { value: 'gold', label: 'Gold', description: 'Warm gold & cream (default)', colors: ['#2C2C2C', '#C4A88A', '#FAFAF8'] },
-  { value: 'emerald', label: 'Emerald & Sage', description: 'Calm garden greens', colors: ['#22301F', '#7C9A6E', '#F4F7F1'] },
-  { value: 'navy', label: 'Navy & Gold', description: 'Deep navy with brass', colors: ['#12233A', '#C0A062', '#F6F3EC'] },
-  { value: 'neutral', label: 'Warm Neutral', description: 'Soft earthy taupe', colors: ['#2E2A26', '#B09A82', '#FAF8F5'] },
-]
+
 
 const GALLERY_CATEGORIES = ['Rooms & Suites', 'Amenities', 'Others']
 
@@ -244,7 +239,6 @@ export default function SettingsPage() {
   })
 
   const [websiteForm, setWebsiteForm] = useState({
-    theme_preset: 'gold',
     hero_badge: '', hero_title: '', hero_subtitle: '', hero_cta_label: '',
     section_discover_title: '', section_why_title: '', section_amenities_title: '', section_gallery_title: '',
     footer_tagline: '',
@@ -303,7 +297,6 @@ export default function SettingsPage() {
         online_gateway_self_settle: s.online_gateway_self_settle === '1' || s.online_gateway_self_settle === true,
       })
       setWebsiteForm({
-        theme_preset: stringSetting(s, 'theme_preset', DEFAULT_BRANDING_TEXT.theme_preset),
         hero_badge: stringSetting(s, 'hero_badge', DEFAULT_BRANDING_TEXT.hero_badge),
         hero_title: stringSetting(s, 'hero_title', DEFAULT_BRANDING_TEXT.hero_title),
         hero_subtitle: stringSetting(s, 'hero_subtitle', DEFAULT_BRANDING_TEXT.hero_subtitle),
@@ -1011,42 +1004,6 @@ export default function SettingsPage() {
 
               {activeTab === 'Website' && (
                 <>
-                  <SectionCard
-                    icon={Palette}
-                    tint="bg-violet-100 text-violet-600"
-                    title="Portal Theme"
-                    description="The selected palette restyles the whole guest portal."
-                  >
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {THEME_SWATCHES.map((t) => {
-                        const selected = websiteForm.theme_preset === t.value
-                        return (
-                          <button
-                            key={t.value}
-                            type="button"
-                            aria-pressed={selected}
-                            onClick={() => setWebsiteForm((p) => ({ ...p, theme_preset: t.value }))}
-                            className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
-                              selected
-                                ? 'border-amber-400 bg-amber-50 ring-2 ring-amber-200'
-                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-bg'
-                            }`}
-                          >
-                            <span className="flex shrink-0 -space-x-1.5">
-                              {t.colors.map((c) => (
-                                <span key={c} className="h-6 w-6 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: c }} />
-                              ))}
-                            </span>
-                            <span className="min-w-0">
-                              <span className="block text-sm font-medium text-foreground">{t.label}</span>
-                              <span className="block truncate text-xs text-muted">{t.description}</span>
-                            </span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </SectionCard>
-
                   <SectionCard
                     icon={Images}
                     tint="bg-sky-100 text-sky-600"

@@ -64,16 +64,14 @@ describe('SettingsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Website/ }))
 
-    expect(screen.getByRole('button', { name: /Navy & Gold/ })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByLabelText('Headline')).toHaveValue('Our Cozy Haven')
     expect(screen.getByDisplayValue('Welcome home.')).toBeInTheDocument()
   })
 
-  it('saves theme, hero text, and gallery metadata in the branding payload', () => {
+  it('saves hero text and gallery metadata in the branding payload', () => {
     mockUseSettings.mockReturnValue({
       data: {
         ...baseSettings,
-        theme_preset: 'emerald',
         hero_title: 'Our Cozy Haven',
         gallery_1_title: 'Deluxe King Room',
         gallery_1_category: 'Rooms & Suites',
@@ -91,7 +89,6 @@ describe('SettingsPage', () => {
     expect(mockMutateSettings).toHaveBeenCalledWith(
       expect.objectContaining({
         settings: expect.arrayContaining([
-          { key: 'theme_preset', value: 'emerald', group: 'branding' },
           { key: 'hero_title', value: 'Stay Awhile', group: 'branding' },
           { key: 'gallery_1_title', value: 'Deluxe King Room', group: 'branding' },
           { key: 'gallery_1_category', value: 'Rooms & Suites', group: 'branding' },
@@ -156,7 +153,6 @@ describe('SettingsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Website/ }))
 
-    expect(screen.getByRole('button', { name: /^Gold/ })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByLabelText('Headline')).toHaveValue('Comfortable Stays, Warm Smiles')
     expect(screen.getByDisplayValue('Cozy stays, warm smiles — right here in Pampanga.')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Deluxe King Room')).toBeInTheDocument()

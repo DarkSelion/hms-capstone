@@ -12,7 +12,7 @@ export const DEFAULT_HERO_IMAGES = [
 ]
 
 export const DEFAULT_BRANDING_TEXT: Record<string, string> = {
-  theme_preset: 'gold',
+  theme_preset: 'navy',
   hero_badge: 'Welcome to Pampanga Home Suites',
   hero_title: 'Comfortable Stays, Warm Smiles',
   hero_subtitle: 'Experience warm Filipino hospitality right here in Pampanga. Every stay feels like coming home.',

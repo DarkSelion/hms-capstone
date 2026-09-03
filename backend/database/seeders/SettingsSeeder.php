@@ -41,7 +41,7 @@ class SettingsSeeder extends Seeder
             ['key' => 'online_gateway_api_key', 'value' => '', 'group' => 'payment'],
             ['key' => 'online_gateway_webhook_secret', 'value' => '', 'group' => 'payment'],
             ['key' => 'online_gateway_self_settle', 'value' => '0', 'group' => 'payment'],
-            ['key' => 'theme_preset', 'value' => 'gold', 'group' => 'branding'],
+            ['key' => 'theme_preset', 'value' => 'navy', 'group' => 'branding'],
             ['key' => 'hero_badge', 'value' => 'Welcome to Pampanga Home Suites', 'group' => 'branding'],
             ['key' => 'hero_title', 'value' => 'Comfortable Stays, Warm Smiles', 'group' => 'branding'],
             ['key' => 'hero_subtitle', 'value' => 'Experience warm Filipino hospitality right here in Pampanga. Every stay feels like coming home.', 'group' => 'branding'],

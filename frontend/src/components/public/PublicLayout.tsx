@@ -11,7 +11,7 @@ export function PublicLayout() {
   const hotelName = useHotelName()
   const brandingSettings = (branding ?? {}) as Record<string, unknown>
   const presetRaw = brandingSettings['theme_preset']
-  const preset = THEME_PRESETS.includes(presetRaw as any) ? (presetRaw as string) : 'gold'
+  const preset = THEME_PRESETS.includes(presetRaw as any) ? (presetRaw as string) : 'navy'
   const favicon = typeof brandingSettings['hotel_favicon'] === 'string' ? brandingSettings['hotel_favicon'] : ''
 
   useEffect(() => {
