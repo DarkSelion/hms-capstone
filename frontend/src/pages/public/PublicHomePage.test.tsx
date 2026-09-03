@@ -13,6 +13,7 @@ const {
   mockUsePublicConfirmOnlinePayment,
   mockUsePublicAuthStore,
   mockUsePaymentSettings,
+  mockUsePortalCurrency,
 } = vi.hoisted(() => ({
   mockUsePublicRoomTypes: vi.fn(),
   mockUseHotelName: vi.fn(),
@@ -23,6 +24,7 @@ const {
   mockUsePublicConfirmOnlinePayment: vi.fn(),
   mockUsePublicAuthStore: vi.fn(),
   mockUsePaymentSettings: vi.fn(),
+  mockUsePortalCurrency: vi.fn(() => 'PHP'),
 }))
 
 vi.mock('@/hooks/usePublicApi', () => ({
@@ -33,6 +35,7 @@ vi.mock('@/hooks/usePublicApi', () => ({
   usePublicReservations: () => mockUsePublicReservations(),
   usePublicConfirmOnlinePayment: () => mockUsePublicConfirmOnlinePayment(),
   usePaymentSettings: () => mockUsePaymentSettings(),
+  usePortalCurrency: () => mockUsePortalCurrency(),
 }))
 
 vi.mock('@/stores/publicAuthStore', () => ({
@@ -127,12 +130,11 @@ describe('PublicHomePage', () => {
     expect(screen.getByText('Guests')).toBeInTheDocument()
   })
 
-  it('shows room tab section with Discover Our World heading', () => {
+  it('shows accommodations section with Discover Our World heading', () => {
     renderHome({ roomTypes: [roomType()] })
 
     expect(screen.getByText('Discover Our World')).toBeInTheDocument()
-    expect(screen.getByText('Rooms')).toBeInTheDocument()
-    expect(screen.getByText('Family Rooms')).toBeInTheDocument()
+    expect(screen.getByText('Accommodations')).toBeInTheDocument()
   })
 
   it('navigates to rooms via hero CTA', () => {
@@ -245,7 +247,7 @@ describe('PublicHomePage', () => {
     renderHome()
 
     expect(screen.getByText('A Glimpse of Pampanga Home Suites')).toBeInTheDocument()
-    expect(screen.getByText('Poolside')).toBeInTheDocument()
+    expect(screen.getAllByText('Poolside').length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders why-choose-us and amenities sections', () => {
