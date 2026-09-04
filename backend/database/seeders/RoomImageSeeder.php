@@ -32,6 +32,18 @@ class RoomImageSeeder extends Seeder
 
         foreach ($rooms as $room) {
             $category = $this->resolveCategory($room->roomType->name ?? '');
+
+            if (($room->roomType->slug ?? '') === 'deluxe-room') {
+                RoomImage::create([
+                    'room_id' => $room->id,
+                    'image_path' => 'rooms/deluxe-room.jpg',
+                    'caption' => ($room->roomType->name ?? '') . ' - ' . $room->room_number,
+                    'sort_order' => 0,
+                    'is_primary' => true,
+                ]);
+                continue;
+            }
+
             $urls = self::IMAGES[$category];
 
             RoomImage::create([
