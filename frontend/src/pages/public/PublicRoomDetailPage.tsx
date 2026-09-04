@@ -74,14 +74,25 @@ export default function PublicRoomDetailPage() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative h-[60vh] min-h-[450px] flex items-end overflow-hidden">
+      <section className="relative h-[65vh] min-h-[500px] flex items-end overflow-hidden">
         <div className="absolute inset-0">
-          <img src={roomType.image_url || getRoomImage(roomType.name)} alt={roomType.name} className="w-full h-full object-cover" />
+          <img
+            src={roomType.image_url || getRoomImage(roomType.name)}
+            alt={roomType.name}
+            className="w-full h-full object-cover animate-ken-burns"
+            style={{ animationDuration: '12s' }}
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/50 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-dark/60 to-transparent" />
         </div>
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-          <p className="section-subtitle mb-3">{roomType.rooms_count ?? 0} rooms available</p>
+          <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-full border backdrop-blur-md mb-4 ${
+            (roomType.rooms_count ?? 0) > 0
+              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
+              : 'bg-red-500/20 text-red-300 border-red-400/30'
+          }`}>
+            {(roomType.rooms_count ?? 0) > 0 ? `${roomType.rooms_count} rooms available` : 'Sold Out'}
+          </span>
           <h1 className="font-serif text-white text-4xl sm:text-5xl lg:text-6xl font-light mb-4">
             {roomType.name}
           </h1>
@@ -93,17 +104,19 @@ export default function PublicRoomDetailPage() {
       </section>
 
       {/* Specs Grid */}
-      <section className="bg-dark py-12 px-4 border-y border-white/5">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+      <section className="bg-dark py-14 px-4 border-y border-white/5">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           {[
             { icon: Maximize, label: 'Room Size', value: `${roomType.size_sqm} SQM` },
             { icon: Users, label: 'Max Guests', value: `${roomType.max_adults} – ${roomType.max_adults + 1}` },
             { icon: BedDouble, label: 'Bed Type', value: roomType.bed_type },
             { icon: Home, label: 'Category', value: roomType.name.includes('Villa') ? 'Villa' : roomType.name.includes('Suite') ? 'Suite' : 'Room' },
           ].map((spec) => (
-            <div key={spec.label} className="text-center p-4">
-              <spec.icon className="h-6 w-6 text-gold mx-auto mb-3" />
-              <p className="text-xs uppercase tracking-[0.15em] text-white/40 mb-1">{spec.label}</p>
+            <div key={spec.label} className="text-center p-5 bg-white/[0.03] rounded-xl border border-white/5 hover:border-gold/15 transition-colors duration-300">
+              <div className="w-10 h-10 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mx-auto mb-3">
+                <spec.icon className="h-5 w-5 text-gold" />
+              </div>
+              <p className="text-[10px] uppercase tracking-[0.15em] text-white/40 mb-1">{spec.label}</p>
               <p className="text-white font-medium text-sm">{spec.value}</p>
             </div>
           ))}
@@ -111,20 +124,21 @@ export default function PublicRoomDetailPage() {
       </section>
 
       {/* Booking CTA */}
-      <section className="bg-dark py-12 px-4">
+      <section className="bg-dark py-14 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="card-dark">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h3 className="font-serif text-2xl text-white font-light mb-2">Ready to Check In?</h3>
-              <p className="text-white/40 text-sm">
-                Starting from <span className="text-gold font-semibold">{fmt(roomType.base_price)}</span> per night
-              </p>
-            </div>
-            <button onClick={handleBook} className="btn-gold flex items-center gap-2 shrink-0">
-              {(roomType.rooms_count ?? 0) > 0 ? 'Book This Room' : 'Check Availability'}
-              <ArrowRight className="h-4 w-4" />
-            </button>
+          <div className="relative overflow-hidden rounded-2xl border border-gold/20 bg-gradient-to-r from-gold/5 via-gold/[0.02] to-gold/5 p-8 md:p-10">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+              <div>
+                <h3 className="font-serif text-2xl text-white font-light mb-2">Ready to Check In?</h3>
+                <p className="text-white/40 text-sm">
+                  Starting from <span className="text-gold font-semibold">{fmt(roomType.base_price)}</span> per night
+                </p>
+              </div>
+              <button onClick={handleBook} className="btn-gold flex items-center gap-2 shrink-0">
+                {(roomType.rooms_count ?? 0) > 0 ? 'Book This Room' : 'Check Availability'}
+                <ArrowRight className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </div>
@@ -138,10 +152,12 @@ export default function PublicRoomDetailPage() {
               <p className="section-subtitle mb-4">Amenities</p>
               <h2 className="section-heading">Room Amenities</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {amenities.map((a: string) => (
-                <div key={a} className="flex items-center gap-3 p-4 bg-white/5 rounded-lg border border-white/5">
-                  <Check className="h-4 w-4 text-gold shrink-0" />
+                <div key={a} className="flex items-center gap-3 p-4 bg-white/[0.03] rounded-xl border border-white/5 hover:border-gold/15 hover:bg-white/[0.05] transition-all duration-300">
+                  <div className="w-8 h-8 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center shrink-0">
+                    <Check className="h-3.5 w-3.5 text-gold" />
+                  </div>
                   <span className="text-sm text-white/60">{a}</span>
                 </div>
               ))}
@@ -159,8 +175,10 @@ export default function PublicRoomDetailPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-4xl mx-auto">
             {DEFAULT_AMENITIES.map((item) => (
-              <div key={item} className="flex items-center gap-3 p-4 bg-white/5 rounded-lg">
-                <Check className="h-4 w-4 text-gold shrink-0" />
+              <div key={item} className="flex items-center gap-3 p-4 bg-white/[0.03] rounded-xl hover:bg-white/[0.05] transition-colors duration-300">
+                <div className="w-7 h-7 rounded-full bg-gold/10 flex items-center justify-center shrink-0">
+                  <Check className="h-3 w-3 text-gold" />
+                </div>
                 <span className="text-sm text-white/50">{item}</span>
               </div>
             ))}

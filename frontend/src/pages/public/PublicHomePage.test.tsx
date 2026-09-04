@@ -118,7 +118,7 @@ describe('PublicHomePage', () => {
     renderHome()
 
     expect(screen.getByText('Your Home Away From Home')).toBeInTheDocument()
-    expect(screen.getByText('Book Now')).toBeInTheDocument()
+    expect(screen.getAllByText('Book Now').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Welcome to Pampanga Home Suites')).toBeInTheDocument()
   })
 
