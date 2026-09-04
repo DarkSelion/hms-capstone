@@ -721,231 +721,225 @@ export default function PublicBookingPage() {
         {step === 3 && selectedGroup && (
           <div className="animate-fade-in">
 
-            {/* Light center section — light card on cream bg */}
-            <section className="bg-cream py-16 px-4">
-              <div className="max-w-5xl mx-auto">
+            {/* Page header */}
+            <div className="text-center mb-10">
+              <button
+                onClick={() => setStep(2)}
+                className="inline-flex items-center gap-1.5 text-white/40 hover:text-gold text-[10px] uppercase tracking-[0.2em] font-medium mb-4 transition-colors"
+              >
+                <ArrowLeft className="h-3 w-3" /> Change room
+              </button>
+              <p className="text-gold/70 text-xs uppercase tracking-[0.2em] font-medium mb-2">Step 3 of 3</p>
+              <h1 className="font-serif text-white text-3xl sm:text-4xl font-light">Confirm Your Booking</h1>
+              <p className="text-white/40 text-sm mt-2">Review your stay details below before confirming your reservation.</p>
+            </div>
 
-                {/* Page header */}
-                <div className="text-center mb-10">
-                  <button
-                    onClick={() => setStep(2)}
-                    className="inline-flex items-center gap-1.5 text-dark/40 hover:text-gold text-[10px] uppercase tracking-[0.2em] font-medium mb-4 transition-colors"
-                  >
-                    <ArrowLeft className="h-3 w-3" /> Change room
-                  </button>
-                  <p className="section-subtitle text-gold-dark mb-3">Step 3 of 3</p>
-                  <h1 className="font-serif text-3xl sm:text-4xl text-dark font-light">Confirm Your Booking</h1>
-                  <p className="text-dark/40 text-sm mt-3">Review your stay details below before confirming your reservation.</p>
+            <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+
+              {/* LEFT — Booking summary, stay details, special requests */}
+              <div className="lg:col-span-6 space-y-5">
+
+                {/* Booking Summary Card — image left, details right */}
+                <div className="bg-dark/50 border border-white/5 rounded-2xl overflow-hidden">
+                  <div className="flex flex-col sm:flex-row">
+                    {/* Image */}
+                    <div className="sm:w-2/5 relative h-48 sm:h-auto sm:min-h-[200px] bg-dark">
+                      <img
+                        src={heroImage}
+                        alt={selectedGroup.roomType.name}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                      {selectedRoom && (
+                        <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-gold px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-dark shadow-lg">
+                          <BedDouble className="h-3 w-3" strokeWidth={3} /> Room {selectedRoom.room_number}
+                        </div>
+                      )}
+                    </div>
+                    {/* Details */}
+                    <div className="flex-1 p-5 sm:p-6 flex flex-col">
+                      <p className="text-gold/70 text-[10px] uppercase tracking-[0.2em] font-medium mb-1">
+                        {categoryLabel(selectedGroup.roomType.name)}
+                      </p>
+                      <h2 className="font-serif text-xl sm:text-2xl text-white font-light leading-tight">
+                        {selectedGroup.roomType.name}
+                      </h2>
+                      <p className="text-white/50 text-sm mt-2">
+                        {[
+                          selectedRoom?.bed_type || selectedGroup.roomType.bed_type,
+                          `Sleeps ${selectedRoom?.capacity || selectedGroup.roomType.max_adults}`,
+                          selectedGroup.roomType.size_sqm ? `${selectedGroup.roomType.size_sqm} m²` : null,
+                          selectedRoom ? `Floor ${selectedRoom.floor}` : null,
+                        ].filter(Boolean).join(' · ')}
+                      </p>
+                      {selectedGroup.roomType.description && (
+                        <p className="text-white/40 text-sm leading-relaxed mt-3 line-clamp-2">
+                          {selectedGroup.roomType.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+                {/* Stay Details Card */}
+                <div className="bg-dark/50 border border-white/5 rounded-2xl p-5 sm:p-6">
+                  <h3 className="text-white font-medium mb-5 flex items-center gap-2 text-sm uppercase tracking-wider">
+                    <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                      <Calendar className="h-4 w-4 text-gold" />
+                    </span>
+                    Your Stay
+                  </h3>
 
-                  {/* LEFT — Booking summary, stay details, special requests */}
-                  <div className="lg:col-span-6 space-y-5">
-
-                    {/* Booking Summary Card — image left, details right */}
-                    <div className="bg-white border border-white/90 rounded-2xl shadow-sm overflow-hidden">
-                      <div className="flex flex-col sm:flex-row">
-                        {/* Image */}
-                        <div className="sm:w-2/5 relative h-48 sm:h-auto sm:min-h-[200px] bg-bg">
-                          <img
-                            src={heroImage}
-                            alt={selectedGroup.roomType.name}
-                            className="absolute inset-0 w-full h-full object-cover"
-                          />
-                          {selectedRoom && (
-                            <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-gold/95 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-dark shadow-lg">
-                              <BedDouble className="h-3 w-3" strokeWidth={3} /> Room {selectedRoom.room_number}
-                            </div>
-                          )}
-                        </div>
-                        {/* Details */}
-                        <div className="flex-1 p-5 sm:p-6 flex flex-col">
-                          <p className="text-gold-dark/70 text-[10px] uppercase tracking-[0.2em] font-medium mb-1">
-                            {categoryLabel(selectedGroup.roomType.name)}
-                          </p>
-                          <h2 className="font-serif text-xl sm:text-2xl text-dark font-light leading-tight">
-                            {selectedGroup.roomType.name}
-                          </h2>
-                          <p className="text-dark/50 text-sm mt-2">
-                            {[
-                              selectedRoom?.bed_type || selectedGroup.roomType.bed_type,
-                              `Sleeps ${selectedRoom?.capacity || selectedGroup.roomType.max_adults}`,
-                              selectedGroup.roomType.size_sqm ? `${selectedGroup.roomType.size_sqm} m²` : null,
-                              selectedRoom ? `Floor ${selectedRoom.floor}` : null,
-                            ].filter(Boolean).join(' · ')}
-                          </p>
-                          {selectedGroup.roomType.description && (
-                            <p className="text-dark/40 text-sm leading-relaxed mt-3 line-clamp-2">
-                              {selectedGroup.roomType.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
+                  {/* Guest name — full width */}
+                  <div className="rounded-xl bg-dark/40 p-4 mb-3 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-gold/10 flex items-center justify-center shrink-0">
+                      <Users className="h-4 w-4 text-gold" />
                     </div>
-
-                    {/* Stay Details Card */}
-                    <div className="bg-white border border-white/90 rounded-2xl shadow-sm p-5 sm:p-6">
-                      <h3 className="text-dark font-medium mb-5 flex items-center gap-2 text-sm uppercase tracking-wider">
-                        <span className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center">
-                          <Calendar className="h-4 w-4 text-gold-dark" />
-                        </span>
-                        Your Stay
-                      </h3>
-
-                      {/* Guest name — full width */}
-                      <div className="rounded-xl bg-bg p-4 mb-3 flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gold/15 flex items-center justify-center shrink-0">
-                          <Users className="h-4 w-4 text-gold-dark" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[10px] uppercase tracking-wider text-dark/40 font-medium">Guest</p>
-                          <p className="text-dark/80 text-sm font-medium truncate">
-                            {`${user?.first_name ?? ''} ${user?.last_name ?? ''}`.trim() || 'Guest'}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* 2x2 grid of stay details */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-xl bg-bg p-4">
-                          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-dark/40 font-medium mb-1.5">
-                            <LogIn className="h-3 w-3" /> Check-in
-                          </div>
-                          <p className="text-dark/85 text-sm font-medium">{formatDate(checkIn)}</p>
-                          <p className="text-dark/40 text-[11px] mt-0.5">From 3:00 PM</p>
-                        </div>
-                        <div className="rounded-xl bg-bg p-4">
-                          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-dark/40 font-medium mb-1.5">
-                            <LogOut className="h-3 w-3" /> Check-out
-                          </div>
-                          <p className="text-dark/85 text-sm font-medium">{formatDate(checkOut)}</p>
-                          <p className="text-dark/40 text-[11px] mt-0.5">By {checkoutTimeLabel}</p>
-                        </div>
-                        <div className="rounded-xl bg-bg p-4">
-                          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-dark/40 font-medium mb-1.5">
-                            <Moon className="h-3 w-3" /> Nights
-                          </div>
-                          <p className="text-dark/85 text-sm font-medium">{nights}</p>
-                        </div>
-                        <div className="rounded-xl bg-bg p-4">
-                          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-dark/40 font-medium mb-1.5">
-                            <Users className="h-3 w-3" /> Guests
-                          </div>
-                          <p className="text-dark/85 text-sm font-medium">
-                            {adultsSafe} adult{adultsSafe > 1 ? 's' : ''}{childrenSafe > 0 ? `, ${childrenSafe} child${childrenSafe > 1 ? 'ren' : ''}` : ''}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Special Requests Card */}
-                    <div className="bg-white border border-white/90 rounded-2xl shadow-sm p-5 sm:p-6">
-                      <h3 className="text-dark font-medium mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
-                        <span className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center">
-                          <MessageSquare className="h-4 w-4 text-gold-dark" />
-                        </span>
-                        Special Requests
-                      </h3>
-                      <textarea
-                        value={specialRequests}
-                        onChange={(e) => setSpecialRequests(e.target.value)}
-                        rows={3}
-                        placeholder="Any special requests or requirements for your stay..."
-                        className="w-full bg-bg border border-transparent rounded-xl p-4 text-sm text-dark placeholder:text-dark/30 focus:outline-none focus:border-gold/40 focus:ring-1 focus:ring-gold/30 resize-none transition-colors"
-                      />
-                      <p className="text-[11px] text-dark/30 mt-2">Optional. We'll do our best to accommodate your requests.</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] uppercase tracking-wider text-white/30 font-medium">Guest</p>
+                      <p className="text-white/85 text-sm font-medium truncate">
+                        {`${user?.first_name ?? ''} ${user?.last_name ?? ''}`.trim() || 'Guest'}
+                      </p>
                     </div>
                   </div>
 
-                  {/* RIGHT — Price Summary (sticky) */}
-                  <div className="lg:col-span-4">
-                    <div className="lg:sticky lg:top-28">
-                      <div className="bg-white border border-white/90 rounded-2xl shadow-sm p-5 sm:p-6">
-
-                        {/* Header */}
-                        <h3 className="text-dark font-medium mb-5 flex items-center gap-2 text-sm uppercase tracking-wider">
-                          <span className="w-8 h-8 rounded-lg bg-gold/15 flex items-center justify-center">
-                            <ReceiptText className="h-4 w-4 text-gold-dark" />
-                          </span>
-                          Price Summary
-                        </h3>
-
-                        {(() => {
-                          const rate = effectiveRate
-                          const subtotal = rate * nights
-                          const tax = subtotal * taxRate
-                          const taxPercent = Math.round(taxRate * 100)
-                          return (
-                            <>
-                              {/* Line items */}
-                              <div className="space-y-3 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="text-dark/55">{fmt(rate)} × {nights} night{nights > 1 ? 's' : ''}</span>
-                                  <span className="text-dark/80 font-medium">{fmt(subtotal)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-dark/55">{taxLabel} ({taxPercent}%)</span>
-                                  <span className="text-dark/80 font-medium">{fmt(tax)}</span>
-                                </div>
-                              </div>
-
-                              {/* Total */}
-                              <div className="border-t border-dark/10 mt-5 pt-5">
-                                <div className="flex justify-between items-baseline">
-                                  <span className="text-dark font-medium">Total</span>
-                                  <span className="text-gold-dark font-serif text-3xl font-light">{fmt(total)}</span>
-                                </div>
-                                <p className="text-dark/40 text-[11px] mt-1 text-right">PHP · taxes included</p>
-                              </div>
-
-                              {/* Cancellation policy */}
-                              {cancellationLabel && (
-                                <div className="mt-5 rounded-xl border border-dark/5 bg-bg p-4">
-                                  <p className="text-[11px] leading-relaxed text-dark/60">
-                                    <span className="text-gold-dark font-medium">Cancellation: </span>{cancellationLabel}
-                                  </p>
-                                </div>
-                              )}
-
-                              {/* Confirm button */}
-                              <button
-                                onClick={handleConfirm}
-                                disabled={createReservation.isPending}
-                                className="btn-gold w-full mt-6 flex items-center justify-center gap-2 !py-4 text-sm"
-                              >
-                                {createReservation.isPending ? (
-                                  <><Loader2 className="h-4 w-4 animate-spin" /> Processing...</>
-                                ) : (
-                                  <><Check className="h-4 w-4" strokeWidth={3} /> Confirm Booking</>
-                                )}
-                              </button>
-
-                              {/* Trust badges */}
-                              <div className="mt-5 space-y-2">
-                                <div className="flex items-center justify-center gap-1.5 text-[11px] text-dark/40">
-                                  <Lock className="h-3 w-3" /> Secure booking — no charge now
-                                </div>
-                                <div className="flex items-center justify-center gap-1.5 text-[11px] text-dark/40">
-                                  <ShieldCheck className="h-3 w-3" /> Free cancellation{cancellationLabel ? ' per policy' : ' available'}
-                                </div>
-                              </div>
-                            </>
-                          )
-                        })()}
+                  {/* 2x2 grid of stay details */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl bg-dark/40 p-4">
+                      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/30 font-medium mb-1.5">
+                        <LogIn className="h-3 w-3" /> Check-in
                       </div>
+                      <p className="text-white/85 text-sm font-medium">{formatDate(checkIn)}</p>
+                      <p className="text-white/40 text-[11px] mt-0.5">From 3:00 PM</p>
                     </div>
+                    <div className="rounded-xl bg-dark/40 p-4">
+                      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/30 font-medium mb-1.5">
+                        <LogOut className="h-3 w-3" /> Check-out
+                      </div>
+                      <p className="text-white/85 text-sm font-medium">{formatDate(checkOut)}</p>
+                      <p className="text-white/40 text-[11px] mt-0.5">By {checkoutTimeLabel}</p>
+                    </div>
+                    <div className="rounded-xl bg-dark/40 p-4">
+                      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/30 font-medium mb-1.5">
+                        <Moon className="h-3 w-3" /> Nights
+                      </div>
+                      <p className="text-white/85 text-sm font-medium">{nights}</p>
+                    </div>
+                    <div className="rounded-xl bg-dark/40 p-4">
+                      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/30 font-medium mb-1.5">
+                        <Users className="h-3 w-3" /> Guests
+                      </div>
+                      <p className="text-white/85 text-sm font-medium">
+                        {adultsSafe} adult{adultsSafe > 1 ? 's' : ''}{childrenSafe > 0 ? `, ${childrenSafe} child${childrenSafe > 1 ? 'ren' : ''}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Special Requests Card */}
+                <div className="bg-dark/50 border border-white/5 rounded-2xl p-5 sm:p-6">
+                  <h3 className="text-white font-medium mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+                    <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
+                      <MessageSquare className="h-4 w-4 text-gold" />
+                    </span>
+                    Special Requests
+                  </h3>
+                  <textarea
+                    value={specialRequests}
+                    onChange={(e) => setSpecialRequests(e.target.value)}
+                    rows={3}
+                    placeholder="Any special requests or requirements for your stay..."
+                    className="input-public resize-none"
+                  />
+                  <p className="text-[11px] text-white/30 mt-2">Optional. We'll do our best to accommodate your requests.</p>
+                </div>
+              </div>
+
+              {/* RIGHT — Price Summary (sticky) */}
+              <div className="lg:col-span-4">
+                <div className="lg:sticky lg:top-28">
+                  <div className="bg-dark/50 border border-white/5 rounded-2xl p-5 sm:p-6">
+
+                    {/* Header */}
+                    <h3 className="text-white font-medium mb-5 flex items-center gap-2 text-sm uppercase tracking-wider">
+                      <span className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center">
+                        <ReceiptText className="h-4 w-4 text-gold" />
+                      </span>
+                      Price Summary
+                    </h3>
+
+                    {(() => {
+                      const rate = effectiveRate
+                      const subtotal = rate * nights
+                      const tax = subtotal * taxRate
+                      const taxPercent = Math.round(taxRate * 100)
+                      return (
+                        <>
+                          {/* Line items */}
+                          <div className="space-y-3 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-white/30">{fmt(rate)} × {nights} night{nights > 1 ? 's' : ''}</span>
+                              <span className="text-white/60">{fmt(subtotal)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-white/30">{taxLabel} ({taxPercent}%)</span>
+                              <span className="text-white/60">{fmt(tax)}</span>
+                            </div>
+                          </div>
+
+                          {/* Total */}
+                          <div className="border-t border-white/10 mt-5 pt-5">
+                            <div className="flex justify-between items-baseline">
+                              <span className="text-white font-medium">Total</span>
+                              <span className="text-gold font-serif text-3xl font-light">{fmt(total)}</span>
+                            </div>
+                            <p className="text-white/30 text-[11px] mt-1 text-right">PHP · taxes included</p>
+                          </div>
+
+                          {/* Cancellation policy */}
+                          {cancellationLabel && (
+                            <div className="mt-5 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                              <p className="text-[11px] leading-relaxed text-white/40">
+                                <span className="text-gold/70 font-medium">Cancellation: </span>{cancellationLabel}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Confirm button */}
+                          <button
+                            onClick={handleConfirm}
+                            disabled={createReservation.isPending}
+                            className="btn-gold w-full mt-6 flex items-center justify-center gap-2 !py-4 text-sm"
+                          >
+                            {createReservation.isPending ? (
+                              <><Loader2 className="h-4 w-4 animate-spin" /> Processing...</>
+                            ) : (
+                              <><Check className="h-4 w-4" strokeWidth={3} /> Confirm Booking</>
+                            )}
+                          </button>
+
+                          {/* Trust badges */}
+                          <div className="mt-5 space-y-2">
+                            <div className="flex items-center justify-center gap-1.5 text-[11px] text-white/30">
+                              <Lock className="h-3 w-3" /> Secure booking — no charge now
+                            </div>
+                            <div className="flex items-center justify-center gap-1.5 text-[11px] text-white/30">
+                              <ShieldCheck className="h-3 w-3" /> Free cancellation{cancellationLabel ? ' per policy' : ' available'}
+                            </div>
+                          </div>
+                        </>
+                      )
+                    })()}
                   </div>
                 </div>
               </div>
-            </section>
+            </div>
 
             {/* Mobile fixed bottom bar */}
             {selectedGroup && (
-              <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur border-t border-dark/10 px-4 py-3 flex items-center justify-between gap-3 shadow-lg">
+              <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-dark/95 backdrop-blur border-t border-white/5 px-4 py-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[10px] text-dark/40 uppercase tracking-wider font-medium">Total</p>
-                  <p className="text-gold-dark font-serif text-xl font-light leading-none">{fmt(total)}</p>
+                  <p className="text-[10px] text-white/30 uppercase tracking-wider">Total</p>
+                  <p className="text-gold font-serif text-xl font-light leading-none">{fmt(total)}</p>
                 </div>
                 <button
                   onClick={handleConfirm}
