@@ -465,7 +465,7 @@ export default function PublicBookingPage() {
                                     {fmt(price)}
                                   </p>
                                   <p className="text-white/30 text-[10px] uppercase tracking-wider mt-1">
-                                    per night{nights > 0 ? ` · ${fmt(price * nights)} total` : ''}
+                                    per night · {nights} night{nights > 1 ? 's' : ''}
                                   </p>
                                   {isSoldOut && (
                                     <p className="text-red-400/70 text-[11px] mt-1">Not available for these dates</p>
