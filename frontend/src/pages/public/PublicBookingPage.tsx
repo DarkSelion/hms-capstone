@@ -729,17 +729,23 @@ export default function PublicBookingPage() {
         {step === 3 && selectedGroup && (
           <div className="animate-fade-in">
 
-            {/* Page header */}
-            <div className="text-center mb-10">
-              <button
-                onClick={() => setStep(2)}
-                className="inline-flex items-center gap-1.5 text-white/40 hover:text-gold text-[10px] uppercase tracking-[0.2em] font-medium mb-5 transition-colors"
-              >
-                <ArrowLeft className="h-3 w-3" /> Change room
-              </button>
-              <h1 className="font-serif text-white text-3xl sm:text-4xl font-light">Confirm Your Booking</h1>
-              <p className="text-white/40 text-sm mt-2">Review your stay details below before confirming your reservation.</p>
-            </div>
+            {/* Hero — same pattern as Steps 1 and 2 */}
+            <section className="relative h-56 sm:h-72 rounded-2xl overflow-hidden mb-10">
+              <img
+                src={heroImage}
+                alt={selectedGroup.roomType.name}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/60 to-dark/30" />
+              <div className="relative z-10 h-full flex flex-col justify-end p-8">
+                <button onClick={() => setStep(2)} className="self-start flex items-center gap-1.5 text-white/40 hover:text-gold text-xs uppercase tracking-wider mb-3 transition-colors">
+                  <ArrowLeft className="h-3.5 w-3.5" /> Change room
+                </button>
+                <p className="text-gold/70 text-xs uppercase tracking-[0.2em] font-medium mb-2">Step 3 of 3</p>
+                <h1 className="font-serif text-white text-3xl sm:text-4xl font-light">Confirm Your Booking</h1>
+                <p className="text-white/40 text-sm mt-2 max-w-lg">Review your stay details below before confirming your reservation.</p>
+              </div>
+            </section>
 
             <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
 
