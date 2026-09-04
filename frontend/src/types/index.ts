@@ -376,6 +376,7 @@ export interface PublicRoom {
   capacity?: number
   description?: string
   image_url?: string
+  bed_type?: string
 }
 
 export interface PublicReservation {

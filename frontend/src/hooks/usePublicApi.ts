@@ -101,7 +101,7 @@ export function usePublicCreateReservation() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data: {
-      room_type_id: number; check_in: string; check_out: string;
+      room_type_id: number; room_id?: number; check_in: string; check_out: string;
       adults: number; children?: number; special_requests?: string;
     }) => publicApi.post<PublicReservation>('/public/reservations', data),
     onSuccess: () => {

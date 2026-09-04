@@ -45,6 +45,15 @@ function groupImage(group: RoomGroup): string {
   return group.sampleRoom.image_url || getHeroImage(group.roomType.name)
 }
 
+function roomPrice(room: PublicRoom): number {
+  const override = room.price_override !== null && room.price_override !== undefined
+    ? Number(room.price_override)
+    : null
+  return override !== null && !Number.isNaN(override)
+    ? override
+    : Number(room.room_type?.base_price ?? 0)
+}
+
 const DEFAULT_AMENITIES = [
   'Complimentary Wi-Fi',
   'Daily housekeeping',
@@ -84,6 +93,7 @@ export default function PublicBookingPage() {
   const [adults, setAdults] = useState(Number(searchParams.get('adults') ?? 2))
   const [childrenCount, setChildrenCount] = useState(Number(searchParams.get('children') ?? 0))
   const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null)
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null)
   const [specialRequests, setSpecialRequests] = useState('')
 
   const roomTypeParam = searchParams.get('room_type')
@@ -145,6 +155,14 @@ export default function PublicBookingPage() {
     }
   }, [roomGroups, selectedTypeId])
 
+  // When filtered to a single type and exactly one room shows, select it.
+  useEffect(() => {
+    if (selectedRoomId !== null) return
+    if (!roomTypeParam) return
+    if (!filteredRooms || filteredRooms.length !== 1) return
+    setSelectedRoomId(filteredRooms[0].id)
+  }, [filteredRooms, selectedRoomId, roomTypeParam])
+
   const maxDate = useMemo(() => {
     const raw = (bookingSettings as Record<string, string> | undefined)?.max_advance_days
     const days = raw ? Number(raw) : 30
@@ -164,6 +182,18 @@ export default function PublicBookingPage() {
     () => roomGroups.find((g) => g.roomType.id === selectedTypeId) ?? null,
     [roomGroups, selectedTypeId],
   )
+
+  // When a specific room has been picked (filtered list), surface it for the summary.
+  const selectedRoom = useMemo(() => {
+    if (!filteredRooms || !selectedRoomId) return null
+    return filteredRooms.find((r) => r.id === selectedRoomId) ?? null
+  }, [filteredRooms, selectedRoomId])
+
+  // The effective rate: per-room override if a specific room is picked, else the type base price.
+  const effectiveRate = useMemo(() => {
+    if (selectedRoom) return roomPrice(selectedRoom)
+    return selectedGroup ? Number(selectedGroup.roomType.base_price) : 0
+  }, [selectedRoom, selectedGroup])
 
   // Party-size limits come from the selected room type; oversized picks clamp automatically.
   const maxAdults = Math.max(1, Number(selectedGroup?.roomType.max_adults ?? 6))
@@ -189,7 +219,7 @@ export default function PublicBookingPage() {
 
   const total = useMemo(() => {
     if (!selectedGroup || !nights || nights < 1) return 0
-    const rate = selectedGroup.roomType.base_price
+    const rate = effectiveRate
     const subtotal = rate * nights
     const tax = subtotal * taxRate
     return Math.round((subtotal + tax) * 100) / 100
@@ -200,6 +230,7 @@ export default function PublicBookingPage() {
     try {
       await createReservation.mutateAsync({
         room_type_id: selectedTypeId,
+        room_id: selectedRoomId ?? undefined,
         check_in: checkIn,
         check_out: checkOut,
         adults: adultsSafe,
@@ -366,113 +397,209 @@ export default function PublicBookingPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-10 gap-8">
                   {/* LEFT — Horizontal room cards (stacked) */}
                   <div className="lg:col-span-6 space-y-4">
-                    {roomGroups.map((group) => {
-                      const isSelected = selectedTypeId === group.roomType.id
-                      const amenities = group.roomType.amenities_json && group.roomType.amenities_json.length > 0
-                        ? group.roomType.amenities_json
-                        : DEFAULT_AMENITIES
-                      const bedType = bedTypeDisplay(group.roomType.bed_type)
-                      const category = categoryLabel(group.roomType.name)
-                      const isSoldOut = group.count <= 0
-                      return (
-                        <div
-                          key={group.roomType.id}
-                          onClick={() => !isSoldOut && setSelectedTypeId(group.roomType.id)}
-                          role="button"
-                          tabIndex={isSoldOut ? -1 : 0}
-                          aria-disabled={isSoldOut}
-                          onKeyDown={(e) => { if (!isSoldOut && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setSelectedTypeId(group.roomType.id) } }}
-                          className={`group cursor-pointer transition-all duration-300 flex flex-col sm:flex-row gap-0 rounded-2xl overflow-hidden border ${
-                            isSoldOut
-                              ? 'border-white/5 bg-dark/30 opacity-60 cursor-not-allowed'
-                              : isSelected
-                                ? 'border-gold/60 bg-dark/60'
-                                : 'border-white/5 bg-dark/40 hover:border-white/20'
-                          }`}
-                        >
-                          {/* Image — compact, left side on desktop */}
-                          <div className="relative w-full sm:w-48 md:w-56 shrink-0 aspect-[4/3] sm:aspect-auto overflow-hidden">
-                            <img
-                              src={groupImage(group)}
-                              alt={group.roomType.name}
-                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-dark/40 sm:to-dark/30" />
-                            {isSelected && (
-                              <div className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-gold px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-dark shadow-lg">
-                                <Check className="h-3 w-3" strokeWidth={3} /> Selected
+                    {roomTypeParam && filteredRooms ? (
+                      // Filtered to one room type: show individual room cards
+                      // (each room has its own bed_type, capacity, price_override).
+                      filteredRooms.map((room) => {
+                        const isSelected = selectedRoomId === room.id
+                        const type = room.room_type!
+                        const bed = room.bed_type || type.bed_type
+                        const capacity = room.capacity || type.capacity
+                        const price = roomPrice(room)
+                        const image = room.image_url || getHeroImage(type.name)
+                        const isSoldOut = room.status !== 'available'
+                        return (
+                          <div
+                            key={room.id}
+                            onClick={() => !isSoldOut && setSelectedRoomId(room.id)}
+                            role="button"
+                            tabIndex={isSoldOut ? -1 : 0}
+                            aria-disabled={isSoldOut}
+                            onKeyDown={(e) => { if (!isSoldOut && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setSelectedRoomId(room.id) } }}
+                            className={`group cursor-pointer transition-all duration-300 flex flex-col sm:flex-row gap-0 rounded-2xl overflow-hidden border ${
+                              isSoldOut
+                                ? 'border-white/5 bg-dark/30 opacity-60 cursor-not-allowed'
+                                : isSelected
+                                  ? 'border-gold/60 bg-dark/60'
+                                  : 'border-white/5 bg-dark/40 hover:border-white/20'
+                            }`}
+                          >
+                            <div className="relative w-full sm:w-48 md:w-56 shrink-0 aspect-[4/3] sm:aspect-auto overflow-hidden">
+                              <img
+                                src={image}
+                                alt={`Room ${room.room_number}`}
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-dark/40 sm:to-dark/30" />
+                              <div className="absolute top-3 left-3">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-dark/70 backdrop-blur px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/80 border border-white/10">
+                                  Room {room.room_number}
+                                </span>
                               </div>
-                            )}
-                          </div>
-
-                          {/* Body — details + price + select */}
-                          <div className="flex-1 p-4 sm:p-5 flex flex-col">
-                            {/* Title row */}
-                            <div className="mb-1.5">
-                              <p className="text-gold/60 text-[10px] uppercase tracking-[0.2em] font-medium">{category}</p>
-                              <h3 className="font-serif text-xl sm:text-2xl text-white font-light leading-tight">
-                                {group.roomType.name}
-                              </h3>
+                              {isSelected && (
+                                <div className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-gold px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-dark shadow-lg">
+                                  <Check className="h-3 w-3" strokeWidth={3} /> Selected
+                                </div>
+                              )}
                             </div>
-
-                            {/* Specs — plain text, dot-separated */}
-                            <p className="text-white/55 text-sm">
-                              {[bedType, `${group.roomType.max_adults} Guest${group.roomType.max_adults > 1 ? 's' : ''}`, group.roomType.size_sqm ? `${group.roomType.size_sqm} m²` : null]
-                                .filter(Boolean)
-                                .join(' · ')}
-                            </p>
-
-                            {/* Description — line-clamp-2 */}
-                            {group.roomType.description && (
-                              <p className="text-white/40 text-sm leading-relaxed mt-2 line-clamp-2">
-                                {group.roomType.description}
+                            <div className="flex-1 p-4 sm:p-5 flex flex-col">
+                              <div className="mb-1.5">
+                                <p className="text-gold/60 text-[10px] uppercase tracking-[0.2em] font-medium">{categoryLabel(type.name)}</p>
+                                <h3 className="font-serif text-xl sm:text-2xl text-white font-light leading-tight">
+                                  {type.name} — Room {room.room_number}
+                                </h3>
+                              </div>
+                              <p className="text-white/55 text-sm">
+                                {[bed ? `${bed} bed` : null, `Sleeps ${capacity}`, type.size_sqm ? `${type.size_sqm} m²` : null, `Floor ${room.floor}`]
+                                  .filter(Boolean)
+                                  .join(' · ')}
                               </p>
-                            )}
-
-                            {/* Amenities — inline text, dot-separated */}
-                            {amenities.length > 0 && (
-                              <p className="text-white/35 text-xs mt-2 line-clamp-1">
-                                {amenities.slice(0, 4).join(' · ')}
-                                {amenities.length > 4 && ` · +${amenities.length - 4} more`}
-                              </p>
-                            )}
-
-                            {/* Bottom row — price + availability + select */}
-                            <div className="mt-auto pt-3 flex items-end justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="text-gold font-serif text-2xl font-light leading-none">
-                                  {fmt(group.roomType.base_price)}
+                              {type.description && (
+                                <p className="text-white/40 text-sm leading-relaxed mt-2 line-clamp-2">
+                                  {type.description}
                                 </p>
-                                <p className="text-white/30 text-[10px] uppercase tracking-wider mt-1">
-                                  per night{nights > 0 ? ` · ${fmt(group.roomType.base_price * nights)} total` : ''}
-                                </p>
-                                {isSoldOut ? (
-                                  <p className="text-red-400/70 text-[11px] mt-1">Sold out for these dates</p>
-                                ) : group.count <= 3 ? (
-                                  <p className="text-emerald-400/70 text-[11px] mt-1">
-                                    Only {group.count} room{group.count > 1 ? 's' : ''} left
+                              )}
+                              <div className="mt-auto pt-3 flex items-end justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="text-gold font-serif text-2xl font-light leading-none">
+                                    {fmt(price)}
                                   </p>
-                                ) : null}
+                                  <p className="text-white/30 text-[10px] uppercase tracking-wider mt-1">
+                                    per night{nights > 0 ? ` · ${fmt(price * nights)} total` : ''}
+                                  </p>
+                                  {isSoldOut && (
+                                    <p className="text-red-400/70 text-[11px] mt-1">Not available for these dates</p>
+                                  )}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); !isSoldOut && setSelectedRoomId(room.id) }}
+                                  disabled={isSoldOut}
+                                  className={`shrink-0 rounded-lg px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
+                                    isSoldOut
+                                      ? 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed'
+                                      : isSelected
+                                        ? 'bg-gold/15 border border-gold text-gold'
+                                        : 'bg-transparent border border-white/20 text-white/80 hover:border-gold/60 hover:text-gold'
+                                  }`}
+                                >
+                                  {isSoldOut ? 'Unavailable' : isSelected ? 'Selected' : 'Select Room'}
+                                </button>
                               </div>
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); !isSoldOut && setSelectedTypeId(group.roomType.id) }}
-                                disabled={isSoldOut}
-                                className={`shrink-0 rounded-lg px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
-                                  isSoldOut
-                                    ? 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed'
-                                    : isSelected
-                                      ? 'bg-gold/15 border border-gold text-gold'
-                                      : 'bg-transparent border border-white/20 text-white/80 hover:border-gold/60 hover:text-gold'
-                                }`}
-                              >
-                                {isSoldOut ? 'Sold Out' : isSelected ? 'Selected' : 'Select Room'}
-                              </button>
                             </div>
                           </div>
-                        </div>
-                      )
-                    })}
+                        )
+                      })
+                    ) : (
+                      // No room_type filter: show grouped cards (one per room type)
+                      roomGroups.map((group) => {
+                        const isSelected = selectedTypeId === group.roomType.id
+                        const amenities = group.roomType.amenities_json && group.roomType.amenities_json.length > 0
+                          ? group.roomType.amenities_json
+                          : DEFAULT_AMENITIES
+                        const bedType = bedTypeDisplay(group.roomType.bed_type)
+                        const category = categoryLabel(group.roomType.name)
+                        const isSoldOut = group.count <= 0
+                        return (
+                          <div
+                            key={group.roomType.id}
+                            onClick={() => !isSoldOut && setSelectedTypeId(group.roomType.id)}
+                            role="button"
+                            tabIndex={isSoldOut ? -1 : 0}
+                            aria-disabled={isSoldOut}
+                            onKeyDown={(e) => { if (!isSoldOut && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setSelectedTypeId(group.roomType.id) } }}
+                            className={`group cursor-pointer transition-all duration-300 flex flex-col sm:flex-row gap-0 rounded-2xl overflow-hidden border ${
+                              isSoldOut
+                                ? 'border-white/5 bg-dark/30 opacity-60 cursor-not-allowed'
+                                : isSelected
+                                  ? 'border-gold/60 bg-dark/60'
+                                  : 'border-white/5 bg-dark/40 hover:border-white/20'
+                            }`}
+                          >
+                            {/* Image — compact, left side on desktop */}
+                            <div className="relative w-full sm:w-48 md:w-56 shrink-0 aspect-[4/3] sm:aspect-auto overflow-hidden">
+                              <img
+                                src={groupImage(group)}
+                                alt={group.roomType.name}
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-dark/40 sm:to-dark/30" />
+                              {isSelected && (
+                                <div className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-gold px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-dark shadow-lg">
+                                  <Check className="h-3 w-3" strokeWidth={3} /> Selected
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Body — details + price + select */}
+                            <div className="flex-1 p-4 sm:p-5 flex flex-col">
+                              {/* Title row */}
+                              <div className="mb-1.5">
+                                <p className="text-gold/60 text-[10px] uppercase tracking-[0.2em] font-medium">{category}</p>
+                                <h3 className="font-serif text-xl sm:text-2xl text-white font-light leading-tight">
+                                  {group.roomType.name}
+                                </h3>
+                              </div>
+
+                              {/* Specs — plain text, dot-separated */}
+                              <p className="text-white/55 text-sm">
+                                {[bedType, `${group.roomType.max_adults} Guest${group.roomType.max_adults > 1 ? 's' : ''}`, group.roomType.size_sqm ? `${group.roomType.size_sqm} m²` : null]
+                                  .filter(Boolean)
+                                  .join(' · ')}
+                              </p>
+
+                              {/* Description — line-clamp-2 */}
+                              {group.roomType.description && (
+                                <p className="text-white/40 text-sm leading-relaxed mt-2 line-clamp-2">
+                                  {group.roomType.description}
+                                </p>
+                              )}
+
+                              {/* Amenities — inline text, dot-separated */}
+                              {amenities.length > 0 && (
+                                <p className="text-white/35 text-xs mt-2 line-clamp-1">
+                                  {amenities.slice(0, 4).join(' · ')}
+                                  {amenities.length > 4 && ` · +${amenities.length - 4} more`}
+                                </p>
+                              )}
+
+                              {/* Bottom row — price + availability + select */}
+                              <div className="mt-auto pt-3 flex items-end justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="text-gold font-serif text-2xl font-light leading-none">
+                                    {fmt(group.roomType.base_price)}
+                                  </p>
+                                  <p className="text-white/30 text-[10px] uppercase tracking-wider mt-1">
+                                    per night{nights > 0 ? ` · ${fmt(group.roomType.base_price * nights)} total` : ''}
+                                  </p>
+                                  {isSoldOut ? (
+                                    <p className="text-red-400/70 text-[11px] mt-1">Sold out for these dates</p>
+                                  ) : group.count <= 3 ? (
+                                    <p className="text-emerald-400/70 text-[11px] mt-1">
+                                      Only {group.count} room{group.count > 1 ? 's' : ''} left
+                                    </p>
+                                  ) : null}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); !isSoldOut && setSelectedTypeId(group.roomType.id) }}
+                                  disabled={isSoldOut}
+                                  className={`shrink-0 rounded-lg px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
+                                    isSoldOut
+                                      ? 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed'
+                                      : isSelected
+                                        ? 'bg-gold/15 border border-gold text-gold'
+                                        : 'bg-transparent border border-white/20 text-white/80 hover:border-gold/60 hover:text-gold'
+                                  }`}
+                                >
+                                  {isSoldOut ? 'Sold Out' : isSelected ? 'Selected' : 'Select Room'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
                   </div>
 
                   {/* RIGHT — Booking summary (sticky) */}
@@ -486,10 +613,12 @@ export default function PublicBookingPage() {
                               {categoryLabel(selectedGroup.roomType.name)}
                             </p>
                             <h2 className="font-serif text-xl text-white font-light mb-1">
-                              {selectedGroup.roomType.name}
+                              {selectedRoom ? `Room ${selectedRoom.room_number}` : selectedGroup.roomType.name}
                             </h2>
                             <p className="text-white/50 text-sm mb-6">
-                              {bedTypeDisplay(selectedGroup.roomType.bed_type)} · {selectedGroup.roomType.max_adults} Guests{selectedGroup.roomType.size_sqm ? ` · ${selectedGroup.roomType.size_sqm} m²` : ''}
+                              {selectedRoom
+                                ? `${selectedRoom.bed_type || selectedGroup.roomType.bed_type} · Sleeps ${selectedRoom.capacity || selectedGroup.roomType.max_adults} · Floor ${selectedRoom.floor}${selectedGroup.roomType.size_sqm ? ` · ${selectedGroup.roomType.size_sqm} m²` : ''}`
+                                : `${bedTypeDisplay(selectedGroup.roomType.bed_type)} · ${selectedGroup.roomType.max_adults} Guests${selectedGroup.roomType.size_sqm ? ` · ${selectedGroup.roomType.size_sqm} m²` : ''}`}
                             </p>
 
                             {/* Stay details — clean key-value rows */}
@@ -517,16 +646,16 @@ export default function PublicBookingPage() {
                             {/* Price — clean breakdown */}
                             <div className="border-t border-white/10 mt-5 pt-5 space-y-2">
                               <div className="flex justify-between text-sm">
-                                <span className="text-white/55">{fmt(selectedGroup.roomType.base_price)} × {nights} night{nights > 1 ? 's' : ''}</span>
-                                <span className="text-white/80">{fmt(selectedGroup.roomType.base_price * nights)}</span>
+                                <span className="text-white/55">{fmt(effectiveRate)} × {nights} night{nights > 1 ? 's' : ''}</span>
+                                <span className="text-white/80">{fmt(effectiveRate * nights)}</span>
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-white/55">{taxLabel} ({Math.round(taxRate * 100)}%)</span>
-                                <span className="text-white/80">{fmt((selectedGroup.roomType.base_price * nights) * taxRate)}</span>
+                                <span className="text-white/80">{fmt(effectiveRate * nights * taxRate)}</span>
                               </div>
                               <div className="flex justify-between items-baseline pt-3 border-t border-white/10">
                                 <span className="text-white font-medium">Total</span>
-                                <span className="text-gold font-serif text-2xl">{fmt((selectedGroup.roomType.base_price * nights) * (1 + taxRate))}</span>
+                                <span className="text-gold font-serif text-2xl">{fmt(effectiveRate * nights * (1 + taxRate))}</span>
                               </div>
                             </div>
 
@@ -569,7 +698,7 @@ export default function PublicBookingPage() {
                   <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-dark/95 backdrop-blur border-t border-white/5 px-4 py-3 flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-gold font-semibold text-lg leading-tight">
-                        {fmt(selectedGroup.roomType.base_price * nights * (1 + taxRate))}
+                        {fmt(effectiveRate * nights * (1 + taxRate))}
                       </p>
                       <p className="text-white/40 text-[10px] uppercase tracking-wider">{nights} night{nights > 1 ? 's' : ''} total</p>
                     </div>
@@ -622,9 +751,9 @@ export default function PublicBookingPage() {
                   <div className="space-y-0">
                     {[
                       { label: 'Room Type', value: selectedGroup.roomType.name },
-                      { label: 'Room Number', value: 'Assigned at check-in' },
-                      { label: 'Bed Type', value: selectedGroup.roomType.bed_type },
-                      { label: 'Max Guests', value: `${selectedGroup.roomType.max_adults} adults` },
+                      { label: 'Room Number', value: selectedRoom ? `Room ${selectedRoom.room_number}` : 'Assigned at check-in' },
+                      { label: 'Bed Type', value: selectedRoom?.bed_type || selectedGroup.roomType.bed_type },
+                      { label: 'Max Guests', value: selectedRoom ? `${selectedRoom.capacity || selectedGroup.roomType.max_adults} guests` : `${selectedGroup.roomType.max_adults} adults` },
                       { label: 'Room Size', value: `${selectedGroup.roomType.size_sqm} m²` },
                     ].map((row) => (
                       <div key={row.label} className="flex justify-between py-2.5 border-b border-white/5 last:border-0">
@@ -677,7 +806,7 @@ export default function PublicBookingPage() {
                 <div className="bg-dark/50 border border-white/5 rounded-2xl p-6 lg:sticky lg:top-28">
                   <h3 className="text-white font-medium mb-5">Price Summary</h3>
                   {(() => {
-                    const rate = selectedGroup.roomType.base_price
+                    const rate = effectiveRate
                     const subtotal = rate * nights
                     const tax = subtotal * taxRate
                     const taxPercent = Math.round(taxRate * 100)

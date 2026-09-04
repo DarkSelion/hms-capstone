@@ -18,6 +18,7 @@ class ReservationController extends Controller
     {
         $data = $request->validate([
             'room_type_id' => 'required|exists:room_types,id',
+            'room_id' => 'nullable|exists:rooms,id',
             'check_in' => 'required|date|after_or_equal:today',
             'check_out' => 'required|date|after:check_in',
             'adults' => 'required|integer|min:1',
@@ -38,32 +39,57 @@ class ReservationController extends Controller
         }
 
         $roomType = RoomType::findOrFail($data['room_type_id']);
-        $rate = (float) $roomType->base_price;
         $nights = now()->parse($data['check_in'])->diffInDays(now()->parse($data['check_out']));
         $nights = max(1, $nights);
-        $subtotal = $rate * $nights;
-        $taxSetting = Setting::where('key', 'tax_rate')->first();
-        $taxRate = ((float)($taxSetting ? $taxSetting->value : '10')) / 100;
-        $tax = $subtotal * $taxRate;
-        $total = round($subtotal + $tax, 2);
 
-        $reservation = DB::transaction(function () use ($data, $guest, $roomType, $rate, $nights, $subtotal, $tax, $taxRate, $total) {
+        $reservation = DB::transaction(function () use ($data, $guest, $roomType, $nights) {
             $overlappingRoomIds = Reservation::overlapping($data['check_in'], $data['check_out'])->pluck('room_id');
 
-            $room = Room::where('room_type_id', $roomType->id)
-                ->where('status', 'available')
-                ->where('is_active', true)
-                ->whereNotIn('id', $overlappingRoomIds)
-                ->orderBy('floor')
-                ->orderBy('room_number')
-                ->lockForUpdate()
-                ->first();
+            // If guest picked a specific room, try to use it; otherwise auto-assign the first available.
+            $room = null;
+            if (!empty($data['room_id'])) {
+                $room = Room::where('id', $data['room_id'])
+                    ->where('room_type_id', $roomType->id)
+                    ->where('is_active', true)
+                    ->lockForUpdate()
+                    ->first();
+                if (!$room) {
+                    throw ValidationException::withMessages([
+                        'room_id' => ['Selected room does not match the chosen room type.'],
+                    ]);
+                }
+                if ($overlappingRoomIds->contains($room->id)) {
+                    throw ValidationException::withMessages([
+                        'room_id' => ['Selected room is already booked for those dates.'],
+                    ]);
+                }
+            } else {
+                $room = Room::where('room_type_id', $roomType->id)
+                    ->where('status', 'available')
+                    ->where('is_active', true)
+                    ->whereNotIn('id', $overlappingRoomIds)
+                    ->orderBy('floor')
+                    ->orderBy('room_number')
+                    ->lockForUpdate()
+                    ->first();
 
-            if (!$room) {
-                throw ValidationException::withMessages([
-                    'room_type_id' => ['No rooms of this type are available for the selected dates.'],
-                ]);
+                if (!$room) {
+                    throw ValidationException::withMessages([
+                        'room_type_id' => ['No rooms of this type are available for the selected dates.'],
+                    ]);
+                }
             }
+
+            // Rate: room price_override wins when set, else room type base price
+            $rate = $room->price_override !== null && $room->price_override !== ''
+                ? (float) $room->price_override
+                : (float) $roomType->base_price;
+
+            $subtotal = $rate * $nights;
+            $taxSetting = Setting::where('key', 'tax_rate')->first();
+            $taxRate = ((float)($taxSetting ? $taxSetting->value : '10')) / 100;
+            $tax = $subtotal * $taxRate;
+            $total = round($subtotal + $tax, 2);
 
             $maxAdults = (int) ($roomType->max_adults ?? 0);
             if ($maxAdults > 0 && (int) $data['adults'] > $maxAdults) {
