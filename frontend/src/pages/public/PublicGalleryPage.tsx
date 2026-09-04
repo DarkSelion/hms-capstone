@@ -27,21 +27,6 @@ function useScrollReveal(threshold = 0.1) {
   return { ref, className: `reveal-hidden ${visible ? 'reveal-visible' : ''}` }
 }
 
-const MASONRY_SIZES = [
-  'row-span-2 col-span-1',   // 0: tall
-  'col-span-1',              // 1: normal
-  'col-span-1',              // 2: normal
-  'row-span-2 col-span-1',   // 3: tall
-  'col-span-2',              // 4: wide
-  'col-span-1',              // 5: normal
-  'col-span-1',              // 6: normal
-  'row-span-2 col-span-1',   // 7: tall
-  'col-span-1',              // 8: normal
-  'col-span-2',              // 9: wide
-  'col-span-1',              // 10: normal
-  'col-span-1',              // 11: normal
-]
-
 export default function PublicGalleryPage() {
   const hotelName = useHotelName()
   const branding = useBrandingSettings()
@@ -193,20 +178,20 @@ export default function PublicGalleryPage() {
               </button>
             </div>
           ) : (
-            /* Desktop: CSS Grid masonry */
+            /* Desktop: CSS columns masonry (no gaps) */
             <>
               {/* Desktop masonry */}
-              <div className="hidden md:grid grid-cols-3 auto-rows-[200px] gap-3">
+              <div className="hidden md:block columns-3 gap-3">
                 {filteredPhotos.map((photo, idx) => (
-                  <GalleryCard
-                    key={photo.id}
-                    photo={photo}
-                    index={idx}
-                    sizeClass={MASONRY_SIZES[idx % MASONRY_SIZES.length]}
-                    onClick={() => openLightbox(idx)}
-                    onLoad={(id) => setLoadedImages(prev => new Set(prev).add(id))}
-                    loaded={loadedImages.has(photo.id)}
-                  />
+                  <div key={photo.id} className="break-inside-avoid mb-3">
+                    <GalleryCard
+                      photo={photo}
+                      index={idx}
+                      onClick={() => openLightbox(idx)}
+                      onLoad={(id) => setLoadedImages(prev => new Set(prev).add(id))}
+                      loaded={loadedImages.has(photo.id)}
+                    />
+                  </div>
                 ))}
               </div>
 
@@ -217,7 +202,6 @@ export default function PublicGalleryPage() {
                     key={photo.id}
                     photo={photo}
                     index={idx}
-                    sizeClass=""
                     mobile
                     onClick={() => openLightbox(idx)}
                     onLoad={(id) => setLoadedImages(prev => new Set(prev).add(id))}
@@ -314,7 +298,6 @@ export default function PublicGalleryPage() {
 function GalleryCard({
   photo,
   index,
-  sizeClass,
   mobile = false,
   onClick,
   onLoad,
@@ -322,7 +305,6 @@ function GalleryCard({
 }: {
   photo: GalleryPhoto
   index: number
-  sizeClass: string
   mobile?: boolean
   onClick: () => void
   onLoad: (id: number) => void
@@ -363,14 +345,14 @@ function GalleryCard({
   return (
     <button
       ref={reveal.ref}
-      className={`group relative rounded-xl overflow-hidden cursor-pointer hover:shadow-[0_0_30px_-5px_rgba(192,160,98,0.3)] hover:border hover:border-gold/20 transition-all duration-500 ${sizeClass} ${reveal.className}`}
+      className={`group relative w-full rounded-xl overflow-hidden cursor-pointer hover:shadow-[0_0_30px_-5px_rgba(192,160,98,0.3)] hover:border hover:border-gold/20 transition-all duration-500 ${reveal.className}`}
       style={{ transitionDelay: `${(index % 6) * 0.06}s` }}
       onClick={onClick}
     >
       <img
         src={photo.src}
         alt={photo.title}
-        className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 ${loaded ? '' : 'opacity-0'}`}
+        className={`w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105 ${loaded ? '' : 'opacity-0'}`}
         loading="lazy"
         onLoad={() => onLoad(photo.id)}
       />
