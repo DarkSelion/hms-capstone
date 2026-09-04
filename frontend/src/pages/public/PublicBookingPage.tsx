@@ -6,7 +6,7 @@ import { useToast } from '@/components/ui/toast'
 import { formatCurrencyWith, formatCheckoutTime } from '@/lib/format'
 import { DatePicker } from '@/components/ui/date-picker'
 import type { PublicRoom, PublicRoomType } from '@/types'
-import { Loader2, Check, Users, Maximize, BedDouble, ArrowLeft, CreditCard, Calendar, ChevronRight } from 'lucide-react'
+import { Loader2, Check, BedDouble, ArrowLeft, CreditCard, Calendar, ChevronRight } from 'lucide-react'
 
 const HERO_IMAGES: Record<string, string> = {
   rooms: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=1600&h=900&fit=crop',
@@ -43,6 +43,29 @@ interface RoomGroup {
 
 function groupImage(group: RoomGroup): string {
   return group.sampleRoom.image_url || getHeroImage(group.roomType.name)
+}
+
+const DEFAULT_AMENITIES = [
+  'Complimentary Wi-Fi',
+  'Daily housekeeping',
+  'In-room safe',
+  'Coffee & tea making facilities',
+  'Flat-screen TV with cable channels',
+  'Hot and cold shower',
+  'Complimentary breakfast',
+  'Air conditioning',
+]
+
+function bedTypeDisplay(bedType: string | undefined): string {
+  if (!bedType) return 'Standard Bed'
+  return bedType
+}
+
+function categoryLabel(name: string): string {
+  const lower = name.toLowerCase()
+  if (lower.includes('villa')) return 'Private Villa'
+  if (lower.includes('suite') || lower.includes('presidential')) return 'Luxury Suite'
+  return 'Guest Room'
 }
 
 const steps = ['Dates', 'Room', 'Confirm']
@@ -114,6 +137,13 @@ export default function PublicBookingPage() {
     const match = roomGroups.find((g) => String(g.roomType.id) === param)
     if (match) setSelectedTypeId(match.roomType.id)
   }, [roomGroups, selectedTypeId, searchParams])
+
+  useEffect(() => {
+    if (selectedTypeId !== null) return
+    if (roomGroups.length === 1) {
+      setSelectedTypeId(roomGroups[0].roomType.id)
+    }
+  }, [roomGroups, selectedTypeId])
 
   const maxDate = useMemo(() => {
     const raw = (bookingSettings as Record<string, string> | undefined)?.max_advance_days
@@ -332,83 +362,226 @@ export default function PublicBookingPage() {
                 <button onClick={() => setStep(1)} className="text-gold text-sm hover:underline">Change dates</button>
               </div>
             ) : (
-              <div className="space-y-4 max-w-3xl mx-auto">
-                {roomGroups.map((group) => {
-                  const isSelected = selectedTypeId === group.roomType.id
-                  return (
-                    <div
-                      key={group.roomType.id}
-                      onClick={() => setSelectedTypeId(group.roomType.id)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedTypeId(group.roomType.id) } }}
-                      className={`group border rounded-xl overflow-hidden cursor-pointer transition-all duration-300 ${
-                        isSelected
-                          ? 'border-gold shadow-lg shadow-gold/10 bg-dark/60'
-                          : 'border-white/5 hover:border-white/15 bg-dark/40 hover:bg-dark/50'
-                      }`}
-                    >
-                      <div className="flex flex-col sm:flex-row">
-                        <div className="sm:w-56 h-44 sm:h-auto shrink-0 overflow-hidden relative">
-                          <img
-                            src={groupImage(group)}
-                            alt={group.roomType.name}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                          <div className="absolute top-3 left-3">
-                            <span className="inline-flex items-center rounded-full bg-dark/80 backdrop-blur px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-gold">
-                              {group.count} {group.count > 1 ? 'rooms' : 'room'} left
-                            </span>
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-10 gap-8">
+                  {/* LEFT — Horizontal room cards (stacked) */}
+                  <div className="lg:col-span-6 space-y-4">
+                    {roomGroups.map((group) => {
+                      const isSelected = selectedTypeId === group.roomType.id
+                      const amenities = group.roomType.amenities_json && group.roomType.amenities_json.length > 0
+                        ? group.roomType.amenities_json
+                        : DEFAULT_AMENITIES
+                      const bedType = bedTypeDisplay(group.roomType.bed_type)
+                      const category = categoryLabel(group.roomType.name)
+                      const isSoldOut = group.count <= 0
+                      return (
+                        <div
+                          key={group.roomType.id}
+                          onClick={() => !isSoldOut && setSelectedTypeId(group.roomType.id)}
+                          role="button"
+                          tabIndex={isSoldOut ? -1 : 0}
+                          aria-disabled={isSoldOut}
+                          onKeyDown={(e) => { if (!isSoldOut && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setSelectedTypeId(group.roomType.id) } }}
+                          className={`group cursor-pointer transition-all duration-300 flex flex-col sm:flex-row gap-0 rounded-2xl overflow-hidden border ${
+                            isSoldOut
+                              ? 'border-white/5 bg-dark/30 opacity-60 cursor-not-allowed'
+                              : isSelected
+                                ? 'border-gold/60 bg-dark/60'
+                                : 'border-white/5 bg-dark/40 hover:border-white/20'
+                          }`}
+                        >
+                          {/* Image — compact, left side on desktop */}
+                          <div className="relative w-full sm:w-48 md:w-56 shrink-0 aspect-[4/3] sm:aspect-auto overflow-hidden">
+                            <img
+                              src={groupImage(group)}
+                              alt={group.roomType.name}
+                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-dark/40 sm:to-dark/30" />
+                            {isSelected && (
+                              <div className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-gold px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-dark shadow-lg">
+                                <Check className="h-3 w-3" strokeWidth={3} /> Selected
+                              </div>
+                            )}
                           </div>
-                        </div>
-                        <div className="flex-1 p-5 flex flex-col">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="min-w-0">
-                              <h3 className="font-serif text-xl text-white font-light">
+
+                          {/* Body — details + price + select */}
+                          <div className="flex-1 p-4 sm:p-5 flex flex-col">
+                            {/* Title row */}
+                            <div className="mb-1.5">
+                              <p className="text-gold/60 text-[10px] uppercase tracking-[0.2em] font-medium">{category}</p>
+                              <h3 className="font-serif text-xl sm:text-2xl text-white font-light leading-tight">
                                 {group.roomType.name}
                               </h3>
-                              {group.roomType.description && (
-                                <p className="text-white/40 text-sm mt-1 line-clamp-2">{group.roomType.description}</p>
-                              )}
                             </div>
-                            <div className="text-right shrink-0">
-                              <p className="text-gold font-semibold text-xl">
-                                {fmt(group.roomType.base_price)}
+
+                            {/* Specs — plain text, dot-separated */}
+                            <p className="text-white/55 text-sm">
+                              {[bedType, `${group.roomType.max_adults} Guest${group.roomType.max_adults > 1 ? 's' : ''}`, group.roomType.size_sqm ? `${group.roomType.size_sqm} m²` : null]
+                                .filter(Boolean)
+                                .join(' · ')}
+                            </p>
+
+                            {/* Description — line-clamp-2 */}
+                            {group.roomType.description && (
+                              <p className="text-white/40 text-sm leading-relaxed mt-2 line-clamp-2">
+                                {group.roomType.description}
                               </p>
-                              <p className="text-white/20 text-[10px] uppercase tracking-wider">per night</p>
-                              {nights > 0 && (
-                                <p className="text-white/30 text-xs mt-1.5">
-                                  {fmt(group.roomType.base_price * nights)} total
+                            )}
+
+                            {/* Amenities — inline text, dot-separated */}
+                            {amenities.length > 0 && (
+                              <p className="text-white/35 text-xs mt-2 line-clamp-1">
+                                {amenities.slice(0, 4).join(' · ')}
+                                {amenities.length > 4 && ` · +${amenities.length - 4} more`}
+                              </p>
+                            )}
+
+                            {/* Bottom row — price + availability + select */}
+                            <div className="mt-auto pt-3 flex items-end justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-gold font-serif text-2xl font-light leading-none">
+                                  {fmt(group.roomType.base_price)}
                                 </p>
-                              )}
+                                <p className="text-white/30 text-[10px] uppercase tracking-wider mt-1">
+                                  per night{nights > 0 ? ` · ${fmt(group.roomType.base_price * nights)} total` : ''}
+                                </p>
+                                {isSoldOut ? (
+                                  <p className="text-red-400/70 text-[11px] mt-1">Sold out for these dates</p>
+                                ) : group.count <= 3 ? (
+                                  <p className="text-emerald-400/70 text-[11px] mt-1">
+                                    Only {group.count} room{group.count > 1 ? 's' : ''} left
+                                  </p>
+                                ) : null}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); !isSoldOut && setSelectedTypeId(group.roomType.id) }}
+                                disabled={isSoldOut}
+                                className={`shrink-0 rounded-lg px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
+                                  isSoldOut
+                                    ? 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed'
+                                    : isSelected
+                                      ? 'bg-gold/15 border border-gold text-gold'
+                                      : 'bg-transparent border border-white/20 text-white/80 hover:border-gold/60 hover:text-gold'
+                                }`}
+                              >
+                                {isSoldOut ? 'Sold Out' : isSelected ? 'Selected' : 'Select Room'}
+                              </button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-4 mt-4 text-xs text-white/30">
-                            <span className="flex items-center gap-1.5"><BedDouble className="h-3.5 w-3.5 text-white/20" /> {group.roomType.bed_type}</span>
-                            <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-white/20" /> {group.roomType.max_adults} adults</span>
-                            <span className="flex items-center gap-1.5"><Maximize className="h-3.5 w-3.5 text-white/20" /> {group.roomType.size_sqm} m²</span>
-                          </div>
                         </div>
-                        <div className="flex items-center justify-center sm:pr-6 pb-5 sm:pb-0">
-                          <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
-                            isSelected ? 'border-gold bg-gold scale-110' : 'border-white/20 group-hover:border-white/40'
-                          }`}>
-                            {isSelected && <Check className="h-4 w-4 text-dark" />}
+                      )
+                    })}
+                  </div>
+
+                  {/* RIGHT — Booking summary (sticky) */}
+                  <div className="lg:col-span-4">
+                    <div className="lg:sticky lg:top-28">
+                      <div className="bg-dark/60 border border-white/5 rounded-2xl p-6">
+                        {selectedGroup ? (
+                          <>
+                            {/* Room info — plain text, no boxes */}
+                            <p className="text-gold/60 text-[10px] uppercase tracking-[0.2em] font-medium mb-1">
+                              {categoryLabel(selectedGroup.roomType.name)}
+                            </p>
+                            <h2 className="font-serif text-xl text-white font-light mb-1">
+                              {selectedGroup.roomType.name}
+                            </h2>
+                            <p className="text-white/50 text-sm mb-6">
+                              {bedTypeDisplay(selectedGroup.roomType.bed_type)} · {selectedGroup.roomType.max_adults} Guests{selectedGroup.roomType.size_sqm ? ` · ${selectedGroup.roomType.size_sqm} m²` : ''}
+                            </p>
+
+                            {/* Stay details — clean key-value rows */}
+                            <div className="divide-y divide-white/5">
+                              <div className="flex items-center justify-between py-2.5">
+                                <span className="text-white/40 text-sm">Check-in</span>
+                                <span className="text-white/85 text-sm font-medium">{formatDate(checkIn)}</span>
+                              </div>
+                              <div className="flex items-center justify-between py-2.5">
+                                <span className="text-white/40 text-sm">Check-out</span>
+                                <span className="text-white/85 text-sm font-medium">{formatDate(checkOut)}</span>
+                              </div>
+                              <div className="flex items-center justify-between py-2.5">
+                                <span className="text-white/40 text-sm">Guests</span>
+                                <span className="text-white/85 text-sm font-medium">
+                                  {adultsSafe} adult{adultsSafe > 1 ? 's' : ''}{childrenSafe > 0 ? `, ${childrenSafe} child${childrenSafe > 1 ? 'ren' : ''}` : ''}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between py-2.5">
+                                <span className="text-white/40 text-sm">Nights</span>
+                                <span className="text-white/85 text-sm font-medium">{nights}</span>
+                              </div>
+                            </div>
+
+                            {/* Price — clean breakdown */}
+                            <div className="border-t border-white/10 mt-5 pt-5 space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-white/55">{fmt(selectedGroup.roomType.base_price)} × {nights} night{nights > 1 ? 's' : ''}</span>
+                                <span className="text-white/80">{fmt(selectedGroup.roomType.base_price * nights)}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-white/55">{taxLabel} ({Math.round(taxRate * 100)}%)</span>
+                                <span className="text-white/80">{fmt((selectedGroup.roomType.base_price * nights) * taxRate)}</span>
+                              </div>
+                              <div className="flex justify-between items-baseline pt-3 border-t border-white/10">
+                                <span className="text-white font-medium">Total</span>
+                                <span className="text-gold font-serif text-2xl">{fmt((selectedGroup.roomType.base_price * nights) * (1 + taxRate))}</span>
+                              </div>
+                            </div>
+
+                            {/* Continue button */}
+                            <button
+                              onClick={() => setStep(3)}
+                              className="btn-gold w-full mt-6 flex items-center justify-center gap-2 !py-3.5"
+                            >
+                              Continue to Confirmation <ChevronRight className="h-4 w-4" />
+                            </button>
+
+                            {/* Back link */}
+                            <button
+                              onClick={() => setStep(1)}
+                              className="w-full text-center text-white/40 hover:text-gold text-xs uppercase tracking-wider mt-4 transition-colors"
+                            >
+                              ← Change dates
+                            </button>
+
+                            {/* Trust note — small, unobtrusive */}
+                            <p className="text-white/30 text-[11px] text-center mt-5 leading-relaxed">
+                              You won't be charged now. Payment is due at check-in.
+                              {cancellationLabel && (
+                                <><br /><span className="text-white/40">Cancellation:</span> {cancellationLabel}</>
+                              )}
+                            </p>
+                          </>
+                        ) : (
+                          <div className="py-8 text-center">
+                            <p className="text-white/40 text-sm">Select a room to see your booking summary.</p>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
-                  )
-                })}
-              </div>
-            )}
+                  </div>
+                </div>
 
-            {selectedGroup && (
-              <div className="max-w-3xl mx-auto mt-8">
-                <button onClick={() => setStep(3)} className="btn-gold w-full flex items-center justify-center gap-2">
-                  Continue to Confirmation <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
+                {/* Mobile fixed bottom bar */}
+                {selectedGroup && (
+                  <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-dark/95 backdrop-blur border-t border-white/5 px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-gold font-semibold text-lg leading-tight">
+                        {fmt(selectedGroup.roomType.base_price * nights * (1 + taxRate))}
+                      </p>
+                      <p className="text-white/40 text-[10px] uppercase tracking-wider">{nights} night{nights > 1 ? 's' : ''} total</p>
+                    </div>
+                    <button
+                      onClick={() => setStep(3)}
+                      className="btn-gold !py-2.5 !px-5 text-sm flex items-center gap-1.5 shrink-0"
+                    >
+                      Continue <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
