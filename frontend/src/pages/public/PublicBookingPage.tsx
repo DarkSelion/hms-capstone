@@ -255,23 +255,31 @@ export default function PublicBookingPage() {
       {/* Step Indicator */}
       <div className="bg-dark/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-center gap-0">
-          {steps.map((label, i) => (
-            <div key={label} className="flex items-center">
-              <div className="flex items-center gap-2.5">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${
-                  step > i + 1 ? 'bg-gold text-dark' : step === i + 1 ? 'bg-gold/20 border border-gold text-gold' : 'bg-white/5 border border-white/10 text-white/25'
-                }`}>
-                  {step > i + 1 ? <Check className="h-3.5 w-3.5" /> : i + 1}
+          {steps.map((label, i) => {
+            const isCompleted = step > i + 1
+            const isActive = step === i + 1
+            return (
+              <div key={label} className="flex items-center">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-semibold transition-all duration-300 ${
+                    isCompleted
+                      ? 'bg-gold text-dark shadow-sm shadow-gold/20'
+                      : isActive
+                        ? 'bg-gold/15 border-2 border-gold text-gold ring-2 ring-gold/20'
+                        : 'bg-white/[0.04] border border-white/[0.08] text-white/25'
+                  }`}>
+                    {isCompleted ? <Check className="h-4 w-4" strokeWidth={3} /> : i + 1}
+                  </div>
+                  <span className={`text-[11px] font-medium tracking-wide hidden sm:block ${isActive ? 'text-gold' : isCompleted ? 'text-white/50' : 'text-white/25'}`}>
+                    {label}
+                  </span>
                 </div>
-                <span className={`text-xs font-medium tracking-wide hidden sm:block ${step === i + 1 ? 'text-gold' : 'text-white/30'}`}>
-                  {label}
-                </span>
+                {i < 2 && (
+                  <div className={`w-12 sm:w-20 h-[2px] mx-3 transition-colors ${isCompleted ? 'bg-gold' : 'bg-white/[0.08]'}`} />
+                )}
               </div>
-              {i < 2 && (
-                <div className={`w-12 sm:w-20 h-px mx-3 transition-colors ${step > i + 1 ? 'bg-gold' : 'bg-white/10'}`} />
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
@@ -725,11 +733,10 @@ export default function PublicBookingPage() {
             <div className="text-center mb-10">
               <button
                 onClick={() => setStep(2)}
-                className="inline-flex items-center gap-1.5 text-white/40 hover:text-gold text-[10px] uppercase tracking-[0.2em] font-medium mb-4 transition-colors"
+                className="inline-flex items-center gap-1.5 text-white/40 hover:text-gold text-[10px] uppercase tracking-[0.2em] font-medium mb-5 transition-colors"
               >
                 <ArrowLeft className="h-3 w-3" /> Change room
               </button>
-              <p className="text-gold/70 text-xs uppercase tracking-[0.2em] font-medium mb-2">Step 3 of 3</p>
               <h1 className="font-serif text-white text-3xl sm:text-4xl font-light">Confirm Your Booking</h1>
               <p className="text-white/40 text-sm mt-2">Review your stay details below before confirming your reservation.</p>
             </div>
@@ -740,20 +747,22 @@ export default function PublicBookingPage() {
               <div className="lg:col-span-6 space-y-5">
 
                 {/* Booking Summary Card — image left, details right */}
-                <div className="bg-dark/50 border border-white/5 rounded-2xl overflow-hidden">
+                <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl overflow-hidden">
                   <div className="flex flex-col sm:flex-row">
                     {/* Image */}
-                    <div className="sm:w-2/5 relative h-48 sm:h-auto sm:min-h-[200px] bg-dark">
-                      <img
-                        src={heroImage}
-                        alt={selectedGroup.roomType.name}
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                      {selectedRoom && (
-                        <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-gold px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-dark shadow-lg">
-                          <BedDouble className="h-3 w-3" strokeWidth={3} /> Room {selectedRoom.room_number}
-                        </div>
-                      )}
+                    <div className="sm:w-2/5 relative h-48 sm:h-auto sm:min-h-[220px] p-1.5">
+                      <div className="relative w-full h-full rounded-xl overflow-hidden bg-dark">
+                        <img
+                          src={heroImage}
+                          alt={selectedGroup.roomType.name}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                        {selectedRoom && (
+                          <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-gold px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-dark shadow-lg shadow-gold/20">
+                            <BedDouble className="h-3 w-3" strokeWidth={3} /> Room {selectedRoom.room_number}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     {/* Details */}
                     <div className="flex-1 p-5 sm:p-6 flex flex-col">
@@ -781,18 +790,18 @@ export default function PublicBookingPage() {
                 </div>
 
                 {/* Stay Details Card */}
-                <div className="bg-dark/50 border border-white/5 rounded-2xl p-5 sm:p-6">
-                  <h3 className="text-white font-medium mb-5 flex items-center gap-2 text-sm uppercase tracking-wider">
-                    <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-                      <Calendar className="h-4 w-4 text-gold" />
+                <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl p-5 sm:p-6">
+                  <h3 className="text-white font-medium mb-5 flex items-center gap-2.5 text-[11px] uppercase tracking-[0.15em]">
+                    <span className="w-8 h-8 rounded-lg border border-white/[0.08] flex items-center justify-center">
+                      <Calendar className="h-4 w-4 text-gold" strokeWidth={1.75} />
                     </span>
                     Your Stay
                   </h3>
 
                   {/* Guest name — full width */}
-                  <div className="rounded-xl bg-dark/40 p-4 mb-3 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gold/10 flex items-center justify-center shrink-0">
-                      <Users className="h-4 w-4 text-gold" />
+                  <div className="rounded-xl bg-white/[0.04] p-4 mb-3 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full border border-white/[0.08] flex items-center justify-center shrink-0">
+                      <Users className="h-4 w-4 text-gold" strokeWidth={1.75} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-[10px] uppercase tracking-wider text-white/30 font-medium">Guest</p>
@@ -804,29 +813,29 @@ export default function PublicBookingPage() {
 
                   {/* 2x2 grid of stay details */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-xl bg-dark/40 p-4">
+                    <div className="rounded-xl bg-white/[0.04] p-4">
                       <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/30 font-medium mb-1.5">
-                        <LogIn className="h-3 w-3" /> Check-in
+                        <LogIn className="h-3 w-3" strokeWidth={1.75} /> Check-in
                       </div>
                       <p className="text-white/85 text-sm font-medium">{formatDate(checkIn)}</p>
                       <p className="text-white/40 text-[11px] mt-0.5">From 3:00 PM</p>
                     </div>
-                    <div className="rounded-xl bg-dark/40 p-4">
+                    <div className="rounded-xl bg-white/[0.04] p-4">
                       <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/30 font-medium mb-1.5">
-                        <LogOut className="h-3 w-3" /> Check-out
+                        <LogOut className="h-3 w-3" strokeWidth={1.75} /> Check-out
                       </div>
                       <p className="text-white/85 text-sm font-medium">{formatDate(checkOut)}</p>
                       <p className="text-white/40 text-[11px] mt-0.5">By {checkoutTimeLabel}</p>
                     </div>
-                    <div className="rounded-xl bg-dark/40 p-4">
+                    <div className="rounded-xl bg-white/[0.04] p-4">
                       <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/30 font-medium mb-1.5">
-                        <Moon className="h-3 w-3" /> Nights
+                        <Moon className="h-3 w-3" strokeWidth={1.75} /> Nights
                       </div>
                       <p className="text-white/85 text-sm font-medium">{nights}</p>
                     </div>
-                    <div className="rounded-xl bg-dark/40 p-4">
+                    <div className="rounded-xl bg-white/[0.04] p-4">
                       <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/30 font-medium mb-1.5">
-                        <Users className="h-3 w-3" /> Guests
+                        <Users className="h-3 w-3" strokeWidth={1.75} /> Guests
                       </div>
                       <p className="text-white/85 text-sm font-medium">
                         {adultsSafe} adult{adultsSafe > 1 ? 's' : ''}{childrenSafe > 0 ? `, ${childrenSafe} child${childrenSafe > 1 ? 'ren' : ''}` : ''}
@@ -836,33 +845,33 @@ export default function PublicBookingPage() {
                 </div>
 
                 {/* Special Requests Card */}
-                <div className="bg-dark/50 border border-white/5 rounded-2xl p-5 sm:p-6">
-                  <h3 className="text-white font-medium mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
-                    <span className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center">
-                      <MessageSquare className="h-4 w-4 text-gold" />
+                <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl p-5 sm:p-6">
+                  <h3 className="text-white font-medium mb-4 flex items-center gap-2.5 text-[11px] uppercase tracking-[0.15em]">
+                    <span className="w-8 h-8 rounded-lg border border-white/[0.08] flex items-center justify-center">
+                      <MessageSquare className="h-4 w-4 text-gold" strokeWidth={1.75} />
                     </span>
                     Special Requests
                   </h3>
                   <textarea
                     value={specialRequests}
                     onChange={(e) => setSpecialRequests(e.target.value)}
-                    rows={3}
+                    rows={2}
                     placeholder="Any special requests or requirements for your stay..."
-                    className="input-public resize-none"
+                    className="w-full !p-3 !py-2.5 !bg-white/[0.05] !border-white/[0.1] rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none focus:!border-gold/50 focus:!ring-1 focus:!ring-gold/20 resize-none transition-colors"
                   />
                   <p className="text-[11px] text-white/30 mt-2">Optional. We'll do our best to accommodate your requests.</p>
                 </div>
               </div>
 
               {/* RIGHT — Price Summary (sticky) */}
-              <div className="lg:col-span-4">
+              <div className="lg:col-span-4 min-h-[400px]">
                 <div className="lg:sticky lg:top-28">
-                  <div className="bg-dark/50 border border-white/5 rounded-2xl p-5 sm:p-6">
+                  <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl p-4 sm:p-5">
 
                     {/* Header */}
-                    <h3 className="text-white font-medium mb-5 flex items-center gap-2 text-sm uppercase tracking-wider">
-                      <span className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center">
-                        <ReceiptText className="h-4 w-4 text-gold" />
+                    <h3 className="text-white font-medium mb-5 flex items-center gap-2.5 text-[11px] uppercase tracking-[0.15em]">
+                      <span className="w-8 h-8 rounded-lg border border-white/[0.08] flex items-center justify-center">
+                        <ReceiptText className="h-4 w-4 text-gold" strokeWidth={1.75} />
                       </span>
                       Price Summary
                     </h3>
@@ -878,11 +887,11 @@ export default function PublicBookingPage() {
                           <div className="space-y-3 text-sm">
                             <div className="flex justify-between">
                               <span className="text-white/30">{fmt(rate)} × {nights} night{nights > 1 ? 's' : ''}</span>
-                              <span className="text-white/60">{fmt(subtotal)}</span>
+                              <span className="text-white/60 font-medium font-sans">{fmt(subtotal)}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-white/30">{taxLabel} ({taxPercent}%)</span>
-                              <span className="text-white/60">{fmt(tax)}</span>
+                              <span className="text-white/60 font-medium font-sans">{fmt(tax)}</span>
                             </div>
                           </div>
 
@@ -890,25 +899,25 @@ export default function PublicBookingPage() {
                           <div className="border-t border-white/10 mt-5 pt-5">
                             <div className="flex justify-between items-baseline">
                               <span className="text-white font-medium">Total</span>
-                              <span className="text-gold font-serif text-3xl font-light">{fmt(total)}</span>
+                              <span className="text-gold text-2xl font-sans font-semibold tracking-tight">{fmt(total)}</span>
                             </div>
                             <p className="text-white/30 text-[11px] mt-1 text-right">PHP · taxes included</p>
                           </div>
 
                           {/* Cancellation policy */}
                           {cancellationLabel && (
-                            <div className="mt-5 rounded-xl border border-white/5 bg-white/[0.02] p-4">
+                            <div className="mt-5 rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
                               <p className="text-[11px] leading-relaxed text-white/40">
                                 <span className="text-gold/70 font-medium">Cancellation: </span>{cancellationLabel}
                               </p>
                             </div>
                           )}
 
-                          {/* Confirm button */}
+                          {/* Confirm button — richer gold + glow */}
                           <button
                             onClick={handleConfirm}
                             disabled={createReservation.isPending}
-                            className="btn-gold w-full mt-6 flex items-center justify-center gap-2 !py-4 text-sm"
+                            className="w-full mt-6 flex items-center justify-center gap-2 !py-[18px] text-sm font-semibold uppercase tracking-wider rounded !bg-[#D4A843] !text-dark hover:!bg-[#E0B850] hover:shadow-xl hover:shadow-gold/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                           >
                             {createReservation.isPending ? (
                               <><Loader2 className="h-4 w-4 animate-spin" /> Processing...</>
@@ -920,10 +929,10 @@ export default function PublicBookingPage() {
                           {/* Trust badges */}
                           <div className="mt-5 space-y-2">
                             <div className="flex items-center justify-center gap-1.5 text-[11px] text-white/30">
-                              <Lock className="h-3 w-3" /> Secure booking — no charge now
+                              <Lock className="h-3 w-3" strokeWidth={1.75} /> Secure booking — no charge now
                             </div>
                             <div className="flex items-center justify-center gap-1.5 text-[11px] text-white/30">
-                              <ShieldCheck className="h-3 w-3" /> Free cancellation{cancellationLabel ? ' per policy' : ' available'}
+                              <ShieldCheck className="h-3 w-3" strokeWidth={1.75} /> Free cancellation{cancellationLabel ? ' per policy' : ' available'}
                             </div>
                           </div>
                         </>
@@ -936,15 +945,15 @@ export default function PublicBookingPage() {
 
             {/* Mobile fixed bottom bar */}
             {selectedGroup && (
-              <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-dark/95 backdrop-blur border-t border-white/5 px-4 py-3 flex items-center justify-between gap-3">
+              <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-dark/95 backdrop-blur border-t border-white/[0.08] px-4 py-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[10px] text-white/30 uppercase tracking-wider">Total</p>
-                  <p className="text-gold font-serif text-xl font-light leading-none">{fmt(total)}</p>
+                  <p className="text-gold text-xl font-sans font-semibold leading-none">{fmt(total)}</p>
                 </div>
                 <button
                   onClick={handleConfirm}
                   disabled={createReservation.isPending}
-                  className="btn-gold !py-2.5 !px-5 text-sm flex items-center gap-1.5 shrink-0"
+                  className="!py-2.5 !px-5 text-sm font-semibold uppercase tracking-wider rounded !bg-[#D4A843] !text-dark hover:!bg-[#E0B850] hover:shadow-xl hover:shadow-gold/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5 shrink-0"
                 >
                   {createReservation.isPending ? (
                     <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Processing</>
