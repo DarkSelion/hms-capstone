@@ -248,4 +248,44 @@ class SettingsBrandingTest extends TestCase
             ->assertJsonPath('hero_title', 'Hello')
             ->assertJsonPath('hotel_favicon', 'http://localhost/storage/branding/favicon.png');
     }
+
+    // ── Legacy GCash settings removed ──────────────────────
+
+    public function test_legacy_gcash_settings_are_not_allowed_keys(): void
+    {
+        $allowed = \App\Http\Controllers\Api\SettingController::ALLOWED_KEYS;
+
+        $this->assertNotContains('online_payment_enabled', $allowed, 'Legacy key "online_payment_enabled" must not be re-added to ALLOWED_KEYS.');
+        $this->assertNotContains('gcash_account', $allowed, 'Legacy key "gcash_account" must not be re-added to ALLOWED_KEYS.');
+        $this->assertNotContains('gcash_qr_image', $allowed, 'Legacy key "gcash_qr_image" must not be re-added to ALLOWED_KEYS.');
+    }
+
+    public function test_legacy_gcash_settings_are_not_in_public_redacted_keys(): void
+    {
+        $redacted = \App\Http\Controllers\Api\SettingController::PUBLIC_REDACTED_KEYS;
+
+        $this->assertNotContains('online_payment_enabled', $redacted, 'Legacy key "online_payment_enabled" should no longer be in PUBLIC_REDACTED_KEYS — it has no code path left.');
+        $this->assertNotContains('gcash_account', $redacted, 'Legacy key "gcash_account" should no longer be in PUBLIC_REDACTED_KEYS — it has no code path left.');
+        $this->assertNotContains('gcash_qr_image', $redacted, 'Legacy key "gcash_qr_image" should no longer be in PUBLIC_REDACTED_KEYS — it has no code path left.');
+    }
+
+    public function test_admin_cannot_set_legacy_gcash_settings(): void
+    {
+        Sanctum::actingAs($this->admin());
+
+        foreach (['online_payment_enabled', 'gcash_account', 'gcash_qr_image'] as $legacyKey) {
+            $response = $this->putJson('/api/settings', [
+                'settings' => [['key' => $legacyKey, 'value' => '1']],
+            ]);
+            $this->assertContains(
+                $response->status(),
+                [422, 400],
+                "Setting legacy key '{$legacyKey}' should be rejected with 4xx, got {$response->status()}"
+            );
+        }
+
+        foreach (['online_payment_enabled', 'gcash_account', 'gcash_qr_image'] as $legacyKey) {
+            $this->assertDatabaseMissing('settings', ['key' => $legacyKey]);
+        }
+    }
 }
