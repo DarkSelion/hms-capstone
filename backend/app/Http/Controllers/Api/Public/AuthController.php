@@ -174,8 +174,14 @@ class AuthController extends Controller
                 'created_at' => now(),
             ]);
 
-            $hotelName = setting('hotel_name', 'Pampanga Home Suites');
-            Mail::to($guest->email)->send(new OtpMail($code, $hotelName));
+            try {
+                Mail::to($guest->email)->send(new OtpMail($code));
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('OTP email failed', [
+                    'email' => $guest->email,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return response()->json([
