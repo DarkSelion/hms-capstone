@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api\Public;
 
 use App\Http\Controllers\Controller;
+use App\Mail\OtpMail;
 use App\Models\ActivityLog;
 use App\Models\Guest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -148,5 +151,82 @@ class AuthController extends Controller
         $guest->delete();
 
         return response()->json(['message' => 'Account deleted successfully.']);
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        $data = $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $guest = Guest::where('email', $data['email'])->first();
+
+        if ($guest) {
+            DB::table('otp_codes')->where('email', $guest->email)->delete();
+
+            $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+            DB::table('otp_codes')->insert([
+                'email' => $guest->email,
+                'code' => $code,
+                'expires_at' => now()->addMinutes(15),
+                'used' => false,
+                'created_at' => now(),
+            ]);
+
+            $hotelName = setting('hotel_name', 'Pampanga Home Suites');
+            Mail::to($guest->email)->send(new OtpMail($code, $hotelName));
+        }
+
+        return response()->json([
+            'message' => 'If an account exists with this email, you will receive a reset code shortly.',
+        ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $data = $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|string|size:6',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $otp = DB::table('otp_codes')
+            ->where('email', $data['email'])
+            ->where('code', $data['code'])
+            ->where('used', false)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (! $otp) {
+            throw ValidationException::withMessages([
+                'code' => ['The code is invalid or has expired.'],
+            ]);
+        }
+
+        $guest = Guest::where('email', $data['email'])->first();
+
+        if (! $guest) {
+            throw ValidationException::withMessages([
+                'email' => ['No account found with this email.'],
+            ]);
+        }
+
+        $guest->update(['password' => Hash::make($data['password'])]);
+
+        DB::table('otp_codes')->where('id', $otp->id)->update(['used' => true]);
+
+        $guest->tokens()->delete();
+
+        ActivityLog::create([
+            'user_id' => null,
+            'action' => 'updated',
+            'module' => 'auth',
+            'model_type' => 'Guest',
+            'model_id' => $guest->id,
+            'description' => "Guest {$guest->full_name} reset password via OTP",
+        ]);
+
+        return response()->json(['message' => 'Password reset successful. Please log in.']);
     }
 }

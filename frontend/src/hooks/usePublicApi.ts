@@ -207,3 +207,18 @@ export function usePublicDeleteAccount() {
     },
   })
 }
+
+// Forgot / Reset Password
+export function usePublicForgotPassword() {
+  return useMutation({
+    mutationFn: (data: { email: string }) =>
+      publicApi.post<{ message: string }>('/public/forgot-password', data),
+  })
+}
+
+export function usePublicResetPassword() {
+  return useMutation({
+    mutationFn: (data: { email: string; code: string; password: string; password_confirmation: string }) =>
+      publicApi.post<{ message: string }>('/public/reset-password', data),
+  })
+}

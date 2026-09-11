@@ -36,6 +36,8 @@ const PublicRoomDetailPage = lazy(() => import('./pages/public/PublicRoomDetailP
 const PublicBookingPage = lazy(() => import('./pages/public/PublicBookingPage'))
 const PublicLoginPage = lazy(() => import('./pages/public/PublicLoginPage'))
 const PublicRegisterPage = lazy(() => import('./pages/public/PublicRegisterPage'))
+const PublicForgotPasswordPage = lazy(() => import('./pages/public/PublicForgotPasswordPage'))
+const PublicResetPasswordPage = lazy(() => import('./pages/public/PublicResetPasswordPage'))
 const PublicMyReservationsPage = lazy(() => import('./pages/public/PublicMyReservationsPage'))
 const PublicProfilePage = lazy(() => import('./pages/public/PublicProfilePage'))
 const PublicGalleryPage = lazy(() => import('./pages/public/PublicGalleryPage'))
@@ -144,6 +146,8 @@ export default function App() {
         </Route>
         <Route path="/public/login" element={<Suspense fallback={<PageLoader />}><PublicLoginPage /></Suspense>} />
         <Route path="/public/register" element={<Suspense fallback={<PageLoader />}><PublicRegisterPage /></Suspense>} />
+        <Route path="/public/forgot-password" element={<Suspense fallback={<PageLoader />}><PublicForgotPasswordPage /></Suspense>} />
+        <Route path="/public/reset-password" element={<Suspense fallback={<PageLoader />}><PublicResetPasswordPage /></Suspense>} />
       </Routes>
     </ToastProvider>
   )

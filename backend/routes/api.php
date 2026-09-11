@@ -186,6 +186,9 @@ Route::prefix('public')->group(function () {
     Route::get('/settings/{group}', [SettingController::class, 'publicByGroup']);
     Route::post('/contact', [PublicContactController::class, 'store'])->middleware('throttle:contact');
 
+    Route::post('/forgot-password', [PublicAuthController::class, 'forgotPassword'])->middleware('throttle:forgot-password');
+    Route::post('/reset-password', [PublicAuthController::class, 'resetPassword'])->middleware('throttle:forgot-password');
+
     Route::middleware(['auth:sanctum', 'role:guest'])->group(function () {
         Route::get('/me', [PublicAuthController::class, 'me']);
         Route::post('/logout', [PublicAuthController::class, 'logout']);

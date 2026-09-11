@@ -81,6 +81,12 @@ export default function PublicLoginPage() {
               </button>
             </form>
 
+            <div className="mt-3 text-center">
+              <Link to="/public/forgot-password" className="text-xs text-white/30 hover:text-gold transition-colors">
+                Forgot password?
+              </Link>
+            </div>
+
             <div className="mt-8 text-center text-sm text-white/30">
               Don&apos;t have an account?{' '}
               <Link to="/public/register" className="text-gold font-medium hover:underline">Create one</Link>
