@@ -7,32 +7,9 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { Users, Maximize, BedDouble, Home, Check, ArrowRight, ArrowLeft, Star, Calendar, Shield, CreditCard, Sparkles, ChevronRight, Coffee, Wifi, Wind } from 'lucide-react'
 import type { PublicRoomType } from '@/types'
 
-const ROOM_IMAGES: Record<string, string[]> = {
-  deluxe: [
-    'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=1200&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&h=500&fit=crop',
-    'https://images.unsplash.com/photo-1591088398332-8a7791972843?w=800&h=500&fit=crop',
-    'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&h=500&fit=crop',
-  ],
-  suite: [
-    'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1200&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&h=500&fit=crop',
-    'https://images.unsplash.com/photo-1591088398332-8a7791972843?w=800&h=500&fit=crop',
-    'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&h=500&fit=crop',
-  ],
-  villa: [
-    'https://images.unsplash.com/photo-1591088398332-8a7791972843?w=1200&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&h=500&fit=crop',
-    'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=500&fit=crop',
-    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&h=500&fit=crop',
-  ],
-  default: [
-    'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=1200&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&h=500&fit=crop',
-    'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&h=500&fit=crop',
-    'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&h=500&fit=crop',
-  ],
-}
+const FALLBACK_IMAGES = [
+  'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=1200&h=600&fit=crop',
+]
 
 const DEFAULT_AMENITIES = [
   'Complimentary Wi-Fi',
@@ -44,18 +21,6 @@ const DEFAULT_AMENITIES = [
   'Complimentary breakfast',
   'Air conditioning',
 ]
-
-function getRoomImages(name: string, primarySrc?: string): string[] {
-  const lower = name.toLowerCase()
-  let base: string[]
-  if (lower.includes('villa')) base = ROOM_IMAGES.villa
-  else if (lower.includes('suite') || lower.includes('presidential')) base = ROOM_IMAGES.suite
-  else base = ROOM_IMAGES.default
-  if (primarySrc) {
-    return [primarySrc, ...base.filter((img) => img !== primarySrc)]
-  }
-  return base
-}
 
 function useScrollReveal(threshold = 0.1) {
   const ref = useRef<HTMLDivElement>(null)
@@ -190,7 +155,11 @@ export default function PublicRoomDetailPage() {
   const allAmenities = (roomType.amenities_json && roomType.amenities_json.length > 0)
     ? roomType.amenities_json
     : DEFAULT_AMENITIES
-  const galleryImages = getRoomImages(roomType.name, roomType.image_url)
+  const galleryImages = (roomType.gallery && roomType.gallery.length > 0)
+    ? roomType.gallery
+    : roomType.image_url
+      ? [roomType.image_url]
+      : FALLBACK_IMAGES
   const heroImage = galleryImages[0]
   const thumbnailImages = galleryImages.slice(1, 4)
   const bedTypeDisplay = roomType.bed_type || 'Standard Bed'
@@ -529,7 +498,7 @@ function SimilarRoomsSection({ rooms, currency }: { rooms: PublicRoomType[]; cur
           >
             <div className="relative aspect-[4/3] overflow-hidden bg-white/5">
               <img
-                src={r.image_url || getRoomImages(r.name)[0]}
+                src={r.image_url || FALLBACK_IMAGES[0]}
                 alt={r.name}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 loading="lazy"

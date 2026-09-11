@@ -363,6 +363,7 @@ export interface PublicRoomType {
   is_active: boolean
   rooms_count?: number
   image_url?: string
+  gallery?: string[]
 }
 
 export interface PublicRoom {

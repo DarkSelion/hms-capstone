@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { usePublicResetPassword, useHotelName } from '@/hooks/usePublicApi'
-import { Loader2, KeyRound, CheckCircle } from 'lucide-react'
+import { Loader2, ShieldCheck, CheckCircle, Mail } from 'lucide-react'
+
+const OTP_LENGTH = 6
 
 export default function PublicResetPasswordPage() {
   const navigate = useNavigate()
@@ -12,15 +14,69 @@ export default function PublicResetPasswordPage() {
   const prefillEmail = (location.state as { email?: string } | null)?.email || ''
 
   const [email, setEmail] = useState(prefillEmail)
-  const [code, setCode] = useState('')
+  const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''))
   const [password, setPassword] = useState('')
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  const code = digits.join('')
+
+  const focusInput = useCallback((index: number) => {
+    const clamped = Math.max(0, Math.min(index, OTP_LENGTH - 1))
+    inputRefs.current[clamped]?.focus()
+    inputRefs.current[clamped]?.select()
+  }, [])
+
+  const handleDigitChange = useCallback((index: number, value: string) => {
+    if (/\D/.test(value)) return
+    const next = [...digits]
+    next[index] = value.slice(-1)
+    setDigits(next)
+    if (value && index < OTP_LENGTH - 1) focusInput(index + 1)
+  }, [digits, focusInput])
+
+  const handleDigitKeyDown = useCallback((index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace') {
+      if (!digits[index] && index > 0) {
+        const next = [...digits]
+        next[index - 1] = ''
+        setDigits(next)
+        focusInput(index - 1)
+      } else {
+        const next = [...digits]
+        next[index] = ''
+        setDigits(next)
+      }
+      e.preventDefault()
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      focusInput(index - 1)
+    } else if (e.key === 'ArrowRight' && index < OTP_LENGTH - 1) {
+      focusInput(index + 1)
+    }
+  }, [digits, focusInput])
+
+  const handleDigitPaste = useCallback((e: React.ClipboardEvent) => {
+    e.preventDefault()
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH)
+    if (!pasted) return
+    const next = Array(OTP_LENGTH).fill('')
+    for (let i = 0; i < pasted.length; i++) next[i] = pasted[i]
+    setDigits(next)
+    focusInput(Math.min(pasted.length, OTP_LENGTH - 1))
+  }, [focusInput])
+
+  const codeComplete = code.length === OTP_LENGTH
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    if (!codeComplete) {
+      setError('Please enter the full 6-digit code.')
+      return
+    }
     try {
       await resetPassword.mutateAsync({ email, code, password, password_confirmation: passwordConfirmation })
       setSuccess(true)
@@ -43,8 +99,11 @@ export default function PublicResetPasswordPage() {
         <div className="relative z-10 px-10 max-w-lg">
           <Link to="/public" className="font-serif text-gold text-3xl font-light tracking-wider">{hotelName}</Link>
           <h2 className="font-serif text-white text-4xl font-light mt-6 leading-tight">
-            Create a New <span className="text-gold">Password</span>
+            Secure Your <span className="text-gold">Account</span>
           </h2>
+          <p className="text-white/50 text-sm mt-4 leading-relaxed">
+            Enter the verification code sent to your email, then choose a new password.
+          </p>
           <div className="gold-line-left mt-6" />
         </div>
       </div>
@@ -65,7 +124,7 @@ export default function PublicResetPasswordPage() {
                 </div>
                 <h1 className="font-serif text-white text-3xl font-light mb-3">Password Reset!</h1>
                 <p className="text-white/50 text-sm leading-relaxed mb-8">
-                  Your password has been updated. Redirecting to login...
+                  Your password has been updated. Redirecting to login…
                 </p>
                 <Link
                   to="/public/login"
@@ -76,81 +135,134 @@ export default function PublicResetPasswordPage() {
               </div>
             ) : (
               <>
-                <div>
+                {/* Header */}
+                <div className="mb-8">
                   <div className="w-12 h-12 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mb-4">
-                    <KeyRound className="h-6 w-6 text-gold" />
+                    <ShieldCheck className="h-6 w-6 text-gold" />
                   </div>
                   <h1 className="font-serif text-white text-3xl font-light mb-2">Reset Password</h1>
-                  <p className="text-white/50 text-sm">Enter the code from your email and your new password</p>
+                  <p className="text-white/50 text-sm">Enter the code from your email and choose a new password</p>
                   <div className="gold-line-left mt-4" />
                 </div>
 
-                <form onSubmit={handleSubmit} className="mt-10 space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-6">
                   {error && (
-                    <div role="alert" className="bg-danger/10 border border-danger/20 text-danger text-sm px-4 py-3 rounded-lg">{error}</div>
+                    <div role="alert" className="bg-danger/10 border border-danger/20 text-danger text-sm px-4 py-3 rounded-lg">
+                      {error}
+                    </div>
                   )}
-                  <div>
-                    <label htmlFor="rp_email" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Email</label>
-                    <input
-                      id="rp_email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="input-public"
-                      placeholder="you@email.com"
-                    />
+
+                  {/* Section 1 — Verification Code */}
+                  <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Mail className="h-4 w-4 text-gold/70" />
+                      <span className="text-xs uppercase tracking-[0.12em] text-white/50 font-medium">Verification Code</span>
+                    </div>
+
+                    {/* Email */}
+                    <div className="mb-4">
+                      <label htmlFor="rp_email" className="text-[11px] uppercase tracking-[0.12em] text-white/30 block mb-1.5">Email</label>
+                      <input
+                        id="rp_email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="input-public text-sm"
+                        placeholder="you@email.com"
+                      />
+                    </div>
+
+                    {/* 6-digit OTP boxes */}
+                    <div>
+                      <label className="text-[11px] uppercase tracking-[0.12em] text-white/30 block mb-2">Reset Code</label>
+                      <div className="flex justify-center gap-2.5">
+                        {Array.from({ length: OTP_LENGTH }).map((_, i) => (
+                          <input
+                            key={i}
+                            ref={(el) => { inputRefs.current[i] = el }}
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={1}
+                            value={digits[i]}
+                            onChange={(e) => handleDigitChange(i, e.target.value)}
+                            onKeyDown={(e) => handleDigitKeyDown(i, e)}
+                            onPaste={handleDigitPaste}
+                            onFocus={(e) => e.target.select()}
+                            className={`w-11 h-13 text-center text-lg font-semibold rounded-lg border transition-all duration-200 outline-none
+                              ${digits[i]
+                                ? 'bg-gold/[0.08] border-gold/40 text-gold'
+                                : 'bg-white/[0.04] border-white/[0.08] text-white'
+                              }
+                              focus:border-gold/60 focus:bg-gold/[0.06] focus:ring-1 focus:ring-gold/20`}
+                            aria-label={`Digit ${i + 1}`}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex justify-center mt-2">
+                        {codeComplete && (
+                          <span className="text-[11px] text-success/70 animate-fade-in">{code}</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label htmlFor="rp_code" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Reset Code</label>
-                    <input
-                      id="rp_code"
-                      type="text"
-                      value={code}
-                      onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      required
-                      className="input-public text-center tracking-[0.3em] text-lg"
-                      placeholder="000000"
-                      maxLength={6}
-                      inputMode="numeric"
-                    />
+
+                  {/* Divider */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-white/[0.06]" />
+                    <span className="text-[11px] uppercase tracking-[0.12em] text-white/20">Set new password</span>
+                    <div className="flex-1 h-px bg-white/[0.06]" />
                   </div>
-                  <div>
-                    <label htmlFor="rp_password" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">New Password</label>
-                    <input
-                      id="rp_password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={8}
-                      className="input-public"
-                      placeholder="Min. 8 characters"
-                    />
+
+                  {/* Section 2 — New Password */}
+                  <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <ShieldCheck className="h-4 w-4 text-gold/70" />
+                      <span className="text-xs uppercase tracking-[0.12em] text-white/50 font-medium">New Password</span>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label htmlFor="rp_password" className="text-[11px] uppercase tracking-[0.12em] text-white/30 block mb-1.5">Password</label>
+                        <input
+                          id="rp_password"
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          minLength={8}
+                          className="input-public text-sm"
+                          placeholder="Min. 8 characters"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="rp_password_confirmation" className="text-[11px] uppercase tracking-[0.12em] text-white/30 block mb-1.5">Confirm Password</label>
+                        <input
+                          id="rp_password_confirmation"
+                          type="password"
+                          value={passwordConfirmation}
+                          onChange={(e) => setPasswordConfirmation(e.target.value)}
+                          required
+                          minLength={8}
+                          className="input-public text-sm"
+                          placeholder="Re-enter your password"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label htmlFor="rp_password_confirmation" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Confirm Password</label>
-                    <input
-                      id="rp_password_confirmation"
-                      type="password"
-                      value={passwordConfirmation}
-                      onChange={(e) => setPasswordConfirmation(e.target.value)}
-                      required
-                      minLength={8}
-                      className="input-public"
-                      placeholder="Re-enter your password"
-                    />
-                  </div>
+
+                  {/* Submit */}
                   <button
                     type="submit"
-                    disabled={resetPassword.isPending}
-                    className="btn-gold w-full flex items-center justify-center gap-2"
+                    disabled={resetPassword.isPending || !codeComplete}
+                    className="btn-gold w-full flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {resetPassword.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                     Reset Password
                   </button>
                 </form>
 
+                {/* Footer links */}
                 <div className="mt-8 text-center text-sm text-white/30">
                   <Link to="/public/forgot-password" className="text-gold hover:underline">Request a new code</Link>
                   {' '}&middot;{' '}

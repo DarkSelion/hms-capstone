@@ -68,6 +68,17 @@ class RoomController extends Controller
         $image = $firstRoom?->images->firstWhere('is_primary', true) ?? $firstRoom?->images->first();
         $roomType->setAttribute('image_url', $this->resolveImageUrl($image));
 
+        $gallery = [];
+        foreach ($roomType->rooms as $room) {
+            foreach ($room->images as $img) {
+                $url = $this->resolveImageUrl($img);
+                if ($url && !in_array($url, $gallery, true)) {
+                    $gallery[] = $url;
+                }
+            }
+        }
+        $roomType->setAttribute('gallery', $gallery);
+
         return response()->json($roomType);
     }
 
