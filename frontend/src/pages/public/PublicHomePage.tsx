@@ -73,8 +73,8 @@ function WhyChooseSection({ title }: { title: string }) {
   const WHY_FEATURES = [
     { icon: Waves, title: 'Swimming Pool', desc: 'Cool off and relax by our refreshing pool — the perfect escape from the tropical heat.', img: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&h=1000&fit=crop' },
     { icon: UtensilsCrossed, title: 'Restaurant', desc: 'Savor delicious Filipino and international cuisine at our on-site restaurant.', img: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=1000&fit=crop' },
-    { icon: Wifi, title: 'Free Wi-Fi', desc: 'Stay connected with complimentary high-speed internet throughout the property.', img: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&h=1000&fit=crop' },
-    { icon: Car, title: 'Free Parking', desc: 'Enjoy convenient and secure parking at no extra cost for all our guests.', img: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=1000&fit=crop' },
+    { icon: Wifi, title: 'Free Wi-Fi', desc: 'Stay connected with complimentary high-speed internet throughout the property.', img: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&h=1000&fit=crop' },
+    { icon: Car, title: 'Free Parking', desc: 'Enjoy convenient and secure parking at no extra cost for all our guests.', img: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800&h=1000&fit=crop' },
   ]
 
   useEffect(() => {
@@ -644,8 +644,8 @@ export default function PublicHomePage() {
         const AMENITIES = [
           { icon: Waves, label: 'Swimming Pool', desc: 'Cool off in our refreshing pool', img: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500&h=400&fit=crop' },
           { icon: UtensilsCrossed, label: 'Restaurant', desc: 'Filipino & international cuisine', img: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=500&h=400&fit=crop' },
-          { icon: Wifi, label: 'Free Wi-Fi', desc: 'High-speed throughout the property', img: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=500&h=400&fit=crop' },
-          { icon: Car, label: 'Free Parking', desc: 'Secure parking for all guests', img: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=500&h=400&fit=crop' },
+          { icon: Wifi, label: 'Free Wi-Fi', desc: 'High-speed throughout the property', img: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=500&h=400&fit=crop' },
+          { icon: Car, label: 'Free Parking', desc: 'Secure parking for all guests', img: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=500&h=400&fit=crop' },
           { icon: Building2, label: 'Event Hall', desc: 'Perfect for celebrations', img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=500&h=400&fit=crop' },
           { icon: Star, label: 'Cozy Lounge', desc: 'Relax & unwind in style', img: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=500&h=400&fit=crop' },
         ]

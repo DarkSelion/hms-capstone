@@ -371,10 +371,13 @@ function RoomImageManager({ roomId }: { roomId: number }) {
       </div>
 
       {imagesLoading ? (
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="aspect-[4/3] animate-pulse rounded-lg bg-bg" />
-          ))}
+        <div className="space-y-3">
+          <div className="aspect-[16/7] animate-pulse rounded-lg bg-bg" />
+          <div className="grid grid-cols-3 gap-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="aspect-[4/3] animate-pulse rounded-lg bg-bg" />
+            ))}
+          </div>
         </div>
       ) : images.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16">
@@ -383,40 +386,60 @@ function RoomImageManager({ roomId }: { roomId: number }) {
           <p className="text-sm text-muted">Upload photos for this room.</p>
         </div>
       ) : (
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-          {images.map((image) => (
-            <div key={image.id} className="group relative overflow-hidden rounded-lg border border-border bg-card">
-              <div className="aspect-[4/3]">
-                <img
-                  src={image.image_url}
-                  alt={image.caption || ''}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              {image.is_primary && (
-                <div className="absolute left-2 top-2 rounded-full bg-gold/90 px-2 py-0.5 text-xs font-medium text-white">
-                  Primary
+        <div className="space-y-3">
+          {(() => {
+            const first = images[0]
+            return (
+              <div key={first.id} className="group relative overflow-hidden rounded-lg border border-border bg-card">
+                <div className="aspect-[16/7]">
+                  <img src={first.image_url} alt={first.caption || ''} className="h-full w-full object-cover" />
                 </div>
-              )}
-              <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                {!image.is_primary && (
-                  <button
-                    onClick={() => handleSetPrimary(image)}
-                    disabled={updateMutation.isPending}
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-card/90 text-gold shadow hover:bg-card"
-                    title="Set as primary"
-                  >
-                    <Star className="h-4 w-4" />
-                  </button>
+                {first.is_primary && (
+                  <div className="absolute left-2 top-2 rounded-full bg-gold/90 px-2 py-0.5 text-xs font-medium text-white">
+                    Primary
+                  </div>
                 )}
-                <button
-                  onClick={() => setDeleteTarget(image)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-card/90 text-danger shadow hover:bg-card"
-                  title="Delete"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  {!first.is_primary && (
+                    <button onClick={() => handleSetPrimary(first)} disabled={updateMutation.isPending} className="flex h-8 w-8 items-center justify-center rounded-full bg-card/90 text-gold shadow hover:bg-card" title="Set as primary">
+                      <Star className="h-4 w-4" />
+                    </button>
+                  )}
+                  <button onClick={() => setDeleteTarget(first)} className="flex h-8 w-8 items-center justify-center rounded-full bg-card/90 text-danger shadow hover:bg-card" title="Delete">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
+            )
+          })()}
+          {images.slice(1).reduce<RoomImage[][]>((rows, img, i) => {
+            if (i % 3 === 0) rows.push([])
+            rows[rows.length - 1].push(img)
+            return rows
+          }, []).map((row, ri) => (
+            <div key={ri} className="grid grid-cols-3 gap-3">
+              {row.map((image) => (
+                <div key={image.id} className="group relative overflow-hidden rounded-lg border border-border bg-card">
+                  <div className="aspect-[4/3]">
+                    <img src={image.image_url} alt={image.caption || ''} className="h-full w-full object-cover" />
+                  </div>
+                  {image.is_primary && (
+                    <div className="absolute left-2 top-2 rounded-full bg-gold/90 px-2 py-0.5 text-xs font-medium text-white">
+                      Primary
+                    </div>
+                  )}
+                  <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    {!image.is_primary && (
+                      <button onClick={() => handleSetPrimary(image)} disabled={updateMutation.isPending} className="flex h-8 w-8 items-center justify-center rounded-full bg-card/90 text-gold shadow hover:bg-card" title="Set as primary">
+                        <Star className="h-4 w-4" />
+                      </button>
+                    )}
+                    <button onClick={() => setDeleteTarget(image)} className="flex h-8 w-8 items-center justify-center rounded-full bg-card/90 text-danger shadow hover:bg-card" title="Delete">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           ))}
         </div>

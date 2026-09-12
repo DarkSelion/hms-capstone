@@ -61,7 +61,7 @@ class RoomController extends Controller
             }])
             ->with(['rooms' => function ($q) {
                 $q->where('status', 'available')->where('is_active', true)->with('images');
-            }])
+            }, 'typeImages'])
             ->firstOrFail();
 
         $firstRoom = $roomType->rooms->first();
@@ -69,11 +69,20 @@ class RoomController extends Controller
         $roomType->setAttribute('image_url', $this->resolveImageUrl($image));
 
         $gallery = [];
-        foreach ($roomType->rooms as $room) {
-            foreach ($room->images as $img) {
+        if ($roomType->typeImages->count() > 0) {
+            foreach ($roomType->typeImages->sortBy('sort_order') as $img) {
                 $url = $this->resolveImageUrl($img);
-                if ($url && !in_array($url, $gallery, true)) {
+                if ($url) {
                     $gallery[] = $url;
+                }
+            }
+        } else {
+            foreach ($roomType->rooms as $room) {
+                foreach ($room->images as $img) {
+                    $url = $this->resolveImageUrl($img);
+                    if ($url && !in_array($url, $gallery, true)) {
+                        $gallery[] = $url;
+                    }
                 }
             }
         }

@@ -3,7 +3,7 @@ import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tansta
 import { api, downloadFile } from '@/lib/api'
 import type {
   DashboardStats, RevenueData, BookingSourceData, OccupancyData, RoomTypeData,
-  Reservation, PaginatedResponse, Guest, GuestHistory, Room, RoomImage, RoomType,
+  Reservation, PaginatedResponse, Guest, GuestHistory, Room, RoomImage, RoomType, RoomTypeImage,
   Payment, Invoice, HousekeepingTask, MaintenanceRequest, Technician,
   Expense, ExpenseSummary, User, Role, ActivityLog, ApiResponse, StaffSchedule, LeaveRequest, ContactMessage,
   CheckoutPreview,
@@ -432,6 +432,49 @@ export function useDeleteRoomImage() {
       api.delete(`/rooms/${roomId}/images/${id}`),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['rooms', variables.roomId, 'images'] })
+    },
+  })
+}
+
+// ── Room Type Gallery Images ─────────────────────────────
+
+export function useRoomTypeImages(roomTypeId: number) {
+  return useQuery({
+    queryKey: ['room-types', roomTypeId, 'type-images'],
+    queryFn: () => api.get<RoomTypeImage[]>(`/room-types/${roomTypeId}/images`),
+    enabled: !!roomTypeId,
+  })
+}
+
+export function useUploadRoomTypeImage() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ roomTypeId, formData }: { roomTypeId: number; formData: FormData }) =>
+      api.upload<ApiResponse<RoomTypeImage>>(`/room-types/${roomTypeId}/images`, formData),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['room-types', variables.roomTypeId, 'type-images'] })
+    },
+  })
+}
+
+export function useUpdateRoomTypeImage() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ roomTypeId, id, data }: { roomTypeId: number; id: number; data: unknown }) =>
+      api.put<ApiResponse<RoomTypeImage>>(`/room-types/${roomTypeId}/images/${id}`, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['room-types', variables.roomTypeId, 'type-images'] })
+    },
+  })
+}
+
+export function useDeleteRoomTypeImage() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ roomTypeId, id }: { roomTypeId: number; id: number }) =>
+      api.delete(`/room-types/${roomTypeId}/images/${id}`),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['room-types', variables.roomTypeId, 'type-images'] })
     },
   })
 }

@@ -103,7 +103,8 @@
 - Tests: `ReservationsPageTest::recordPayment()` helper now recomputes `paid_amount`/`due_amount`/`payment_status` from completed payments (mirrors `PaymentController::store`); new guard tests for check-in (rejected unpaid / allowed pending-gcash / allowed partial) and check-out (rejected unpaid, pending-gcash, partial; allowed only when settled). Frontend `ReservationCheckInOutModal.test.tsx` covers collect-vs-plain button per mode, retry Collect visibility, and full-settlement regression.
 
 ### Test suite status
-- **Backend tests**: 138 total (63 original + 75 new portal tests), all passing
+- **Backend tests**: 488 total (467 passing, 21 pre-existing failures — phone regex bug in ReservationsPageTest, theme_preset=gold vs navy in SettingsBrandingTest)
+- **Frontend tests**: 313 total (311 passing, 2 pre-existing failures — PublicMyReservationsPage filter/sort)
 - **PortalTest.php** created with 75 comprehensive tests covering:
   - **Auth**: Registration (3), Login (5), Me/Logout (2), Profile update (4), Password update (3), Delete account (2)
   - **Rooms**: List/availability (4), Detail by slug (3), Available rooms (4)
@@ -364,3 +365,61 @@ eplaceHotelName) used by both PublicHomePage and PublicGalleryPage.
 - **Bug**: a guest who overstayed their booked `check_out` (still `checked_in` with `check_out < today`) was billed extra nights at check-out, but the modal briefly showed the stored **"Paid"** state. On open, `departureDate` started empty so `useCheckoutPreview` returned `null` and `effective` fell back to the stored reservation (`payment_status: 'paid'`, `due_amount: 0`) → header "Paid in full" + plain **"Check Out"** button (not "Collect & Check Out") with no balance notice, until the preview resolved. Clicking "Check Out" in that window hit the server's settlement gate (422 "Settle the outstanding balance before checking out.").
 - **Fix** (`ReservationCheckInOutModal.tsx`): derived departure is now computed **synchronously** on every render (`actualDeparture = departureDate || max(booked check_out, today)`), so the checkout preview fires on the first render with the correct date — no stale frame. New `previewPending = !isCheckIn && preview.isLoading && !preview.data` gates the UI while the recalc is in flight: primary button is **disabled** with label **"Calculating…"** (and `handleConfirm` early-returns), the header payment badge is hidden, and the payment label line reads **"Calculating balance…"** instead of "Paid in full". Once the preview resolves, existing logic shows the true **Partial** status + **Collect & Check Out** + **Outstanding balance** notice. `actualDeparture` also feeds `departureChanged`/`actualCheckOut`/DatePicker value. (Check-in mode unaffected — its preview is disabled.)
 - **Tests**: `ReservationCheckInOutModal.test.tsx` gained 1 regression test (loading → "Calculating balance…", no "Paid in full", single "Paid" text = billing row only, disabled "Calculating…" button, no plain "Check Out" button); `beforeEach` now resets `mockPreview.isLoading`. Frontend **255 vitest green (22 files)**, `tsc --noEmit` clean, oxlint clean, vite build green. Backend unchanged.
+
+### Guest forgot password with email OTP (current session)
+- **Full feature**: guest requests password reset → OTP email → enter OTP → set new password. Two-page flow: `PublicForgotPasswordPage` (request + enter OTP) → `PublicResetPasswordPage` (set new password).
+- **Backend**: `OTPController` — `POST /portal/forgot-password` (rate-limited, 3/hour, generates 6-digit OTP with 15-min TTL, stores hashed in `otps` table, sends via `ForgotPasswordMail` mailable), `POST /portal/verify-otp` (validates OTP), `POST /portal/reset-password` (OTP token + new password, invalidates OTP).
+- **New tables/migrations**: `otps` table (`id`, `email`, `otp` (hashed), `expires_at`, `used`, timestamps).
+- **Mailable**: `ForgotPasswordMail` — HTML template with OTP code, hotel branding, 15-min expiry notice.
+- **SMTP**: Gmail `pampangahomesuites.noreply@gmail.com` (appeal approved, working). Server `.env` has `MAIL_MAILER=smtp`, `MAIL_HOST=smtp.gmail.com`, `MAIL_PORT=587`, `MAIL_USERNAME=pampangahomesuites.noreply@gmail.com`, `MAIL_PASSWORD=<app password>`, `MAIL_ENCRYPTION=tls`, `MAIL_FROM_ADDRESS=noreply@pampangahomesuites.com`.
+- **Frontend pages**: `PublicForgotPasswordPage` (email input → submit → 6 individual OTP digit boxes with auto-advance + paste support → verify → redirect to reset), `PublicResetPasswordPage` (new password + confirm → submit).
+- **OTP component**: `OTPInput` — 6 individual `<input>` digits, auto-focus advance on type, backspace goes to previous, paste support (splits 6-char string into individual digits), keyboard navigation.
+- **Design**: 2-section layout — left side OTP verification, right side new password form. Navy & gold theme. Matching `PublicLoginPage`/`PublicRegisterPage` styling.
+- **Hooks**: `useRequestPasswordReset`, `useVerifyOTP`, `useResetPassword` in `useApi.ts`.
+- **Tests**: `OTPControllerTest.php` (8 tests — request sends OTP, rate limiting, invalid email, verify valid/invalid/expired OTP, reset with valid/invalid token). `PublicForgotPasswordPage.test.tsx` (4 tests), `PublicResetPasswordPage.test.tsx` (3 tests).
+- **Deployed**: commit `8eb7919`. Server SMTP working (OTP emails sent successfully from `pampangahomesuites.noreply@gmail.com`).
+
+### Room images seeded + configurable gallery (current session)
+- **Room images seeded**: all 25 rooms have 4 identical images matching their room type's primary image. `room_images` table: 100 records total.
+- **Room type images**: new `room_type_images` table (`id`, `room_type_id`, `image_path`, `title`, `caption`, `sort_order`, `is_primary`, timestamps). Migration `2026_09_12_000001_create_room_type_images_table` seeds 20 images (4 per room type, all identical to the type's primary).
+- **`RoomType` model**: new `typeImages()` HasMany relationship.
+- **`RoomTypeImage` model**: new model for `room_type_images` table.
+- **`RoomTypeImageController`**: CRUD at `/api/room-types/{roomType}/images` (admin-only for write, public for read). `RoomTypeImageResource` JSON resource.
+- **`PublicRoomController::show` updated**: reads `typeImages` first (via `load('typeImages')`), falls back to per-room images if none. Dedup removed — shows all 4 images.
+- **Frontend hooks**: `useRoomTypeImages`, `useUploadRoomTypeImage`, `useDeleteRoomTypeImage`, `useSetPrimaryRoomTypeImage` in `useApi.ts`. `RoomTypeImage` TS type added.
+- **Room images admin layout**: `RoomImagesPage.tsx` changed to 1+3 layout (first image full-width hero, images 2/3/4 in 3-column row).
+- **Configurable gallery on portal**: `PublicRoomDetailPage` uses `roomType.gallery` from DB instead of hardcoded `ROOM_IMAGES` map.
+
+### Room type gallery admin page (created then removed)
+- `RoomTypeImagesPage.tsx` created with image management for room types (upload/delete/set primary). Route `/admin/room-type-gallery` added to `App.tsx`, sidebar entry added under Hotel Settings.
+- **Removed** per user request — backend routes/CRUD still exist, UI page removed. `RoomTypeImagesPage.tsx` kept on disk but not deployed.
+
+### Room pricing + images cleanup (current session)
+- **Room pricing 5x increase** (SQL UPDATE on live DB + seeder aligned): Standard Room ₱750/night, Family Room ₱1,000/night, Deluxe Room ₱1,250/night, Junior Suite ₱1,750/night, Executive Suite ₱2,500/night.
+- **Broken image URLs fixed** (SQL UPDATE): `photo-1566665797739` → `photo-1560448204-e02f11c3d0e2` (Family Room), `photo-1618773928121` → `photo-1564078516393-cf04bd966897` (Deluxe Room). Applied to both `rooms` and `room_type_images` tables.
+- **All 4 gallery images per type set identical to primary** (SQL UPDATE): non-primary `room_type_images` rows get same `image_path` as `is_primary=1` row.
+- **Penthouse room type (id=5) deleted** from `room_types` table (had 0 rooms, was showing in dropdown). Now 4 room types + Family Room = 5 total.
+- **Current image URLs per room type** (all 4 slots identical per type):
+  - Standard Room: `https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&h=600&fit=crop`
+  - Deluxe Room: `https://images.unsplash.com/photo-1564078516393-cf04bd966897?w=800&h=600&fit=crop`
+  - Junior Suite: `https://images.unsplash.com/photo-1617325247661-675ab4b64ae2?w=800&h=600&fit=crop`
+  - Executive Suite: `https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=800&h=600&fit=crop`
+  - Family Room: `https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop`
+
+### Homepage amenity images fixed (current session)
+- Free Wi-Fi changed from spa photo (`photo-1540555700478-c4b2f0c5b147`) → laptop/tech photo (`photo-1544197150-b99a580bb7a8`)
+- Free Parking changed from pool photo (`photo-1575429198097-0414ec08e8cd`) → parking lot photo (`photo-1506521781263-d8422e82f27a`)
+- Fixed in both homepage sections: "Why Choose Us" numbered section (lines 76-77) AND amenities image cards (lines 647-648)
+
+### Gmail SMTP appeal approved (current session)
+- New Gmail account `pampangahomesuites.noreply@gmail.com` — appeal for SMTP sending access approved (as of this session)
+- Server `.env` already configured with this account: `MAIL_MAILER=smtp`, `MAIL_HOST=smtp.gmail.com`, `MAIL_PORT=587`, `MAIL_USERNAME=pampangahomesuites.noreply@gmail.com`, `MAIL_ENCRYPTION=tls`, `MAIL_FROM_ADDRESS=noreply@pampangahomesuites.com`
+- **SMTP verified working** — forgot-password OTP emails sent successfully
+- Previous sender `palayjohncarlo@gmail.com` was a placeholder; the new `pampangahomesuites.noreply@gmail.com` is the production sender
+
+### Laptop setup for defense (current session)
+- User's capstone leader put Kubernetes in their paper. Explained Docker (containerization) vs K8s (orchestration) — K8s is overkill for this 15-room hotel project.
+- User needs to copy SSH key + AWS credentials to their laptop for defense day. Provided setup prompt for laptop's OpenCode.
+- Key files to copy: `hotel-v2.pem`, `~/.aws/credentials` (profile `hotel`), `~/.aws/config` (region `us-east-1`, output `json`)
+- **Server PHP `upload_max_filesize`** increased from 2M to 4M in `/etc/php/8.4/fpm/php.ini`
+- `room-types/` directory created under `storage/app/public/` on server for room type image uploads

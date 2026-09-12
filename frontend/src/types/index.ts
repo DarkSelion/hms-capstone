@@ -96,6 +96,16 @@ export interface RoomImage {
   created_at?: string;
 }
 
+export interface RoomTypeImage {
+  id: number;
+  room_type_id: number;
+  image_url: string;
+  caption?: string;
+  sort_order: number;
+  is_primary: boolean;
+  created_at?: string;
+}
+
 export interface Reservation {
   id: number;
   reservation_number: string;

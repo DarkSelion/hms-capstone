@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\ReservationController;
 use App\Http\Controllers\Api\RoomController;
 use App\Http\Controllers\Api\RoomImageController;
 use App\Http\Controllers\Api\RoomTypeController;
+use App\Http\Controllers\Api\RoomTypeImageController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\StaffController;
@@ -119,6 +120,12 @@ Route::middleware(['auth:sanctum', 'role:admin,staff'])->group(function () {
 
         // Room Types
         Route::apiResource('room-types', RoomTypeController::class);
+
+        // Room Type Gallery Images
+        Route::get('/room-types/{roomType}/images', [RoomTypeImageController::class, 'index']);
+        Route::post('/room-types/{roomType}/images', [RoomTypeImageController::class, 'store']);
+        Route::put('/room-types/{roomType}/images/{typeImage}', [RoomTypeImageController::class, 'update']);
+        Route::delete('/room-types/{roomType}/images/{typeImage}', [RoomTypeImageController::class, 'destroy']);
 
         // Maintenance (write operations)
         Route::put('/maintenance/{maintenance}', [MaintenanceController::class, 'update']);
