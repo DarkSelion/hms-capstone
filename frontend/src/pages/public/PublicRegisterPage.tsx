@@ -4,6 +4,18 @@ import { usePublicRegister, useHotelName } from '@/hooks/usePublicApi'
 import { Loader2, Eye, EyeOff } from 'lucide-react'
 import { isValidPHPhone, stripPhoneInput } from '@/lib/phone'
 
+const ALLOWED_EMAIL_DOMAINS = [
+  'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com',
+  'aol.com', 'protonmail.com', 'zoho.com', 'mail.com', 'live.com',
+  'msn.com', 'ymail.com', 'rocketmail.com', 'gmail.com.ph',
+]
+
+function isValidEmailDomain(email: string): boolean {
+  const domain = email.split('@')[1]?.toLowerCase()
+  if (!domain) return false
+  return ALLOWED_EMAIL_DOMAINS.some(d => domain === d || domain.endsWith('.' + d))
+}
+
 export default function PublicRegisterPage() {
   const navigate = useNavigate()
   const hotelName = useHotelName()
@@ -29,6 +41,10 @@ export default function PublicRegisterPage() {
     }
     if (!isValidPHPhone(form.phone)) {
       setError('Enter a valid Philippine phone number (e.g. 09171234567 or +63 9171234567)')
+      return
+    }
+    if (!isValidEmailDomain(form.email)) {
+      setError('Please use a valid email address (Gmail, Yahoo, Outlook, etc.)')
       return
     }
     try {
