@@ -54,7 +54,7 @@ class AuthController extends Controller
         $data = $request->validate([
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,'.$request->user()->id,
-            'phone' => 'nullable|string|max:20|regex:/^(\+63\s?|0)\d{8,13}$/',
+            'phone' => 'nullable|string|max:20|regex:/^[+]?[0-9]{10,15}$/',
             'avatar' => 'nullable|string|max:255',
         ]);
 
