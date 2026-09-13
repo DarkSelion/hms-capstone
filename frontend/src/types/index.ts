@@ -406,6 +406,7 @@ payment_status: string
   checked_in_at?: string
   checked_out_at?: string
   special_requests?: string
+  refund_requested_at?: string
   created_at: string
 }
 

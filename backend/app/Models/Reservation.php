@@ -46,6 +46,7 @@ class Reservation extends Model
         'overdue_at',
         'checked_in_at',
         'checked_out_at',
+        'refund_requested_at',
     ];
 
     protected $appends = [];

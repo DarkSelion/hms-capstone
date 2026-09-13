@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  usePublicMe, usePublicReservations, usePublicCancelReservation,
+  usePublicMe, usePublicReservations, usePublicCancelReservation, usePublicRequestRefund,
   usePublicInitiateOnlinePayment, usePublicSettings, usePaymentSettings, usePortalCurrency,
 } from '@/hooks/usePublicApi'
 import { usePublicAuthStore } from '@/stores/publicAuthStore'
@@ -118,6 +118,7 @@ export default function PublicMyReservationsPage() {
   const { data: user } = usePublicMe()
   const { data, isLoading } = usePublicReservations()
   const cancelReservation = usePublicCancelReservation()
+  const requestRefund = usePublicRequestRefund()
   const initiateOnline = usePublicInitiateOnlinePayment()
   const currency = usePortalCurrency()
   const fmt = (amount: number) => formatCurrencyWith(amount, currency)
@@ -133,6 +134,9 @@ export default function PublicMyReservationsPage() {
 
   const [cancelTarget, setCancelTarget] = useState<PublicReservation | null>(null)
   const [cancelError, setCancelError] = useState('')
+  const [refundTarget, setRefundTarget] = useState<PublicReservation | null>(null)
+  const [refundReason, setRefundReason] = useState('')
+  const [refundError, setRefundError] = useState('')
   const [paymentModal, setPaymentModal] = useState<PublicReservation | null>(null)
   const [detailsModal, setDetailsModal] = useState<PublicReservation | null>(null)
   const [filter, setFilter] = useState<FilterKey>('all')
@@ -212,6 +216,22 @@ export default function PublicMyReservationsPage() {
       onError: (e) => {
         const message = e instanceof Error ? e.message : 'Unable to cancel the reservation. Please try again.'
         setCancelError(message)
+      },
+    })
+  }
+
+  function handleRefundConfirm() {
+    if (!refundTarget || !refundReason.trim()) return
+    setRefundError('')
+    requestRefund.mutate({ id: refundTarget.id, reason: refundReason.trim() }, {
+      onSuccess: () => {
+        addToast('Refund request submitted', 'success')
+        setRefundTarget(null)
+        setRefundReason('')
+      },
+      onError: (e) => {
+        const message = e instanceof Error ? e.message : 'Unable to submit refund request. Please try again.'
+        setRefundError(message)
       },
     })
   }
@@ -354,6 +374,7 @@ export default function PublicMyReservationsPage() {
                       onlineGatewayEnabled={onlineGatewayEnabled}
                       onPay={() => setPaymentModal(r)}
                       onCancel={() => { setCancelError(''); setCancelTarget(r) }}
+                      onRefund={() => { setRefundError(''); setRefundReason(''); setRefundTarget(r) }}
                       onView={() => setDetailsModal(r)}
                       today={today}
                     />
@@ -412,6 +433,51 @@ export default function PublicMyReservationsPage() {
               <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2.5">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-danger" />
                 <p className="text-xs text-danger leading-relaxed">{cancelError}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </ConfirmDialog>
+
+      {/* Refund Request Confirmation */}
+      <ConfirmDialog
+        isOpen={refundTarget !== null}
+        onClose={() => { if (!requestRefund.isPending) { setRefundTarget(null); setRefundReason('') } }}
+        onConfirm={handleRefundConfirm}
+        title="Request Refund"
+        message="Submit a refund request for this reservation. Our team will review it and process the refund manually."
+        confirmLabel={requestRefund.isPending ? 'Submitting...' : 'Submit Refund Request'}
+        confirmVariant="danger"
+        isLoading={requestRefund.isPending}
+      >
+        {refundTarget && (
+          <div className="mt-4 space-y-3 text-left">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-bg border border-border">
+              <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-dark/5">
+                <img src={getRoomImageUrl(refundTarget)} alt={refundTarget.room?.room_type?.name} className="w-full h-full object-cover" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground truncate">{refundTarget.room?.room_type?.name}</p>
+                <p className="text-xs text-muted truncate">
+                  Room {refundTarget.room?.room_number} · {refundTarget.reservation_number}
+                </p>
+              </div>
+              <p className="text-sm font-semibold text-foreground shrink-0">{fmt(toNum(refundTarget.total_amount))}</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-foreground block mb-1.5">Reason for refund</label>
+              <textarea
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+                placeholder="Please explain why you need a refund..."
+                rows={3}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold resize-none"
+              />
+            </div>
+            {refundError && (
+              <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2.5">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-danger" />
+                <p className="text-xs text-danger leading-relaxed">{refundError}</p>
               </div>
             )}
           </div>
@@ -554,6 +620,7 @@ function ReservationCard({
   onlineGatewayEnabled: boolean
   onPay: () => void
   onCancel: () => void
+  onRefund: () => void
   onView: () => void
   today: string
 }) {
@@ -567,7 +634,9 @@ function ReservationCard({
   const checkInDays = isUpcoming ? daysUntil(r.check_in, today) : 0
   const hasBalance = (r.payment_status === 'unpaid' || r.payment_status === 'partial') && r.due_amount > 0
   const showPayButton = hasBalance && canPayOnline(r)
-  const showCancelButton = r.status === 'pending' || r.status === 'confirmed'
+  const isAlive = r.status === 'pending' || r.status === 'confirmed' || r.status === 'checked_in'
+  const showCancelButton = !r.refund_requested_at && r.payment_status !== 'paid' && (r.status === 'pending' || r.status === 'confirmed')
+  const showRefundButton = !r.refund_requested_at && r.payment_status === 'paid' && isAlive
 
   return (
     <div
@@ -707,6 +776,21 @@ function ReservationCard({
               <XCircle className="h-3.5 w-3.5" />
               Cancel
             </button>
+          )}
+          {showRefundButton && (
+            <button
+              onClick={onRefund}
+              className="px-4 py-2 border border-amber-400/40 text-amber-700 rounded-lg text-xs font-semibold uppercase tracking-wider hover:bg-amber-50 hover:border-amber-400/60 transition-all inline-flex items-center gap-1.5"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Refund
+            </button>
+          )}
+          {r.refund_requested_at && (
+            <span className="px-3 py-1.5 rounded-lg text-xs bg-amber-50 border border-amber-200 text-amber-700 inline-flex items-center gap-1.5">
+              <Clock className="h-3 w-3" />
+              Refund Requested
+            </span>
           )}
           {showPayButton && (
             onlineGatewayEnabled ? (

@@ -120,6 +120,17 @@ export function usePublicCancelReservation() {
   })
 }
 
+export function usePublicRequestRefund() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: number; reason: string }) =>
+      publicApi.post<{ message: string; reservation: unknown }>('/public/reservations/' + id + '/refund-request', { reason }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['public-reservations'] })
+    },
+  })
+}
+
 // Settings (public)
 export function usePublicSettings(group: string) {
   return useQuery({

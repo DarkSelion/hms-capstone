@@ -214,4 +214,45 @@ class ReservationController extends Controller
 
         return response()->json($reservation->load(['room.roomType']));
     }
+
+    public function refundRequest(Request $request, Reservation $reservation)
+    {
+        $guest = $request->user();
+
+        if ($reservation->guest_id !== $guest->id) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
+        if (in_array($reservation->status, ['cancelled', 'checked_out', 'no_show'])) {
+            return response()->json(['message' => 'Cannot request a refund for this reservation.'], 422);
+        }
+
+        if ($reservation->payment_status !== 'paid') {
+            return response()->json(['message' => 'Refund requests are only available for fully paid reservations.'], 422);
+        }
+
+        if ($reservation->refund_requested_at !== null) {
+            return response()->json(['message' => 'A refund request has already been submitted for this reservation.'], 422);
+        }
+
+        $data = $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $reservation->update(['refund_requested_at' => now()]);
+
+        ActivityLog::create([
+            'user_id' => null,
+            'action' => 'refund_requested',
+            'module' => 'reservations',
+            'model_type' => 'Reservation',
+            'model_id' => $reservation->id,
+            'description' => "Guest {$guest->full_name} requested a refund for reservation #{$reservation->reservation_number} — Reason: {$data['reason']}",
+        ]);
+
+        return response()->json([
+            'message' => 'Refund request submitted. Our team will review it shortly.',
+            'reservation' => $reservation->fresh()->load(['room.roomType']),
+        ]);
+    }
 }
