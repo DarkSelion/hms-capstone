@@ -15,7 +15,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { isAdminRole } from '@/lib/permissions'
 import { useToast } from '@/components/ui/toast'
 import {
-  Search, Users, X, CheckCircle, Clock, Sparkles, Wrench,
+  Search, Users, X,
   Edit, Save, MapPin, BedDouble, Tag, Radio, StickyNote, Loader2, ChevronDown
 } from 'lucide-react'
 
@@ -28,12 +28,12 @@ const ROOM_STATUS_OPTIONS = [
 ]
 
 const STATUS_TABS = [
-  { value: '', label: 'All', icon: BedDouble, color: 'text-dark/60', dot: 'bg-dark/30' },
-  { value: 'available', label: 'Available', icon: CheckCircle, color: 'text-emerald-600', dot: 'bg-emerald-500' },
-  { value: 'occupied', label: 'Occupied', icon: BedDouble, color: 'text-sky-600', dot: 'bg-sky-500' },
-  { value: 'reserved', label: 'Reserved', icon: Clock, color: 'text-amber-600', dot: 'bg-amber-500' },
-  { value: 'dirty', label: 'Dirty', icon: Sparkles, color: 'text-orange-600', dot: 'bg-orange-500' },
-  { value: 'maintenance', label: 'Maintenance', icon: Wrench, color: 'text-red-600', dot: 'bg-red-500' },
+  { value: '', label: 'All', color: 'text-dark/60', dot: 'bg-dark/30' },
+  { value: 'available', label: 'Available', color: 'text-emerald-600', dot: 'bg-emerald-500' },
+  { value: 'occupied', label: 'Occupied', color: 'text-sky-600', dot: 'bg-sky-500' },
+  { value: 'reserved', label: 'Reserved', color: 'text-amber-600', dot: 'bg-amber-500' },
+  { value: 'dirty', label: 'Dirty', color: 'text-orange-600', dot: 'bg-orange-500' },
+  { value: 'maintenance', label: 'Maintenance', color: 'text-red-600', dot: 'bg-red-500' },
 ]
 
 const ROOM_STATUS_HELPERS: Record<string, string> = {
@@ -295,7 +295,6 @@ export default function RoomsPage() {
           {/* ── Row 1: Status Tabs ── */}
           <div className="mb-5 flex flex-wrap items-center gap-2">
             {STATUS_TABS.map((tab) => {
-              const Icon = tab.icon
               const isActive = statusFilter === tab.value
               const count = statusCounts[tab.value as keyof typeof statusCounts] ?? 0
               return (
@@ -309,7 +308,6 @@ export default function RoomsPage() {
                   }`}
                 >
                   <span className={`h-2 w-2 rounded-full ${tab.dot}`} />
-                  <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-dark/70' : tab.color}`} />
                   {tab.label}
                   <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                     isActive ? 'bg-dark/10 text-dark/70' : 'bg-dark/5 text-dark/40'
