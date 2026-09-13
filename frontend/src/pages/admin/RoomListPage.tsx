@@ -99,9 +99,6 @@ export default function RoomListPage() {
   const roomTypesList = roomTypesData?.data ?? []
   const selectedRoomType = roomTypesList.find((rt) => rt.id === formData.room_type_id)
   const primaryImage = selectedRoom?.images?.find(img => img.is_primary) ?? selectedRoom?.images?.[0]
-  const effectivePrice = formData.price_override !== ''
-    ? Number(formData.price_override)
-    : selectedRoomType ? Number(selectedRoomType.base_price) : 0
 
   function getRoomTypeName(room: Room): string {
     return typeof room.room_type === 'object' ? room.room_type?.name ?? '-' : '-'
@@ -389,7 +386,7 @@ export default function RoomListPage() {
                   error={formErrors.room_type_id}
                 >
                   {roomTypesList.map((rt) => (
-                    <option key={rt.id} value={rt.id}>{rt.name} ({formatCurrency(Number(rt.base_price))})</option>
+                    <option key={rt.id} value={rt.id}>{rt.name}</option>
                   ))}
                 </Select>
               </div>
@@ -440,10 +437,6 @@ export default function RoomListPage() {
                   />
                   <p className="text-xs text-muted">Leave empty to use the room type's base price.</p>
                 </div>
-              </div>
-              <div className="mt-4 flex items-center justify-between rounded-xl bg-primary/5 px-3 py-2.5">
-                <span className="text-sm font-medium text-primary-dark">Effective Price / Night</span>
-                <span className="text-base font-bold text-primary-dark">{formatCurrency(effectivePrice)}</span>
               </div>
             </section>
 
