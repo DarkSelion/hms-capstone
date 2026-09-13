@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { usePublicResetPassword, useHotelName } from '@/hooks/usePublicApi'
-import { Loader2, ShieldCheck, CheckCircle, Mail } from 'lucide-react'
+import { Loader2, ShieldCheck, CheckCircle, Mail, Eye, EyeOff } from 'lucide-react'
 
 const OTP_LENGTH = 6
 
@@ -19,6 +19,8 @@ export default function PublicResetPasswordPage() {
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
@@ -224,29 +226,39 @@ export default function PublicResetPasswordPage() {
                     <div className="space-y-3">
                       <div>
                         <label htmlFor="rp_password" className="text-[11px] uppercase tracking-[0.12em] text-white/30 block mb-1.5">Password</label>
-                        <input
-                          id="rp_password"
-                          type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                          minLength={8}
-                          className="input-public text-sm"
-                          placeholder="Min. 8 characters"
-                        />
+                        <div className="relative">
+                          <input
+                            id="rp_password"
+                            type={showPassword ? 'text' : 'password'}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            minLength={8}
+                            className="input-public text-sm pr-10"
+                            placeholder="Min. 8 characters"
+                          />
+                          <button type="button" onClick={() => setShowPassword(!showPassword)} tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                       </div>
                       <div>
                         <label htmlFor="rp_password_confirmation" className="text-[11px] uppercase tracking-[0.12em] text-white/30 block mb-1.5">Confirm Password</label>
-                        <input
-                          id="rp_password_confirmation"
-                          type="password"
-                          value={passwordConfirmation}
-                          onChange={(e) => setPasswordConfirmation(e.target.value)}
-                          required
-                          minLength={8}
-                          className="input-public text-sm"
-                          placeholder="Re-enter your password"
-                        />
+                        <div className="relative">
+                          <input
+                            id="rp_password_confirmation"
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            value={passwordConfirmation}
+                            onChange={(e) => setPasswordConfirmation(e.target.value)}
+                            required
+                            minLength={8}
+                            className="input-public text-sm pr-10"
+                            placeholder="Re-enter your password"
+                          />
+                          <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

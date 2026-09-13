@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { usePublicRegister, useHotelName } from '@/hooks/usePublicApi'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 import { isValidPHPhone, stripPhoneInput } from '@/lib/phone'
 
 export default function PublicRegisterPage() {
@@ -13,6 +13,8 @@ export default function PublicRegisterPage() {
     gender: '', password: '', password_confirmation: '',
   })
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   function update(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -106,11 +108,21 @@ export default function PublicRegisterPage() {
               </div>
               <div>
                 <label htmlFor="reg_password" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Password</label>
-                <input id="reg_password" type="password" value={form.password} onChange={(e) => update('password', e.target.value)} required minLength={8} className="input-public" />
+                <div className="relative">
+                  <input id="reg_password" type={showPassword ? 'text' : 'password'} value={form.password} onChange={(e) => update('password', e.target.value)} required minLength={8} className="input-public pr-10" placeholder="Min. 8 characters" />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label htmlFor="reg_password_confirm" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Confirm Password</label>
-                <input id="reg_password_confirm" type="password" value={form.password_confirmation} onChange={(e) => update('password_confirmation', e.target.value)} required className="input-public" />
+                <div className="relative">
+                  <input id="reg_password_confirm" type={showConfirmPassword ? 'text' : 'password'} value={form.password_confirmation} onChange={(e) => update('password_confirmation', e.target.value)} required className="input-public pr-10" placeholder="Re-enter your password" />
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               <button
                 type="submit"

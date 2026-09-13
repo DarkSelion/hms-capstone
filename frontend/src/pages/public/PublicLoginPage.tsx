@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { usePublicLogin, useHotelName } from '@/hooks/usePublicApi'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 
 export default function PublicLoginPage() {
   const navigate = useNavigate()
@@ -10,6 +10,7 @@ export default function PublicLoginPage() {
   const login = usePublicLogin()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
 
   const redirect = searchParams.get('redirect') || '/public'
@@ -69,7 +70,12 @@ export default function PublicLoginPage() {
               </div>
               <div>
                 <label htmlFor="login_password" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Password</label>
-                <input id="login_password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="input-public" placeholder="Enter your password" />
+                <div className="relative">
+                  <input id="login_password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} required className="input-public pr-10" placeholder="Enter your password" />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               <button
                 type="submit"
