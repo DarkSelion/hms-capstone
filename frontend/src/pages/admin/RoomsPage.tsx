@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRooms, useRoomTypes, useUpdateRoom } from '@/hooks/useApi'
 import type { Room, RoomImage } from '@/types'
 import { formatCurrency } from '@/lib/format'
@@ -16,8 +16,8 @@ import { useAuthStore } from '@/stores/authStore'
 import { isAdminRole } from '@/lib/permissions'
 import { useToast } from '@/components/ui/toast'
 import {
-  Search, Users, X,
-  Edit, Save, MapPin, BedDouble, Tag, Radio, StickyNote, Loader2
+  Search, Users, X, CheckCircle, Clock, Sparkles, Wrench,
+  Edit, Save, MapPin, BedDouble, Tag, Radio, StickyNote, Loader2, ChevronDown
 } from 'lucide-react'
 
 const ROOM_STATUS_OPTIONS = [
@@ -26,6 +26,15 @@ const ROOM_STATUS_OPTIONS = [
   { value: 'reserved', label: 'Reserved' },
   { value: 'dirty', label: 'Dirty' },
   { value: 'maintenance', label: 'Maintenance' },
+]
+
+const STATUS_TABS = [
+  { value: '', label: 'All', icon: BedDouble, color: 'text-dark/60', dot: 'bg-dark/30' },
+  { value: 'available', label: 'Available', icon: CheckCircle, color: 'text-emerald-600', dot: 'bg-emerald-500' },
+  { value: 'occupied', label: 'Occupied', icon: BedDouble, color: 'text-sky-600', dot: 'bg-sky-500' },
+  { value: 'reserved', label: 'Reserved', icon: Clock, color: 'text-amber-600', dot: 'bg-amber-500' },
+  { value: 'dirty', label: 'Dirty', icon: Sparkles, color: 'text-orange-600', dot: 'bg-orange-500' },
+  { value: 'maintenance', label: 'Maintenance', icon: Wrench, color: 'text-red-600', dot: 'bg-red-500' },
 ]
 
 const ROOM_STATUS_HELPERS: Record<string, string> = {
@@ -93,6 +102,14 @@ export default function RoomsPage() {
   const updateRoom = useUpdateRoom()
 
   const rooms = roomsData?.data ?? []
+  const statusCounts = useMemo(() => ({
+    all: roomsData?.total ?? 0,
+    available: rooms.filter(r => r.status === 'available').length,
+    occupied: rooms.filter(r => r.status === 'occupied').length,
+    reserved: rooms.filter(r => r.status === 'reserved').length,
+    dirty: rooms.filter(r => r.status === 'dirty').length,
+    maintenance: rooms.filter(r => r.status === 'maintenance').length,
+  }), [rooms, roomsData])
   const paginationInfo = roomsData
     ? { currentPage: roomsData.current_page, lastPage: roomsData.last_page, total: roomsData.total, per_page: roomsData.per_page }
     : null
@@ -276,87 +293,130 @@ export default function RoomsPage() {
 
       <Card>
         <CardContent className="pt-6">
+          {/* ── Row 1: Status Tabs ── */}
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            {STATUS_TABS.map((tab) => {
+              const Icon = tab.icon
+              const isActive = statusFilter === tab.value
+              const count = statusCounts[tab.value as keyof typeof statusCounts] ?? 0
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => { setStatusFilter(tab.value); setCurrentPage(1) }}
+                  className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
+                    isActive
+                      ? 'bg-gold text-dark shadow-md shadow-gold/20 ring-1 ring-gold/30'
+                      : 'bg-white border border-gray-200 text-dark/50 hover:border-gold/40 hover:text-dark hover:shadow-sm'
+                  }`}
+                >
+                  <span className={`h-2 w-2 rounded-full ${tab.dot}`} />
+                  <Icon className={`h-3.5 w-3.5 ${isActive ? 'text-dark/70' : tab.color}`} />
+                  {tab.label}
+                  <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    isActive ? 'bg-dark/10 text-dark/70' : 'bg-dark/5 text-dark/40'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* ── Row 2: Search + Dropdowns ── */}
           <div className="mb-4 flex flex-wrap items-center gap-3">
-            <div className="relative max-w-[200px] flex-1">
-              <Input
+            {/* Search */}
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-dark/30 pointer-events-none" />
+              <input
+                type="text"
                 placeholder="Search room number..."
-                icon={<Search className="h-4 w-4" />}
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }}
+                className="w-full h-11 pl-10 pr-4 rounded-xl border border-gray-200 bg-white text-sm text-foreground placeholder:text-dark/30 focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold transition-colors"
               />
             </div>
-            <Select
-              value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1) }}
-              className="w-[140px]"
-            >
-              <option value="">All Status</option>
-              {ROOM_STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </Select>
-            <Select
-              value={floorFilter}
-              onChange={(e) => { setFloorFilter(e.target.value); setCurrentPage(1) }}
-              className="w-[130px]"
-            >
-              {FLOOR_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </Select>
-            {isAdmin && (
-              <Select
-                value={roomTypeFilter}
-                onChange={(e) => { setRoomTypeFilter(e.target.value); setCurrentPage(1) }}
-                className="w-[160px]"
+
+            {/* Floor Dropdown */}
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-dark/30 pointer-events-none" />
+              <select
+                value={floorFilter}
+                onChange={(e) => { setFloorFilter(e.target.value); setCurrentPage(1) }}
+                className="h-11 pl-9 pr-10 rounded-xl border border-gray-200 bg-white text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold transition-colors"
               >
-                <option value="">All Types</option>
-                {roomTypesList.map((rt) => (
-                  <option key={rt.id} value={rt.id}>{rt.name}</option>
+                {FLOOR_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
-              </Select>
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-dark/30 pointer-events-none" />
+            </div>
+
+            {/* Room Type Dropdown */}
+            {isAdmin && (
+              <div className="relative">
+                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-dark/30 pointer-events-none" />
+                <select
+                  value={roomTypeFilter}
+                  onChange={(e) => { setRoomTypeFilter(e.target.value); setCurrentPage(1) }}
+                  className="h-11 pl-9 pr-10 rounded-xl border border-gray-200 bg-white text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold transition-colors"
+                >
+                  <option value="">All Types</option>
+                  {roomTypesList.map((rt) => (
+                    <option key={rt.id} value={rt.id}>{rt.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-dark/30 pointer-events-none" />
+              </div>
+            )}
+
+            {/* Clear All */}
+            {(search || statusFilter || floorFilter || roomTypeFilter) && (
+              <button
+                onClick={() => { setSearch(''); setStatusFilter(''); setFloorFilter(''); setRoomTypeFilter(''); setCurrentPage(1) }}
+                className="h-11 px-4 rounded-xl text-xs font-semibold text-dark/40 hover:text-danger hover:bg-danger/5 border border-transparent hover:border-danger/20 transition-all inline-flex items-center gap-1.5"
+              >
+                <X className="h-3.5 w-3.5" />
+                Clear all
+              </button>
             )}
           </div>
 
-          {/* Active Filter Bar */}
+          {/* ── Row 3: Active Filter Badges ── */}
           {(search || statusFilter || floorFilter || roomTypeFilter) && (
-            <div className="mb-4 flex items-center gap-2 text-sm text-muted">
-              <span>Active filters:</span>
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <span className="text-xs text-dark/40 font-medium">Active:</span>
               {search && (
-                <Badge variant="secondary" className="gap-1">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gold/10 border border-gold/20 text-xs font-medium text-gold-dark">
                   Search: {search}
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setSearch(''); setCurrentPage(1) }}>
+                  <button onClick={() => { setSearch(''); setCurrentPage(1) }} className="hover:text-danger transition-colors">
                     <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
+                  </button>
+                </span>
               )}
               {statusFilter && (
-                <Badge variant="secondary" className="gap-1">
-                  Status: {ROOM_STATUS_OPTIONS.find(o => o.value === statusFilter)?.label}
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setStatusFilter(''); setCurrentPage(1) }}>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gold/10 border border-gold/20 text-xs font-medium text-gold-dark">
+                  {ROOM_STATUS_OPTIONS.find(o => o.value === statusFilter)?.label}
+                  <button onClick={() => { setStatusFilter(''); setCurrentPage(1) }} className="hover:text-danger transition-colors">
                     <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
+                  </button>
+                </span>
               )}
               {floorFilter && (
-                <Badge variant="secondary" className="gap-1">
-                  Floor: {floorFilter}
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setFloorFilter(''); setCurrentPage(1) }}>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gold/10 border border-gold/20 text-xs font-medium text-gold-dark">
+                  Floor {floorFilter}
+                  <button onClick={() => { setFloorFilter(''); setCurrentPage(1) }} className="hover:text-danger transition-colors">
                     <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
+                  </button>
+                </span>
               )}
               {roomTypeFilter && (
-                <Badge variant="secondary" className="gap-1">
-                  Type: {roomTypesList.find(rt => rt.id === Number(roomTypeFilter))?.name}
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setRoomTypeFilter(''); setCurrentPage(1) }}>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gold/10 border border-gold/20 text-xs font-medium text-gold-dark">
+                  {roomTypesList.find(rt => rt.id === Number(roomTypeFilter))?.name}
+                  <button onClick={() => { setRoomTypeFilter(''); setCurrentPage(1) }} className="hover:text-danger transition-colors">
                     <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
+                  </button>
+                </span>
               )}
-              <Button variant="ghost" size="sm" onClick={() => { setSearch(''); setStatusFilter(''); setFloorFilter(''); setRoomTypeFilter(''); setCurrentPage(1) }}>
-                Clear all
-              </Button>
             </div>
           )}
 
