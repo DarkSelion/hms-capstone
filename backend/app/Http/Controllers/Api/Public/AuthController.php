@@ -19,7 +19,7 @@ class AuthController extends Controller
         $data = $request->validate([
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => 'required|email|unique:guests,email|regex:/^[a-zA-Z0-9._%+-]+@(gmail|yahoo|outlook|hotmail|icloud|aol|protonmail|zoho|mail|live|msn|ymail|rocketmail)\.(com|ph)$/',
+            'email' => ['required', 'email', 'unique:guests,email', 'regex:/^[a-zA-Z0-9._%+-]+@(gmail|yahoo|outlook|hotmail|icloud|aol|protonmail|zoho|mail|live|msn|ymail|rocketmail)\.(com|ph)$/'],
             'phone' => 'required|string|max:20|regex:/^[+]?[0-9]{10,15}$/',
             'password' => 'required|string|min:8|confirmed',
             'gender' => 'nullable|string|max:20',
