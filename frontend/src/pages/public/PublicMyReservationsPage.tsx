@@ -610,6 +610,7 @@ function ReservationCard({
   onlineGatewayEnabled,
   onPay,
   onCancel,
+  onRefund,
   onView,
   today,
 }: {
