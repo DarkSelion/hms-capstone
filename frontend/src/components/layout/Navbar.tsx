@@ -39,13 +39,14 @@ function getActivityRoute(activity: ActivityLog): string {
     maintenance: '/admin/maintenance',
     expenses: '/admin/expenses',
     staff: '/admin/staff',
+    schedule: '/admin/staff',
     room_list: '/admin/room-list',
     rooms: '/admin/rooms',
-    auth: '/admin/settings',
+    auth: '/admin/activity-logs',
     settings: '/admin/settings',
   }
 
-  return moduleRoutes[module] ?? '/admin/dashboard'
+  return moduleRoutes[module] ?? '/admin/activity-logs'
 }
 
 const ROLE_LABELS: Record<string, string> = {
