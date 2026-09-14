@@ -175,7 +175,7 @@ export default function ProfilePage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* User Info Card */}
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-1 lg:sticky lg:top-6 lg:self-start">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center text-center">
               <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">

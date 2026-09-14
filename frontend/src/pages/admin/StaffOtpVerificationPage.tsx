@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Hotel, ShieldCheck, ArrowLeft, RefreshCw, Monitor } from 'lucide-react'
+import { Hotel, ShieldCheck, ArrowLeft, RefreshCw, Monitor, ClipboardPaste, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { OTPInput } from '@/components/ui/otp-input'
 import { api } from '@/lib/api'
@@ -42,6 +42,7 @@ export default function StaffOtpVerificationPage() {
   const [attempts, setAttempts] = useState(0)
   const [cooldown, setCooldown] = useState(0)
   const [trustDevice, setTrustDevice] = useState(true)
+  const [pasted, setPasted] = useState(false)
 
   const deviceInfo = useMemo(() => getDeviceInfo(), [])
 
@@ -61,6 +62,22 @@ export default function StaffOtpVerificationPage() {
     const timer = setTimeout(() => setCooldown((c) => c - 1), 1000)
     return () => clearTimeout(timer)
   }, [cooldown])
+
+  const handlePasteFromClipboard = useCallback(async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      const digits = text.replace(/\D/g, '').slice(0, OTP_LENGTH)
+      if (digits.length === OTP_LENGTH) {
+        const next = Array(OTP_LENGTH).fill('')
+        for (let i = 0; i < digits.length; i++) next[i] = digits[i]
+        setDigits(next)
+        setPasted(true)
+        setTimeout(() => setPasted(false), 2000)
+      }
+    } catch {
+      // Clipboard permission denied or empty — ignore
+    }
+  }, [])
 
   const handleVerify = useCallback(async () => {
     if (!codeComplete || !tempToken) return
@@ -178,6 +195,25 @@ export default function StaffOtpVerificationPage() {
                   disabled={attempts >= MAX_ATTEMPTS}
                   variant="admin"
                 />
+                {!codeComplete && attempts < MAX_ATTEMPTS && (
+                  <button
+                    type="button"
+                    onClick={handlePasteFromClipboard}
+                    className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors mx-auto"
+                  >
+                    {pasted ? (
+                      <>
+                        <Check className="h-3.5 w-3.5" />
+                        Pasted!
+                      </>
+                    ) : (
+                      <>
+                        <ClipboardPaste className="h-3.5 w-3.5" />
+                        Paste from clipboard
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
 
               {/* Attempts counter */}
