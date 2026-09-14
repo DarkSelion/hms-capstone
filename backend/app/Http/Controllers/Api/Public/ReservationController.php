@@ -28,6 +28,14 @@ class ReservationController extends Controller
 
         $guest = $request->user();
 
+        // Require verified email before booking
+        if (! $guest->email_verified_at) {
+            return response()->json([
+                'message' => 'Please verify your email address before making a reservation. Check your inbox for the verification link.',
+                'requires_verification' => true,
+            ], 403);
+        }
+
         $maxAdvanceDays = (int) (Setting::where('key', 'max_advance_days')->value('value') ?? 30);
         if ($maxAdvanceDays > 0) {
             $latest = now()->addDays($maxAdvanceDays)->startOfDay();

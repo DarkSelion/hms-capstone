@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\MaintenanceController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\Public\AuthController as PublicAuthController;
+use App\Http\Controllers\Api\Public\EmailVerificationController;
 use App\Http\Controllers\Api\Public\ContactController as PublicContactController;
 use App\Http\Controllers\Api\Public\OnlinePaymentGatewayController as PublicOnlinePaymentGatewayController;
 use App\Http\Controllers\Api\Public\ReservationController as PublicReservationController;
@@ -214,6 +215,8 @@ Route::prefix('public')->middleware('throttle:api')->group(function () {
         Route::put('/profile', [PublicAuthController::class, 'updateProfile']);
         Route::put('/password', [PublicAuthController::class, 'updatePassword']);
         Route::delete('/profile', [PublicAuthController::class, 'destroyAccount']);
+        Route::post('/send-verification', [EmailVerificationController::class, 'send'])->middleware('throttle:3,1');
+        Route::post('/verify-email', [EmailVerificationController::class, 'verify']);
         Route::post('/reservations', [PublicReservationController::class, 'store']);
         Route::get('/reservations', [PublicReservationController::class, 'index']);
         Route::get('/reservations/{reservation}', [PublicReservationController::class, 'show']);

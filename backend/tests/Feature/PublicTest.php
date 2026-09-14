@@ -30,6 +30,7 @@ class PublicTest extends TestCase
             'email' => 'john@example.com',
             'phone' => '09171234567',
             'password' => Hash::make('password'),
+            'email_verified_at' => now(),
         ], $overrides));
     }
 

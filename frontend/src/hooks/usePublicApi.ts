@@ -233,3 +233,18 @@ export function usePublicResetPassword() {
       publicApi.post<{ message: string }>('/public/reset-password', data),
   })
 }
+
+// Email Verification
+export function useSendVerificationEmail() {
+  return useMutation({
+    mutationFn: () =>
+      publicApi.post<{ message: string }>('/public/send-verification'),
+  })
+}
+
+export function useVerifyEmail() {
+  return useMutation({
+    mutationFn: (data: { token: string; email: string }) =>
+      publicApi.post<{ message: string }>('/public/verify-email', data),
+  })
+}

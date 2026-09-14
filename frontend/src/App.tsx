@@ -45,6 +45,7 @@ const PublicMyReservationsPage = lazy(() => import('./pages/public/PublicMyReser
 const PublicProfilePage = lazy(() => import('./pages/public/PublicProfilePage'))
 const PublicGalleryPage = lazy(() => import('./pages/public/PublicGalleryPage'))
 const PublicContactPage = lazy(() => import('./pages/public/PublicContactPage'))
+const PublicVerifyEmailPage = lazy(() => import('./pages/public/PublicVerifyEmailPage'))
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuthStore()
@@ -173,6 +174,7 @@ export default function App() {
         <Route path="/public/register" element={<Suspense fallback={<PageLoader />}><PublicRegisterPage /></Suspense>} />
         <Route path="/public/forgot-password" element={<Suspense fallback={<PageLoader />}><PublicForgotPasswordPage /></Suspense>} />
         <Route path="/public/reset-password" element={<Suspense fallback={<PageLoader />}><PublicResetPasswordPage /></Suspense>} />
+        <Route path="/public/verify-email" element={<Suspense fallback={<PageLoader />}><PublicVerifyEmailPage /></Suspense>} />
       </Routes>
     </ToastProvider>
   )

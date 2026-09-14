@@ -7,20 +7,24 @@ const {
   mockUsePublicMe,
   mockUsePublicReservations,
   mockUsePublicCancelReservation,
+  mockUsePublicRequestRefund,
   mockUsePublicInitiateOnlinePayment,
   mockUsePublicSettings,
   mockUsePaymentSettings,
   mockUsePortalCurrency,
+  mockSendVerification,
   mockUseAuthStore,
   mockUseToast,
 } = vi.hoisted(() => ({
   mockUsePublicMe: vi.fn(),
   mockUsePublicReservations: vi.fn(),
   mockUsePublicCancelReservation: vi.fn(),
+  mockUsePublicRequestRefund: vi.fn(),
   mockUsePublicInitiateOnlinePayment: vi.fn(),
   mockUsePublicSettings: vi.fn(),
   mockUsePaymentSettings: vi.fn(),
   mockUsePortalCurrency: vi.fn(),
+  mockSendVerification: vi.fn(),
   mockUseAuthStore: vi.fn(),
   mockUseToast: vi.fn(),
 }))
@@ -29,10 +33,12 @@ vi.mock('@/hooks/usePublicApi', () => ({
   usePublicMe: () => mockUsePublicMe(),
   usePublicReservations: () => mockUsePublicReservations(),
   usePublicCancelReservation: () => mockUsePublicCancelReservation(),
+  usePublicRequestRefund: () => mockUsePublicRequestRefund(),
   usePublicInitiateOnlinePayment: () => mockUsePublicInitiateOnlinePayment(),
   usePublicSettings: (group: string) => mockUsePublicSettings(group),
   usePaymentSettings: () => mockUsePaymentSettings(),
   usePortalCurrency: () => mockUsePortalCurrency(),
+  useSendVerificationEmail: () => mockSendVerification(),
 }))
 
 vi.mock('@/stores/publicAuthStore', () => ({
@@ -108,7 +114,9 @@ describe('PublicMyReservationsPage', () => {
     })
     mockUseToast.mockReturnValue({ addToast: vi.fn() })
     mockUsePublicCancelReservation.mockReturnValue({ mutate: vi.fn(), isPending: false })
+    mockUsePublicRequestRefund.mockReturnValue({ mutate: vi.fn(), isPending: false })
     mockUsePublicInitiateOnlinePayment.mockReturnValue({ mutate: vi.fn(), isPending: false, isError: false, error: null })
+    mockSendVerification.mockReturnValue({ mutate: vi.fn(), isPending: false })
   })
 
   it('shows sign-in prompt when not authenticated', () => {

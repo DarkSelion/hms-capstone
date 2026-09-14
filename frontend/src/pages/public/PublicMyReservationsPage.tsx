@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   usePublicMe, usePublicReservations, usePublicCancelReservation, usePublicRequestRefund,
   usePublicInitiateOnlinePayment, usePublicSettings, usePaymentSettings, usePortalCurrency,
+  useSendVerificationEmail,
 } from '@/hooks/usePublicApi'
 import { usePublicAuthStore } from '@/stores/publicAuthStore'
 import { formatCurrencyWith, formatDateDisplay, formatCheckoutTime, toLocalDateStr } from '@/lib/format'
@@ -131,6 +132,9 @@ export default function PublicMyReservationsPage() {
   const hasLateCheckoutFee = lateCheckoutFeeRaw !== '' && !isNaN(lateCheckoutFeeNum) && lateCheckoutFeeNum > 0
   const paymentSettings = usePaymentSettings()
   const onlineGatewayEnabled = paymentSettings['online_gateway_enabled'] === '1' || paymentSettings['online_gateway_enabled'] === true
+  const sendVerification = useSendVerificationEmail()
+  const isEmailVerified = !!user?.email_verified_at
+  const [verificationSent, setVerificationSent] = useState(false)
 
   const [cancelTarget, setCancelTarget] = useState<PublicReservation | null>(null)
   const [cancelError, setCancelError] = useState('')
@@ -315,6 +319,33 @@ export default function PublicMyReservationsPage() {
           <div className="gold-line-left mt-8" />
         </div>
       </section>
+
+      {/* Email verification banner */}
+      {!isEmailVerified && (
+        <section className="bg-amber-50 border-b border-amber-200">
+          <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-amber-800">Please verify your email address</p>
+                <p className="text-xs text-amber-600">You need to verify your email before making reservations.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                sendVerification.mutate(undefined, {
+                  onSuccess: () => { setVerificationSent(true); addToast('Verification email sent. Check your inbox.', 'success') },
+                  onError: () => addToast('Failed to send verification email.', 'error'),
+                })
+              }}
+              disabled={sendVerification.isPending || verificationSent}
+              className="shrink-0 px-4 py-2 bg-amber-600 text-white text-xs font-semibold rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors"
+            >
+              {sendVerification.isPending ? 'Sending...' : verificationSent ? 'Email Sent' : 'Verify Email'}
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Body */}
       <section className="bg-cream py-10 sm:py-12 px-4">

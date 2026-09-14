@@ -56,6 +56,7 @@ class RoomTypeCapacityAlignmentTest extends TestCase
             'email' => 'family-' . uniqid() . '@example.com',
             'phone' => '09170000000',
             'password' => Hash::make('password'),
+            'email_verified_at' => now(),
         ]);
     }
 
