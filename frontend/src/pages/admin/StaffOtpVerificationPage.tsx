@@ -34,6 +34,7 @@ export default function StaffOtpVerificationPage() {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
   const tempToken = useAuthStore((s) => s.tempToken)
+  const authToken = useAuthStore((s) => s.token)
   const hotelName = useHotelName()
 
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''))
@@ -47,12 +48,12 @@ export default function StaffOtpVerificationPage() {
   const code = digits.join('')
   const codeComplete = code.length === OTP_LENGTH
 
-  // Redirect if no temp token
+  // Redirect if no temp token (but not if we just authenticated)
   useEffect(() => {
-    if (!tempToken) {
+    if (!tempToken && !authToken) {
       navigate('/admin/login', { replace: true })
     }
-  }, [tempToken, navigate])
+  }, [tempToken, authToken, navigate])
 
   // Cooldown timer for resend
   useEffect(() => {

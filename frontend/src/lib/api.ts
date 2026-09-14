@@ -33,8 +33,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   if (!response.ok) {
     if (response.status === 401) {
-      useAuthStore.getState().logout()
-      dispatchAuthEvent(AUTH_EVENTS.UNAUTHORIZED, '/admin/login')
+      const currentToken = useAuthStore.getState().token
+      if (currentToken) {
+        useAuthStore.getState().logout()
+        dispatchAuthEvent(AUTH_EVENTS.UNAUTHORIZED, '/admin/login')
+      }
     }
     const error = await response.json().catch(() => ({ message: 'Request failed' }))
     throw new Error(error.message || error.error || 'Request failed')
@@ -55,8 +58,11 @@ export async function downloadFile(url: string, accept = 'application/pdf'): Pro
 
   if (!response.ok) {
     if (response.status === 401) {
-      useAuthStore.getState().logout()
-      dispatchAuthEvent(AUTH_EVENTS.UNAUTHORIZED, '/admin/login')
+      const currentToken = useAuthStore.getState().token
+      if (currentToken) {
+        useAuthStore.getState().logout()
+        dispatchAuthEvent(AUTH_EVENTS.UNAUTHORIZED, '/admin/login')
+      }
     }
     const error = await response.json().catch(() => ({ message: 'Request failed' }))
     throw new Error(error.message || error.error || 'Request failed')
