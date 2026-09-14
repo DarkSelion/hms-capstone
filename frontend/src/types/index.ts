@@ -6,6 +6,9 @@ export interface User {
   avatar?: string;
   role: Role;
   is_active: boolean;
+  last_login_at?: string;
+  last_login_ip?: string;
+  last_login_user_agent?: string;
   created_at: string;
 }
 

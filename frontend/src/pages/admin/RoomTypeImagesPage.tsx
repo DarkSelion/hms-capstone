@@ -5,13 +5,13 @@ import {
 } from '@/hooks/useApi'
 import type { RoomTypeImage } from '@/types'
 import { PageHeader } from '@/components/shared/PageHeader'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import { useToast } from '@/components/ui/toast'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import {
-  Upload, Trash2, Star, Loader2, ImageIcon, Images, Plus,
+  Trash2, Star, Loader2, ImageIcon, Images, Plus,
 } from 'lucide-react'
 
 export default function RoomTypeImagesPage() {

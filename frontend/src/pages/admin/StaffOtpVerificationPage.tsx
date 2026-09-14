@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Hotel, ShieldCheck, Loader2, ArrowLeft, RefreshCw, Monitor } from 'lucide-react'
+import { Hotel, ShieldCheck, ArrowLeft, RefreshCw, Monitor } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { OTPInput } from '@/components/ui/otp-input'
 import { api } from '@/lib/api'
@@ -30,16 +30,6 @@ function getDeviceInfo() {
   return { browser, os, deviceName: `${browser} on ${os}` }
 }
 
-async function computeDeviceHash(): Promise<string> {
-  const ua = navigator.userAgent
-  const lang = navigator.language
-  const screen = `${screen.width}x${screen.height}`
-  const data = `${ua}|${lang}|${screen}`
-  const encoder = new TextEncoder()
-  const buffer = await crypto.subtle.digest('SHA-256', encoder.encode(data))
-  return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('')
-}
-
 export default function StaffOtpVerificationPage() {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
@@ -49,16 +39,10 @@ export default function StaffOtpVerificationPage() {
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''))
   const [error, setError] = useState('')
   const [attempts, setAttempts] = useState(0)
-  const [resending, setResending] = useState(false)
   const [cooldown, setCooldown] = useState(0)
   const [trustDevice, setTrustDevice] = useState(true)
 
   const deviceInfo = useMemo(() => getDeviceInfo(), [])
-  const [deviceHash, setDeviceHash] = useState<string>('')
-
-  useEffect(() => {
-    computeDeviceHash().then(setDeviceHash)
-  }, [])
 
   const code = digits.join('')
   const codeComplete = code.length === OTP_LENGTH
