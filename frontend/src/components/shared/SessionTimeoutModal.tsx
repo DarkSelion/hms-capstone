@@ -1,4 +1,4 @@
-import { Loader2, Clock, LogOut, RefreshCw } from 'lucide-react'
+import { Clock, LogOut, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface SessionTimeoutModalProps {

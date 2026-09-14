@@ -11,9 +11,8 @@ import { useToast } from '@/components/ui/toast'
 import { formatDateDisplay } from '@/lib/format'
 import { stripPhoneInput } from '@/lib/phone'
 import {
-  useTrustedDevices, useRevokeTrustedDevice, useRevokeAllTrustedDevices,
+  useTrustedDevices, useRevokeTrustedDevice,
 } from '@/hooks/useApi'
-import type { TrustedDevice } from '@/hooks/useApi'
 import {
   Save, Loader2, UserCircle, Mail, Phone, Shield, Calendar, Key, Clock, Monitor, Globe,
   Smartphone, Trash2, ShieldAlert, LogOut,
@@ -79,7 +78,6 @@ export default function ProfilePage() {
 
   const { data: devices } = useTrustedDevices()
   const revokeDevice = useRevokeTrustedDevice()
-  const revokeAllDevices = useRevokeAllTrustedDevices()
 
   const me = meData
 
@@ -397,7 +395,7 @@ export default function ProfilePage() {
         }}
         title="Revoke All Sessions"
         message="This will immediately log you out from all other devices and sessions. Your current session will remain active."
-        confirmText="Revoke All"
+        confirmLabel="Revoke All"
         variant="danger"
       />
     </div>
