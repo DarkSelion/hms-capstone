@@ -3,9 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/authStore'
 import { PageHeader } from '@/components/shared/PageHeader'
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
 import { formatDateDisplay } from '@/lib/format'
@@ -15,7 +15,7 @@ import {
 } from '@/hooks/useApi'
 import {
   Save, Loader2, UserCircle, Mail, Phone, Shield, Calendar, Key, Clock, Monitor, Globe,
-  Smartphone, Trash2, ShieldAlert, LogOut,
+  Smartphone, Trash2, ShieldAlert, ShieldOff, AlertTriangle,
 } from 'lucide-react'
 
 interface MeUser {
@@ -132,6 +132,7 @@ export default function ProfilePage() {
     onSuccess: () => {
       addToast('All sessions revoked. You will need to log in again on other devices.', 'success')
       queryClient.invalidateQueries({ queryKey: ['trusted-devices'] })
+      queryClient.invalidateQueries({ queryKey: ['login-history'] })
     },
     onError: () => addToast('Failed to revoke sessions', 'error'),
   })
@@ -295,16 +296,20 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-2">
                   <ShieldAlert className="h-4 w-4 text-gold" />
                   <h4 className="text-sm font-semibold text-foreground">Trusted Devices</h4>
+                  {activeDevices.length > 0 && (
+                    <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                      {activeDevices.length}
+                    </span>
+                  )}
                 </div>
                 {activeDevices.length > 0 && (
                   <Button
-                    variant="outline"
+                    variant="danger"
                     size="sm"
                     onClick={() => setShowRevokeAll(true)}
-                    className="text-danger hover:bg-danger/10"
                   >
-                    <LogOut className="mr-1.5 h-3.5 w-3.5" />
-                    Revoke All
+                    <ShieldOff className="mr-1.5 h-3.5 w-3.5" />
+                    Revoke All ({activeDevices.length})
                   </Button>
                 )}
               </div>
@@ -342,6 +347,88 @@ export default function ProfilePage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Revoke All Sessions — Custom Modal */}
+          <Modal isOpen={showRevokeAll} onClose={() => setShowRevokeAll(false)} size="md">
+            {/* Header */}
+            <div className="flex items-start gap-4 mb-6">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-danger/10 text-danger">
+                <ShieldOff className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Revoke All Sessions</h3>
+                <p className="text-sm text-muted mt-0.5">
+                  {activeDevices.length} active device{activeDevices.length !== 1 ? 's' : ''} will be signed out
+                </p>
+              </div>
+            </div>
+
+            {/* Warning callout */}
+            <div className="flex items-start gap-3 rounded-xl bg-warning/5 border border-warning/20 p-4 mb-6">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-warning/10 text-warning">
+                <AlertTriangle className="h-4 w-4" />
+              </div>
+              <div className="text-sm text-foreground">
+                <p className="font-medium mb-1">What happens next:</p>
+                <ul className="space-y-1 text-muted">
+                  <li className="flex items-start gap-1.5">
+                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted" />
+                    All other devices will be immediately signed out
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted" />
+                    Your current session will remain active
+                  </li>
+                  <li className="flex items-start gap-1.5">
+                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-muted" />
+                    You'll need to verify your identity on each device again
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Devices to be revoked */}
+            <div className="mb-6">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted mb-3">Devices that will be signed out</p>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {activeDevices.map((device) => (
+                  <div key={device.id} className="flex items-center gap-3 rounded-xl bg-bg p-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-danger/5 text-danger/60">
+                      {device.browser?.includes('Chrome') ? <Globe className="h-3.5 w-3.5" /> :
+                       device.browser?.includes('Firefox') ? <Smartphone className="h-3.5 w-3.5" /> :
+                       <Monitor className="h-3.5 w-3.5" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{device.device_name}</p>
+                      <p className="text-xs text-muted">
+                        {formatLongDateTime(device.last_used_at)}
+                        {device.ip_address && <> · <span className="font-mono">{device.ip_address}</span></>}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowRevokeAll(false)} disabled={revokeAllSessions.isPending}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onClick={() => { revokeAllSessions.mutate(); setShowRevokeAll(false) }}
+                disabled={revokeAllSessions.isPending}
+              >
+                {revokeAllSessions.isPending ? (
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                ) : (
+                  <ShieldOff className="mr-1.5 h-4 w-4" />
+                )}
+                Revoke All Sessions
+              </Button>
+            </div>
+          </Modal>
 
           {/* Login History */}
           <Card>
@@ -384,20 +471,6 @@ export default function ProfilePage() {
           </Card>
         </div>
       </div>
-
-      {/* Revoke All Confirmation */}
-      <ConfirmDialog
-        isOpen={showRevokeAll}
-        onClose={() => setShowRevokeAll(false)}
-        onConfirm={() => {
-          revokeAllSessions.mutate()
-          setShowRevokeAll(false)
-        }}
-        title="Revoke All Sessions"
-        message="This will immediately log you out from all other devices and sessions. Your current session will remain active."
-        confirmLabel="Revoke All"
-        variant="danger"
-      />
     </div>
   )
 }
