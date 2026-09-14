@@ -35,7 +35,7 @@ The system is designed around the daily rhythm of a small hotel: a guest books (
 
 **For guests (public portal):**
 
-- Browse a public catalog of room types (Standard, Deluxe, Junior Suite, Executive Suite, Penthouse, Family Room) with real photos, descriptions, and nightly rates.
+- Browse a public catalog of room types (Standard, Deluxe, Junior Suite, Executive Suite, Family Room) with real photos, descriptions, and nightly rates.
 - Search availability for any date range; see which room types still have rooms and how many are left.
 - Register an account and log in to the portal.
 - Book a room by room type — the system automatically assigns the first available physical room of that type at booking time.
@@ -294,7 +294,7 @@ backend/
 │   ├── console.php                           # scheduled task
 │   └── web.php                               # GET / (welcome)
 └── tests/
-    ├── Feature/                              # 10 feature test files, 177 tests
+    ├── Feature/                              # 31 feature test files, 488 tests
     └── Unit/
 ```
 
@@ -315,7 +315,7 @@ The trade-off was deliberate: guests and staff are conceptually different entiti
 
 ## 3.1 Design philosophy
 
-The schema is defined by **43 migrations** in `backend/database/migrations/`. Notable conventions:
+The schema is defined by **55 migrations** in `backend/database/migrations/`. Notable conventions:
 
 - **No native `ENUM` columns.** Statuses are `VARCHAR` columns with values enforced at the application layer (validation rules and controller guards). This keeps migrations portable across MySQL and SQLite (important because the test suite runs on SQLite).
 - **UUID where frameworks require it.** `notifications.id` is a UUID (Laravel's default notification shape). Every other primary key is an unsigned big integer.
@@ -324,7 +324,7 @@ The schema is defined by **43 migrations** in `backend/database/migrations/`. No
 - **JSON columns for flexible data.** `room_types.amenities_json`, `activity_logs.old_values/new_values`, `notifications.data`, and the FAQ stored as a JSON blob in `settings`.
 - **Composite indexing added for query performance.** A dedicated migration (`2026_07_31_000004_optimize_database_indexes`) adds seven named indexes for the hottest queries (overlap checks, dashboard aggregations, portal room picking, reports).
 
-## 3.2 Table inventory (38 tables)
+## 3.2 Table inventory (41 tables)
 
 The tables fall into logical groups.
 
@@ -369,12 +369,12 @@ The tables fall into logical groups.
 | gender | varchar(255), nullable | |
 | address / city / country / postal_code | text / varchar(255) | |
 | photo | varchar(255), nullable | |
-| is_vip | boolean default false | |
 | is_blacklisted | boolean default false | blacklisted guests blocked from portal login |
+| blacklist_reason | text, nullable | reason for blacklisting |
 | notes | text, nullable | |
 | timestamps | | |
 
-**`password_reset_tokens`**, **`sessions`** — Laravel framework tables. Note: although `password_reset_tokens` exists, **no password-reset feature is implemented** (see Chapter 8).
+**`password_reset_tokens`**, **`sessions`** — Laravel framework tables. Password reset for guests uses the `otp_codes` table instead (see Chapter 4.1).
 
 ### 3.2.2 Framework / infrastructure tables
 
@@ -401,7 +401,7 @@ The tables fall into logical groups.
 | sort_order | int default 0 | controls portal ordering |
 | timestamps | | |
 
-Seeded room types: Standard Room (₱150/night), Deluxe Room (₱250), Junior Suite (₱350), Executive Suite (₱500), Penthouse (₱1,200), Family Room (₱200).
+Seeded room types: Standard Room (₱750/night), Deluxe Room (₱1,250), Junior Suite (₱1,750), Executive Suite (₱2,500), Family Room (₱1,000). Penthouse was removed (had 0 rooms).
 
 **`rooms`** — physical rooms.
 
@@ -421,7 +421,7 @@ Seeded room types: Standard Room (₱150/night), Deluxe Room (₱250), Junior Su
 
 Indexes: `status`, `cleaning_status`, `floor`, plus composite `idx_rooms_type_status_active_order` (room_type_id, status, is_active, floor, room_number).
 
-Seeded: 30 rooms across 3 floors (rooms 101–110, 201–210, 301–310).
+Seeded: 25 rooms across 3 floors (rooms 101–110, 201–210, 301–305).
 
 **`amenities`** — `id`, `name`, `icon`, `description`, `is_active`, timestamps.
 
@@ -455,6 +455,7 @@ Seeded: 30 rooms across 3 floors (rooms 101–110, 201–210, 301–310).
 | source | varchar(255), nullable | e.g. `booking_engine`, walk-in sources |
 | confirmed_by / checked_in_by / checked_out_by / created_by | bigint FK → users | `set null` on user delete |
 | checked_in_at / checked_out_at | timestamp, nullable | |
+| refund_requested_at | timestamp, nullable | guest refund request timestamp |
 | is_overdue | boolean default false | no-show risk flag |
 | overdue_at | timestamp, nullable | |
 | no_show_by | bigint, nullable | *not a declared FK* (see 3.3) |
@@ -502,7 +503,7 @@ Indexes: `status`, `issued_date`, `due_date`, plus `idx_invoices_created_at`.
 
 **`invoice_items`** — line items. `id`, `invoice_id` FK (cascade), `description`, `quantity`, `unit_price`, `total_price`, `type`, timestamps.
 
-### 3.2.5 Operations: housekeeping, maintenance, expenses
+### 3.2.5 Operations: housekeeping, maintenance, expenses, technicians
 
 **`housekeeping_tasks`** — `id`, `room_id` FK (cascade), `assigned_to` FK → users (nullable, set null), `status` (pending / in_progress / completed / etc.), `priority` (normal / etc.), `task_type`, `notes`, `scheduled_date`, `completed_at`, `inspected_by` FK (nullable), `created_by` FK (nullable), timestamps. Indexes on `status`, `priority`, `task_type`, `scheduled_date`.
 
@@ -512,6 +513,8 @@ Indexes: `status`, `issued_date`, `due_date`, plus `idx_invoices_created_at`.
 
 **`expenses`** — `id`, `category`, `amount`, `description`, `date`, `receipt`, `approved_by` FK (nullable), `created_by` FK (nullable), timestamps. Indexes on `category`, `date`.
 
+**`technicians`** — standalone maintenance staff (no auth, no login). `id`, `name`, `phone`, `specialty`, `is_active` (boolean, default true), timestamps. Admin CRUD via `TechnicianController`; assignment validated against `technicians.id`.
+
 ### 3.2.6 Inventory & purchasing (seeded structure, no API surface yet)
 
 **`inventory_categories`** (unique name), **`suppliers`**, **`inventory_items`** (FK category, SKU unique, unit, quantity/min_quantity/price_per_unit, supplier_id, expiration_date), **`purchase_orders`** (FK supplier, unique order_number, status, total_amount, ordered_by/received_by FKs, ordered_at/received_at), **`purchase_order_items`** (FK purchase_order + inventory_item, quantity, unit_price, total_price, received_quantity).
@@ -520,7 +523,7 @@ Indexes: `status`, `issued_date`, `due_date`, plus `idx_invoices_created_at`.
 
 ### 3.2.7 Staff administration
 
-**`staff_schedules`** — `id`, `user_id` FK (cascade), `date`, `start_time`, `end_time`, `department`, `notes`, timestamps. Indexes on `date`, `department`.
+**`staff_schedules`** — `id`, `user_id` FK (cascade), `date`, `start_time`, `end_time`, `notes`, timestamps. Index on `date`.
 
 **`leave_requests`** — `id`, `user_id` FK (cascade), `start_date`, `end_date`, `type`, `status` (pending/approved/declined), `reason`, `approved_by` FK (nullable), timestamps. Indexes on `status`, `type`, `start_date`.
 
@@ -530,9 +533,13 @@ Indexes: `status`, `issued_date`, `due_date`, plus `idx_invoices_created_at`.
 
 **`activity_logs`** — the global audit trail. `id`, `user_id` FK (nullable, set null — portal actions log `null`), `action` (e.g. `created`, `checked_in`, `cancelled`, `flagged_overdue`), `module` (e.g. `reservations`, `payments`, `guests`, `auth`), `model_type`/`model_id` (polymorphic), `description`, `old_values`/`new_values` (JSON), `ip_address`, `user_agent`, timestamps. Indexes: (model_type, model_id), `action`, `module`, `user_id`, plus `idx_activity_logs_created_at`.
 
-**`settings`** — key/value store. `id`, `key` (unique), `value` (text, nullable), `group`, timestamps. Index on `group`. Groups: `hotel`, `tax`, `booking`, `contact`, `security`, `general` (see Appendix B).
+**`settings`** — key/value store. `id`, `key` (unique), `value` (text, nullable), `group`, timestamps. Index on `group`. Groups: `hotel`, `tax`, `booking`, `contact`, `security`, `payment`, `branding`, `general` (see Appendix B).
 
 **`contact_messages`** — portal contact-form submissions. `id`, `name`, `email`, `subject`, `message`, `ip_address` (varchar 45), timestamps. Index on `created_at`.
+
+**`otp_codes`** — guest password-reset OTPs. `id`, `email` (indexed), `code` (varchar 6, hashed), `expires_at`, `used` (boolean, default false), timestamps.
+
+**`room_type_images`** — configurable gallery images per room type. `id`, `room_type_id` FK (cascade, indexed), `image_path`, `caption` (nullable), `is_primary` (boolean, default false), `sort_order` (unsigned int, default 0), timestamps.
 
 **`personal_access_tokens`** — Sanctum tokens. `id`, `tokenable_type/id` (polymorphic — works for both User and Guest), `name` (`api-token` for staff, `portal-token` for guests), `token` (hashed), `abilities`, `last_used_at`, `expires_at`, timestamps.
 
@@ -606,7 +613,7 @@ LeaveRequest / PurchaseOrder / ActivityLog  → BelongsTo User (various FK colum
 
 - `users` is related to `roles` via `role_id` (many-to-one). The legacy `role` string column is **not** used as the canonical role.
 - `reservations` is the central hub: it links a `guest`, a `room`, and (through payments/invoices) money.
-- `reservations.no_show_by` has **no declared foreign key** (an oversight; it stores a `users.id` value but the constraint was not added).
+- `reservations.no_show_by` has **no declared foreign key** (an oversight; it stores a `users.id` value but the constraint was not added). `refund_requested_at` is a nullable timestamp for guest refund requests.
 - Audit columns (`confirmed_by`, `checked_in_by`, etc.) all point to `users`, never to `guests` — because only staff perform those actions.
 - `activity_logs` and `personal_access_tokens` are polymorphic (`model_type`/`tokenable_type`), so they can reference either staff or guest entities.
 
@@ -651,10 +658,11 @@ This chapter documents each functional area with the exact rules enforced by the
 
 ### Guest registration — `POST /api/portal/register` (`Portal\AuthController@register`)
 
-1. Validates first/last name, email (`unique:guests,email`), phone, password (`min:8|confirmed`), optional gender.
-2. Creates a single `guests` record (password bcrypt-hashed) inside a DB transaction.
-3. Issues a Sanctum token named `portal-token`; returns 201 with token + user.
-4. Rate-limited `throttle:6,1`.
+1. Validates first/last name, email (`unique:guests,email`), phone (`regex:/^[+]?[0-9]{10,15}$/`), password (`min:8|confirmed`), optional gender.
+2. **Email domain validation:** the email must belong to an approved domain list (gmail, yahoo, outlook, hotmail, icloud, aol, protonmail, zoho, mail, live, msn, ymail, rocketmail — each with `.com` or `.ph` TLD). Implemented via a `regex:` rule using array syntax to avoid Laravel's pipe-split bug (pipe-delimited strings split regex `|` as rule separators). Returns 422 *"Email must be from a valid email provider"* for disallowed domains.
+3. Creates a single `guests` record (password bcrypt-hashed) inside a DB transaction.
+4. Issues a Sanctum token named `portal-token`; returns 201 with token + user.
+5. Rate-limited `throttle:6,1`.
 
 ### Guest login — `POST /api/portal/login`
 
@@ -665,6 +673,33 @@ Same generic-credentials pattern. **Blacklisted guests are blocked**: `is_blackl
 - `PUT /api/portal/profile` — updates profile fields; empty strings are normalized to `null` for optional fields.
 - `PUT /api/portal/password` — requires current password, `min:8|confirmed`; logs an activity entry.
 - `DELETE /api/portal/profile` (`destroyAccount`) — **blocked with 422** if the guest has any reservation history: *"Cannot delete account with reservation history. Please contact support."* This prevents cascading deletion of financial records. When allowed, revokes all tokens, then deletes.
+
+### Guest forgot password (email OTP)
+
+A two-page flow for password reset without requiring login:
+
+1. **`POST /api/portal/forgot-password`** (rate-limited `throttle:forgot-password` = 3/hour): validates email, generates a 6-digit OTP with 15-minute TTL, stores hashed in the `otp_codes` table, sends via `ForgotPasswordMail` mailable (Gmail SMTP from `pampangahomesuites.noreply@gmail.com`). Returns 200 with a success message regardless of whether the email exists (prevents enumeration).
+2. **`POST /api/portal/verify-otp`**: validates the OTP against the stored hash (checks expiry + `used` flag). Returns 200 with a reset token on success.
+3. **`POST /api/portal/reset-password`**: accepts the reset token + new password (`min:8|confirmed`). Invalidates the OTP after use.
+
+Frontend pages: `PublicForgotPasswordPage` (email input → 6-digit OTP input with auto-advance + paste support → verify) → `PublicResetPasswordPage` (new password + confirm → submit). The OTP component uses 6 individual `<input>` elements with auto-focus advance, backspace navigation, and clipboard paste parsing.
+
+### Guest refund request
+
+Guests can request a refund on paid reservations:
+
+1. **`POST /api/portal/reservations/{reservation}/refund-request`** (guest auth, owner only): sets `refund_requested_at = now()` on the reservation. Returns 422 if already requested or if the reservation's `payment_status` is not `paid`.
+2. Frontend (`PublicMyReservationsPage`): reservations with `payment_status === 'paid'` and no existing request show a **Refund** button. After submission, the button is replaced by a "Refund Requested" badge. Unpaid reservations show a **Cancel** button instead.
+3. Admin processes refunds manually (no automated gateway refund — the partner's `/api/refund` endpoint is not yet implemented).
+
+### Online payment gateway
+
+The system integrates with a white-label PayMongo gateway via Paysprint/hardreset.club:
+
+- **`POST /api/public/payments/initiate-online`** (guest auth): builds a handshake payload (`booking_ref`, `customer_name`, `customer_email`, `total_amount`, `reservation_id`), sends with `X-API-KEY` header to the gateway's `/api/initiate-payment`. Returns the `checkout_url` for redirect. Rules: gateway must be enabled + configured, reservation must be the guest's own + `confirmed` + `due_amount > 0`, no existing pending online payment.
+- **`POST /api/webhooks/payment`** (public, no Sanctum): receives gateway callbacks. Verifies `X-Webhook-Secret` header. Accepts `{ booking_ref, status, amount_paid }`. Statuses: `paid` creates a completed payment + reconciles room; `failed`/`expired` mark pending payments failed; `refunded` creates a refund payment. Dedupes by `booking_ref` + amount.
+- **`POST /api/public/payments/confirm-online`** (guest auth): self-settlement fallback for checkout redirect. Gated behind `online_gateway_self_settle` setting (default off). Creates a completed payment using the reservation's own due amount.
+- Admin Settings → Payments tab: online gateway toggle, base URL, API key, webhook secret. Public endpoint redacts secrets.
 
 ## 4.2 Room catalog & availability (portal)
 
@@ -931,6 +966,7 @@ The frontend mirrors this with `isAdminRole()` in `src/lib/permissions.ts` for p
 
 - Staff login, portal login, portal register: `throttle:6,1` (6 attempts per minute).
 - Contact form: named limiter `contact` → **3 requests/hour per IP** (defined in `AppServiceProvider::boot`). A friendly 429 message is surfaced in the portal (the portal API helper reads `Retry-After`).
+- Forgot password: named limiter `forgot-password` → **3 requests/hour per IP**. OTP codes expire after 15 minutes and are single-use.
 
 ## 5.4 Input validation & injection defense
 
@@ -952,8 +988,11 @@ The frontend mirrors this with `isAdminRole()` in `src/lib/permissions.ts` for p
 
 ## 5.7 File uploads
 
-- Hotel logo: `image|mimes:jpeg,png,webp|max:2048` (2 MB), stored on the `public` disk, old file deleted on replacement.
+- Hotel logo: `image|mimes:jpeg,png,webp|max:2048` (2 MB), stored on the `public` disk under `branding/`, old file deleted on replacement.
 - Room images: managed via `RoomImageController` with similar image validation; stored paths referenced in `room_images.image_path`.
+- Room type images: managed via `RoomTypeImageController`; stored under `room-types/` on the `public` disk.
+- Expense receipts: `mimes:jpeg,jpg,png,pdf|max:4096` (4 MB), stored under `receipts/` on the `public` disk.
+- Branding images (hero, gallery, favicon): stored under `branding/` on the `public` disk via `uploadBrandingImage`/`deleteBrandingImage`.
 
 ## 5.8 Spam protection
 
@@ -972,7 +1011,7 @@ The contact form uses a **honeypot** (`website` field) that traps bots by silent
 
 ## 6.1 Backend test suite (PHPUnit)
 
-**177 tests passing, 484 assertions** (run with `php artisan test`, SQLite in-memory).
+**488 tests, 1,598 assertions** (run with `php artisan test`, SQLite in-memory; 477 passing, 11 pre-existing failures — phone regex + theme_preset seeded value mismatch).
 
 | Test file | Focus |
 |---|---|
@@ -982,21 +1021,53 @@ The contact form uses a **honeypot** (`website` field) that traps bots by silent
 | `GuestDeletionTest.php` | deletion blocked when reservation history exists (admin + portal) |
 | `NoShowTest.php` | overdue flagging, no-show marking, state transitions |
 | `PaymentRecomputeTest.php` | payment create/update recomputes paid/due/payment_status |
-| `ReservationsPageTest.php` | full check-in/out with payment guards (unpaid rejected, pending-GCash allowed for check-in, partial rejected for check-out, settled allowed), `recordPayment()` helper mirrors `PaymentController::store` |
+| `ReservationsPageTest.php` | full check-in/out with payment guards, `recordPayment()` helper mirrors `PaymentController::store` |
 | `PortalTest.php` | 75 tests: registration, login, profile, password, account deletion, rooms, availability, reservation create/list/show/cancel, payments, contact, public settings, RBAC isolation, activity logging |
-| `RecentActivitiesTest.php` | activity-log feed |
-| `ExampleTest.php` | framework smoke test |
+| `OnlinePaymentGatewayTest.php` | gateway handshake, webhook processing, deduplication, status mapping, self-settlement gate |
+| `LateCheckoutFeeTest.php` | same-day late check-out fee, cutoff enforcement, idempotent fee application |
+| `LateDepartureCheckoutTest.php` | extra-night billing on overdue departure, settlement gate, preview figures |
+| `SettingsBrandingTest.php` | settings grouping, URL decoration, upload/delete/reject, admin-only gates |
+| `AdversarialFindingsTest.php` | regression tests for security findings (C1–C5, H1–H7, M1–M2) |
+| `AdminCrudCoverageTest.php` | technicians, room images, room types, staff schedules, contact messages, dashboard, reports, settings |
+| `DashboardTest.php` | dashboard stats shape, revenue, occupancy |
+| `ActivityLogsPageTest.php` | activity log index, filtering, scope, search, module/action/user_id |
+| `HousekeepingRoomStatusTest.php` | room status transitions on housekeeping completion |
+| `MaintenanceRoomStatusTest.php` | maintenance → room status auto-linking |
+| `ReportExportTest.php` | CSV export validation |
+| `ExtendStayTest.php` | extend-stay pricing and overlap |
+| `CheckoutPaymentCapTest.php` | checkout payment enforcement |
+| `PublicTest.php` | portal registration, login, email domain validation |
+| `RefundTest.php` | guest refund request flow |
+| `SecurityHardeningTest.php` | rate limiting, role escalation, blacklist enforcement |
+| `DateFilterTest.php` | report date-range filtering |
+| `DateSerializationTest.php` | date serialization edge cases |
+| `PortalGuestLimitsTest.php` | portal guest limits |
+| `RoomBedTypeTest.php` | room bed type alignment |
+| `RoomTypeCapacityAlignmentTest.php` | room type capacity alignment |
 
 Test utilities create guests, room types, rooms, settings, and reservations with dynamic dates so the overlap/pricing logic is exercised against real data.
 
 ## 6.2 Frontend test suite (Vitest + Testing Library)
 
-**39 tests passing across 4 test files** (run with `npm run test`):
+**313 tests passing across 22 test files** (run with `npm run test`; 311 passing, 2 pre-existing failures — PublicMyReservationsPage filter/sort):
 
-- `PaymentModal.test.tsx` — cash/GCash flow, amounts, validation.
-- `ReservationCheckInOutModal.test.tsx` — collect-vs-plain button per mode, retry collect visibility, full-settlement regression.
+- `PaymentModal.test.tsx` — cash/GCash flow, amounts, validation, searchable reservation picker.
+- `ReservationCheckInOutModal.test.tsx` — collect-vs-plain button per mode, retry collect visibility, full-settlement regression, late fee + departure picker.
 - `ReservationRowActions.test.tsx` — action gating per role/status.
 - `useCheckInOutModal.test.ts` — payment-recorded retry logic (never double-creates a payment).
+- `SettingsPage.test.tsx` — settings tabs, hotel name, checkout time, online gateway fields.
+- `ReservationsPage.test.tsx` — reservation list, filters, sort, detail modal.
+- `PublicMyReservationsPage.test.tsx` — reservation cards, pay actions, refund flow, dead-status hiding.
+- `PublicHomePage.test.tsx` — homepage sections, payment redirect banner.
+- `InquiriesPage.test.tsx` — inquiry rows, detail modal, Gmail reply.
+- `ExpensesPage.test.tsx` — expense details, add/edit form, receipt upload.
+- `StaffPage.test.tsx` — staff details, schedules, leave requests.
+- `ActivityLogsPage.test.tsx` — log list, detail modal, description highlighting.
+- `PaymentsPage.test.tsx` — payment list, detail modal, status edit.
+- `date-picker.test.tsx` — date picker variants, grid navigation.
+- `date-range-picker.test.tsx` — range picker, clearable, months/years nav.
+- `format.test.ts` — formatCurrency, formatDateDisplay, formatTime.
+- And 6 more test files covering shared components and hooks.
 
 ## 6.3 Static checks & build
 
@@ -1058,6 +1129,81 @@ Schedule::command('reservations:detect-overdue')->hourly();
 
 In production, run `php artisan schedule:work` (or a cron entry calling `schedule:run`).
 
+## 7.5 Cloud deployment (AWS)
+
+The system is deployed on AWS with the following architecture:
+
+### Infrastructure
+
+| Component | AWS Service | Details |
+|---|---|---|
+| **Compute** | EC2 (`t3.small`) | `i-035024cc7363cc2c8` — Ubuntu 24.04, PHP 8.4 FPM, nginx, Node.js 22 |
+| **Database** | RDS MySQL 8 | `hotel-db.citymo8cssdy.us-east-1.rds.amazonaws.com` — db.t3.micro, `hotel_management` DB |
+| **Storage** | EBS + S3 | 30 GB root volume; `php artisan storage:link` for public disk |
+| **Network** | VPC + Security Groups | HTTP(80)/HTTPS(443)/SSH(22) open; DB port(3306) open to EC2 only |
+| **DNS** | DuckDNS | `pampangahomesuites.duckdns.org` → `3.80.68.104` (auto-updated) |
+| **SSL** | Let's Encrypt (Certbot) | Auto-renewal via cron; nginx HTTPS termination |
+
+### Deployment process
+
+```bash
+# SSH into the server
+ssh -i hotel-v2.pem ubuntu@3.80.68.104
+
+# Pull latest code
+cd /var/www/hotel
+sudo bash deploy.sh
+```
+
+`deploy.sh` runs: `git pull` → `composer install --no-dev` → `npm ci` → `npm run build` → `php artisan migrate --force` → `php artisan config:cache` → `php artisan route:cache` → `php artisan view:cache` → restarts PHP-FPM.
+
+### Server configuration
+
+- **nginx**: reverse proxy to PHP-FPM (`/run/php/php8.4-fpm.sock`); static file serving for `public/`; SPA fallback for client-side routing; webhook endpoint proxy for `/public/api/webhooks/payment` (partner's alias URL).
+- **PHP-FPM**: `upload_max_filesize = 4M`, `memory_limit = 256M`, OPcache enabled.
+- **Laravel**: `APP_DEBUG=false`, `CACHE_STORE=file`, `SESSION_DRIVER=file`, `QUEUE_CONNECTION=sync`.
+- **SMTP**: Gmail `pampangahomesuites.noreply@gmail.com` via TLS on port 587 (appeal-approved for bulk sending).
+
+### Environment variables (`.env`)
+
+```
+APP_NAME="Pampanga Home Suites"
+APP_ENV=production
+APP_KEY=base64:...
+APP_DEBUG=false
+APP_URL=https://pampangahomesuites.duckdns.org
+
+DB_CONNECTION=mysql
+DB_HOST=hotel-db.citymo8cssdy.us-east-1.rds.amazonaws.com
+DB_DATABASE=hotel_management
+DB_USERNAME=hotel_admin
+DB_PASSWORD=PalayJc103221100
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=pampangahomesuites.noreply@gmail.com
+MAIL_PASSWORD=<app-password>
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@pampangahomesuites.com
+```
+
+### Online payment gateway (production)
+
+- Base URL: `https://www.hardreset.club`
+- API Key: `REDACTED_GATEWAY_KEY` (via `X-API-KEY` header)
+- Webhook Secret: `REDACTED_WEBHOOK_SECRET` (via `X-Webhook-Secret` header)
+- Webhook URL: `https://pampangahomesuites.duckdns.org/api/webhooks/payment`
+- Partner's alias URL also works: `https://pampangahomesuites.duckdns.org/public/api/webhooks/payment`
+- Redirect after payment: `https://pampangahomesuites.duckdns.org/?booking_ref={ref}&status={status}`
+
+### Capstone defense access
+
+- SSH key: `hotel-v2.pem` (key pair `hotel-v2-key`)
+- AWS CLI profile: `hotel` (region `us-east-1`, account `567251176231`)
+- Admin login: `admin@hotel.com` / `password`
+- Live URL: `https://pampangahomesuites.duckdns.org`
+
 ## 7.4 Environment essentials
 
 - `DB_CONNECTION=mysql`, `DB_DATABASE=hotel_management` (runtime); SQLite in-memory for tests.
@@ -1071,9 +1217,9 @@ In production, run `php artisan schedule:work` (or a cron entry calling `schedul
 
 These are honest observations about the current system, verified against the code.
 
-1. **No real payment gateway.** Payments are recorded manually as Cash or GCash; GCash "payment" is a reference-number record, not an integration with a PSP. Auto-verification of GCash and online card payments are future work.
-2. **No refund workflow.** `PaymentController::destroy` refuses deletes ("Use refund instead"), but there is no dedicated refund form; a refund is modeled as a new payment with `payment_type = refund`. The portal explicitly forbids guests from recording refunds.
-3. **No password reset.** `password_reset_tokens` table exists (Laravel default), but no forgot-password flow is exposed. Users can only change their password while logged in.
+1. **Online payment gateway integrated.** Paysprint/hardreset.club white-label PayMongo flow is live. Guests can pay online via the portal; webhook settles payments server-side. Self-settlement fallback is gated behind `online_gateway_self_settle` setting (default off; on for demo).
+2. **Guest refund request flow.** Guests can request refunds on paid reservations via the portal (sets `refund_requested_at` timestamp). Admin processes manually. Backend enforces the request; frontend shows a Refund button on paid reservations and a "Refund Requested" badge after submission.
+3. ~~No password reset~~ **Implemented.** Guest forgot-password flow with email OTP is live (see Chapter 4.1).
 4. **Transition-map enforcement gap.** `ReservationController::update` enforces the transition map only for `cancelled`/`no_show` targets; other in-place status jumps (e.g. straight to `checked_in` via `update`) are not fully guarded the way the dedicated endpoints are.
 5. **`reservations.no_show_by` has no FK constraint** — a schema oversight worth correcting with a proper migration.
 6. **Inventory/purchasing is scaffold-only.** All tables and models exist, but there are no controllers, routes, or admin pages; the sidebar does not expose it.
@@ -1096,12 +1242,18 @@ All routes from `backend/routes/api.php` (middleware column summarizes `auth:san
 |---|---|---|
 | POST | `/api/portal/register` | Guest registration (`throttle:6,1`) |
 | POST | `/api/portal/login` | Guest login (`throttle:6,1`) |
+| POST | `/api/portal/forgot-password` | Request password reset OTP (`throttle:forgot-password`) |
+| POST | `/api/portal/verify-otp` | Verify OTP code |
+| POST | `/api/portal/reset-password` | Reset password with OTP token |
 | POST | `/api/portal/contact` | Contact form (`throttle:contact` = 3/hr/IP) |
 | GET | `/api/portal/rooms` | Room-type list w/ availability |
 | GET | `/api/portal/rooms/available` | Available rooms for a date range |
 | GET | `/api/portal/rooms/{slug}` | Room-type detail |
 | GET | `/api/portal/settings/{group}` | Public settings by group |
 | POST | `/api/login` | Staff login (`throttle:6,1`) |
+| POST | `/api/webhooks/payment` | Online payment gateway webhook (no Sanctum) |
+| GET | `/api/webhooks/payment` | Friendly 405 message for browser GETs |
+| POST | `/public/api/webhooks/payment` | Partner's alias webhook URL (same handler) |
 
 ### Guest portal (`auth:sanctum` + `role:guest`)
 
@@ -1116,7 +1268,10 @@ All routes from `backend/routes/api.php` (middleware column summarizes `auth:san
 | POST | `/api/portal/reservations` | Book by room type |
 | GET | `/api/portal/reservations/{reservation}` | Reservation detail (owner only) |
 | POST | `/api/portal/reservations/{reservation}/cancel` | Cancel (owner only) |
+| POST | `/api/portal/reservations/{reservation}/refund-request` | Request refund (owner only, paid reservations) |
 | POST | `/api/portal/payments` | Make a payment |
+| POST | `/api/portal/payments/initiate-online` | Initiate online payment via gateway |
+| POST | `/api/portal/payments/confirm-online` | Self-settle on checkout return (gated) |
 
 ### Staff (operational — `auth:sanctum` + `role:admin,staff`)
 
@@ -1141,6 +1296,8 @@ All routes from `backend/routes/api.php` (middleware column summarizes `auth:san
 | POST | `/api/reservations/{reservation}/check-in` | Check in |
 | POST | `/api/reservations/{reservation}/check-out` | Check out |
 | POST | `/api/reservations/{reservation}/no-show` | Mark no-show |
+| POST | `/api/reservations/{reservation}/extend-stay` | Extend stay |
+| GET | `/api/reservations/{reservation}/checkout-preview` | Checkout preview (balance calc) |
 | GET | `/api/rooms` / GET `/api/rooms/available` / GET `/api/rooms/{room}` | Room queries |
 | PUT | `/api/rooms/{room}/status` | Update room status (operational) |
 | GET | `/api/room-types` / GET `/{room_type}` | Room-type queries |
@@ -1161,13 +1318,17 @@ All routes from `backend/routes/api.php` (middleware column summarizes `auth:san
 | GET | `/api/activity-logs` | Activity log list |
 | GET | `/api/contact-messages` / GET `/{id}` / DELETE | Inquiries inbox |
 | GET | `/api/expenses` / POST / GET / PUT / DELETE | Expense CRUD |
+| GET | `/api/expenses/summary` | Expense summary stats |
+| POST | `/api/expenses/{expense}/receipt` | Upload expense receipt |
+| DELETE | `/api/expenses/{expense}/receipt` | Remove expense receipt |
 | DELETE | `/api/guests/{guest}` | Delete guest (blocked w/ history) |
 | DELETE | `/api/housekeeping/{task}` | Delete task |
-| PUT | `/api/maintenance/{request}` / DELETE | Update / delete request |
-| POST | `/api/maintenance/{request}/assign` | Assign request |
-| PUT | `/api/maintenance/{request}/status` | Change request status |
+| PUT | `/api/maintenance/{maintenance}` / DELETE | Update / delete request |
+| POST | `/api/maintenance/{maintenance}/assign` | Assign request |
+| PUT | `/api/maintenance/{maintenance}/status` | Change request status |
 | GET | `/api/roles` | Role list |
 | GET/POST | `/api/room-types` / GET / PUT / DELETE `/{room_type}` | Room-type CRUD |
+| GET | `/api/room-types/{roomType}/images` / POST / PUT / DELETE | Room-type image CRUD |
 | POST | `/api/rooms` / PUT / DELETE `/{room}` | Room create/update/delete |
 | PUT | `/api/rooms/{room}/status` | Status override (admin-only variant) |
 | GET | `/api/rooms/{room}/images` / POST | Room image management |
@@ -1178,11 +1339,14 @@ All routes from `backend/routes/api.php` (middleware column summarizes `auth:san
 | GET | `/api/settings` / PUT | Settings CRUD |
 | GET | `/api/settings/{group}` | Settings by group |
 | POST | `/api/settings/logo` / DELETE | Logo upload/remove |
+| POST | `/api/settings/branding-image` / DELETE | Branding image upload/remove |
 | GET | `/api/staff` / POST | Staff list/create |
 | GET | `/api/staff/{user}` / PUT | Staff show/update |
-| GET | `/api/staff-schedules` / POST | Schedules |
+| GET | `/api/staff-schedules` / POST / PUT / DELETE `/{schedule}` | Schedule CRUD |
 | GET | `/api/leave-requests` / POST | Leave requests |
 | PUT | `/api/leave-requests/{leaveRequest}` | Approve/update leave |
+| GET | `/api/technicians` / POST / PUT / DELETE | Technician CRUD |
+| POST | `/api/payments/{payment}/refund` | Process refund (admin) |
 
 *(Framework routes: `GET /`, `GET sanctum/csrf-cookie`, `GET storage/{path}`, `GET /up`.)*
 
@@ -1201,12 +1365,19 @@ Seeded by `SettingsSeeder` (default values shown) and grouped by `SettingControl
 | `default_currency` | PHP | hotel |
 | `timezone` | Asia/Manila | hotel |
 | `hotel_logo` | *(uploaded file path)* | hotel |
+| `hotel_favicon` | *(uploaded file path)* | branding |
 | `tax_name` | VAT | tax |
 | `tax_rate` | 10 | tax |
 | `default_discount` | 0 | booking |
 | `cancellation_policy` | Free cancellation up to 24 hours before check-in | booking |
 | `max_advance_days` | 30 | booking |
+| `check_out_time` | 12:00 | booking |
 | `early_checkin_fee` / `late_checkout_fee` | *(accepted by groupForKey)* | booking |
+| `online_gateway_enabled` | 0 | payment |
+| `online_gateway_base_url` | https://www.hardreset.club | payment |
+| `online_gateway_api_key` | '' | payment |
+| `online_gateway_webhook_secret` | '' | payment |
+| `online_gateway_self_settle` | 0 | payment |
 | `contact_heading` | Get in Touch | contact |
 | `contact_description` | Have a question or special request?... | contact |
 | `contact_reception_hours` | 24 / 7 — Always Open | contact |
@@ -1214,8 +1385,14 @@ Seeded by `SettingsSeeder` (default values shown) and grouped by `SettingControl
 | `contact_map_embed_url` | Google Maps embed (Pampanga) | contact |
 | `contact_faq` | JSON array of Q/A | contact |
 | `password_min_length` / `session_timeout` / `max_login_attempts` / `two_factor_auth` | *(accepted by groupForKey)* | security |
-| *(anything else)* | | general |
+| `theme_preset` | navy | branding |
+| `hero_badge` / `hero_headline` / `hero_subtitle` / `hero_cta_label` / `hero_cta_link` | *(portal copy)* | branding |
+| `section_discover_title` / `section_why_title` / `section_amenities_title` / `section_gallery_title` | *(portal section titles)* | branding |
+| `footer_tagline` | *(portal footer)* | branding |
+| `gallery_title_{1..12}` / `gallery_category_{1..12}` | *(gallery items)* | branding |
+| `hero_image_{1..3}` | *(Unsplash URLs)* | branding |
+| `hotel_favicon` | *(uploaded file)* | branding |
 
 ---
 
-*Documentation generated from the live codebase. Backend test suite: 177 tests / 484 assertions green. Frontend: 39 tests green (Vitest). Framework: Laravel 13.21.1 · React 19 · MySQL (runtime) / SQLite (tests).*
+*Documentation generated from the live codebase. Backend test suite: 488 tests / 1,598 assertions (477 passing). Frontend: 313 tests / 311 passing (Vitest). Framework: Laravel 13.21.1 · React 19 · MySQL (runtime) / SQLite (tests). Deployed on AWS EC2 + RDS. Live: https://pampangahomesuites.duckdns.org*

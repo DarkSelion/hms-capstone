@@ -11,7 +11,11 @@ interface User {
 interface AuthState {
   token: string | null
   user: User | null
+  pendingOtp: boolean
+  tempToken: string | null
   setAuth: (token: string, user: User) => void
+  setPendingOtp: (tempToken: string) => void
+  clearPendingOtp: () => void
   logout: () => void
 }
 
@@ -22,8 +26,12 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       token: null,
       user: null,
-      setAuth: (token, user) => set({ token, user }),
-      logout: () => set({ token: null, user: null }),
+      pendingOtp: false,
+      tempToken: null,
+      setAuth: (token, user) => set({ token, user, pendingOtp: false, tempToken: null }),
+      setPendingOtp: (tempToken) => set({ pendingOtp: true, tempToken }),
+      clearPendingOtp: () => set({ pendingOtp: false, tempToken: null }),
+      logout: () => set({ token: null, user: null, pendingOtp: false, tempToken: null }),
     }),
     { name: 'auth-storage' },
   ),

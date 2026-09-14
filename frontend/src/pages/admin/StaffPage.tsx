@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   useStaffList, useStaffSchedules, useLeaveRequests, useRoles, useCreateStaff,
+  useRevokeStaffSessions,
 } from '@/hooks/useApi'
 import { api } from '@/lib/api'
 import { useQueryClient } from '@tanstack/react-query'
@@ -25,6 +26,7 @@ import { useToast } from '@/components/ui/toast'
 import {
   Plus, Edit, Search, Eye, Calendar, Save, Check, X, AlertCircle, Inbox, Loader2,
   UserPlus, UserCog, UserRound, CalendarPlus, CalendarOff, Trash2, Mail, Phone, ShieldCheck, Building2, Lock, Users,
+  ShieldAlert, LogOut, Clock, Globe,
 } from 'lucide-react'
 
 const ASSIGNABLE_ROLES: Record<string, string[]> = {
@@ -110,6 +112,10 @@ export default function StaffPage() {
   const [showAddLeave, setShowAddLeave] = useState(false)
   const [leaveForm, setLeaveForm] = useState({ user_id: '', type: 'annual', start_date: '', end_date: '', reason: '' })
   const [leaveFormErrors, setLeaveFormErrors] = useState<Record<string, string>>({})
+
+  const [showRevokeSessionsConfirm, setShowRevokeSessionsConfirm] = useState(false)
+  const [revokeSessionsUserId, setRevokeSessionsUserId] = useState<number | null>(null)
+  const revokeStaffSessions = useRevokeStaffSessions()
 
 
   const { data: staffList, isLoading: staffLoading, error: staffError, refetch: refetchStaff } = useStaffList()
@@ -836,6 +842,59 @@ export default function StaffPage() {
                 </div>
               </div>
             </div>
+
+            {/* Security Card */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-danger/10 text-danger">
+                  <ShieldAlert className="h-4 w-4" />
+                </div>
+                <h4 className="text-sm font-semibold text-foreground">Security</h4>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-xl bg-bg p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                    <Clock className="h-3.5 w-3.5" /> Last Login
+                  </p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {viewStaff.last_login_at ? formatDateDisplay(viewStaff.last_login_at) : '—'}
+                  </p>
+                  {viewStaff.last_login_ip && (
+                    <p className="text-xs text-muted mt-0.5">
+                      IP: <span className="font-mono">{viewStaff.last_login_ip}</span>
+                    </p>
+                  )}
+                </div>
+                <div className="rounded-xl bg-bg p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                    <Globe className="h-3.5 w-3.5" /> Device
+                  </p>
+                  <p className="text-sm font-semibold text-foreground truncate" title={viewStaff.last_login_user_agent ?? ''}>
+                    {viewStaff.last_login_user_agent
+                      ? viewStaff.last_login_user_agent.includes('Chrome') ? 'Chrome'
+                        : viewStaff.last_login_user_agent.includes('Firefox') ? 'Firefox'
+                        : viewStaff.last_login_user_agent.includes('Safari') ? 'Safari'
+                        : viewStaff.last_login_user_agent.includes('Edge') ? 'Edge'
+                        : 'Other browser'
+                      : '—'}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setRevokeSessionsUserId(viewStaff.id)
+                    setShowRevokeSessionsConfirm(true)
+                  }}
+                  className="text-danger hover:bg-danger/10 border-danger/30"
+                >
+                  <LogOut className="mr-1.5 h-3.5 w-3.5" />
+                  Revoke All Sessions
+                </Button>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center py-8 text-center">
@@ -1224,6 +1283,27 @@ export default function StaffPage() {
         title="Delete Schedule"
         message="This will permanently remove this shift schedule."
         confirmLabel="Delete"
+        variant="danger"
+      />
+
+      <ConfirmDialog
+        isOpen={showRevokeSessionsConfirm}
+        onClose={() => { setShowRevokeSessionsConfirm(false); setRevokeSessionsUserId(null) }}
+        onConfirm={() => {
+          if (revokeSessionsUserId) {
+            revokeStaffSessions.mutate(revokeSessionsUserId, {
+              onSuccess: () => {
+                addToast('All sessions revoked for this staff member.', 'success')
+                setShowRevokeSessionsConfirm(false)
+                setRevokeSessionsUserId(null)
+              },
+              onError: () => addToast('Failed to revoke sessions.', 'error'),
+            })
+          }
+        }}
+        title="Revoke All Sessions"
+        message="This will immediately log out this staff member from all active devices and sessions. They will need to log in again."
+        confirmLabel="Revoke All Sessions"
         variant="danger"
       />
     </div>

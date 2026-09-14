@@ -7,6 +7,8 @@ import { useAuthStore } from './stores/authStore'
 import { usePublicAuthStore } from './stores/publicAuthStore'
 import { isAdminRole } from './lib/permissions'
 import { ToastProvider } from './components/ui/toast'
+import { useSessionTimeout } from './hooks/useSessionTimeout'
+import { SessionTimeoutModal } from './components/shared/SessionTimeoutModal'
 
 const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'))
 const ReservationsPage = lazy(() => import('./pages/admin/ReservationsPage'))
@@ -29,6 +31,7 @@ const ProfilePage = lazy(() => import('./pages/admin/ProfilePage'))
 const RoomTypesPage = lazy(() => import('./pages/admin/RoomTypesPage'))
 const AmenitiesPage = lazy(() => import('./pages/admin/AmenitiesPage'))
 const RoomImagesPage = lazy(() => import('./pages/admin/RoomImagesPage'))
+const StaffOtpVerificationPage = lazy(() => import('./pages/admin/StaffOtpVerificationPage'))
 
 const PublicHomePage = lazy(() => import('./pages/public/PublicHomePage'))
 const PublicRoomsPage = lazy(() => import('./pages/public/PublicRoomsPage'))
@@ -62,6 +65,26 @@ function ProtectedPublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function SessionTimeoutWrapper() {
+  const token = useAuthStore((s) => s.token)
+  const logout = useAuthStore((s) => s.logout)
+  const { showWarning, secondsLeft, extendSession } = useSessionTimeout()
+
+  if (!token) return null
+
+  return (
+    <SessionTimeoutModal
+      open={showWarning}
+      secondsLeft={secondsLeft}
+      onExtend={extendSession}
+      onLogout={() => {
+        logout()
+        window.location.href = '/admin/login'
+      }}
+    />
+  )
+}
+
 function PageLoader() {
   return (
     <div className="flex items-center justify-center h-64">
@@ -83,6 +106,7 @@ export default function App() {
 
   return (
     <ToastProvider>
+      <SessionTimeoutWrapper />
       <Routes>
         {/* Guest portal at root */}
         <Route path="/" element={
@@ -93,6 +117,7 @@ export default function App() {
 
         {/* Admin routes */}
         <Route path="/admin/login" element={<LoginPage />} />
+        <Route path="/admin/verify-otp" element={<Suspense fallback={<PageLoader />}><StaffOtpVerificationPage /></Suspense>} />
         <Route
           path="/admin"
           element={

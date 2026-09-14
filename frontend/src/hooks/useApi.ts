@@ -1017,10 +1017,17 @@ export function useDeleteContactMessage() {
 export function useLogin() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: unknown) => api.post<{ token: string; user: User }>('/login', data),
+    mutationFn: (data: unknown) => api.post<{ token: string; user: User; requires_otp?: boolean; temp_token?: string }>('/login', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] })
     },
+  })
+}
+
+export function useVerifyLoginOtp() {
+  return useMutation({
+    mutationFn: (data: { temp_token: string; otp: string; trust_device?: boolean; device_name?: string }) =>
+      api.post<{ token: string; user: User }>('/login/verify-otp', data),
   })
 }
 
@@ -1038,6 +1045,82 @@ export function useProfile() {
   return useQuery({
     queryKey: ['profile'],
     queryFn: () => api.get<ApiResponse<User>>('/profile'),
+  })
+}
+
+interface AuthEvent {
+  action: string
+  description: string
+  ip_address: string | null
+  user_agent: string | null
+  created_at: string
+}
+
+export function useLoginHistory() {
+  return useQuery({
+    queryKey: ['login-history'],
+    queryFn: () => api.get<AuthEvent[]>('/auth/login-history'),
+  })
+}
+
+export function useTokenInfo() {
+  return useQuery({
+    queryKey: ['token-info'],
+    queryFn: () => api.get<{ expires_at: string | null; last_used_at: string | null }>('/auth/token-info'),
+    staleTime: 60_000,
+  })
+}
+
+// ── Trusted Devices ──────────────────────────────────
+
+export interface TrustedDevice {
+  id: number
+  user_id: number
+  device_name: string
+  device_hash: string
+  browser: string | null
+  operating_system: string | null
+  ip_address: string | null
+  last_used_at: string | null
+  revoked_at: string | null
+  created_at: string
+}
+
+export function useTrustedDevices() {
+  return useQuery({
+    queryKey: ['trusted-devices'],
+    queryFn: () => api.get<TrustedDevice[]>('/auth/trusted-devices'),
+  })
+}
+
+export function useRevokeTrustedDevice() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/auth/trusted-devices/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trusted-devices'] })
+    },
+  })
+}
+
+export function useRevokeAllTrustedDevices() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.post('/auth/trusted-devices/revoke-all'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trusted-devices'] })
+    },
+  })
+}
+
+export function useRevokeStaffSessions() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (userId: number) => api.post(`/staff/${userId}/revoke-sessions`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trusted-devices'] })
+      queryClient.invalidateQueries({ queryKey: ['login-history'] })
+    },
   })
 }
 

@@ -13,7 +13,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'phone', 'avatar', 'role_id', 'role', 'is_active'])]
+#[Fillable(['name', 'email', 'password', 'phone', 'avatar', 'role_id', 'role', 'is_active', 'last_login_at', 'last_login_ip', 'last_login_user_agent'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -57,6 +57,11 @@ class User extends Authenticatable
     public function activityLogs(): HasMany
     {
         return $this->hasMany(ActivityLog::class);
+    }
+
+    public function trustedDevices(): HasMany
+    {
+        return $this->hasMany(TrustedDevice::class);
     }
 
     protected function casts(): array

@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import StaffPage from './StaffPage'
 import type { User, Role, StaffSchedule, LeaveRequest, PaginatedResponse } from '@/types'
 
-const { mockApi, mockUseStaffList, mockUseStaffSchedules, mockUseLeaveRequests, mockUseRoles, mockUseCreateStaff, mockUseQueryClient, mockUseToast } =
+const { mockApi, mockUseStaffList, mockUseStaffSchedules, mockUseLeaveRequests, mockUseRoles, mockUseCreateStaff, mockUseRevokeStaffSessions, mockUseQueryClient, mockUseToast } =
   vi.hoisted(() => ({
     mockApi: {
       get: vi.fn(() => Promise.resolve({})),
@@ -16,6 +16,7 @@ const { mockApi, mockUseStaffList, mockUseStaffSchedules, mockUseLeaveRequests, 
     mockUseLeaveRequests: vi.fn(),
     mockUseRoles: vi.fn(),
     mockUseCreateStaff: vi.fn(),
+    mockUseRevokeStaffSessions: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
     mockUseQueryClient: vi.fn(),
     mockUseToast: vi.fn(),
   }))
@@ -26,6 +27,7 @@ vi.mock('@/hooks/useApi', () => ({
   useLeaveRequests: (params?: Record<string, unknown>) => mockUseLeaveRequests(params),
   useRoles: () => mockUseRoles(),
   useCreateStaff: () => mockUseCreateStaff(),
+  useRevokeStaffSessions: () => mockUseRevokeStaffSessions(),
 }))
 
 vi.mock('@/lib/api', () => ({

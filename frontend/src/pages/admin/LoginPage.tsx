@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,9 +21,22 @@ type LoginForm = z.infer<typeof loginSchema>
 export function LoginPage() {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
+  const setPendingOtp = useAuthStore((s) => s.setPendingOtp)
   const loginMutation = useLogin()
   const [showPassword, setShowPassword] = useState(false)
+  const [deviceHash, setDeviceHash] = useState('')
   const hotelName = useHotelName()
+
+  useEffect(() => {
+    const ua = navigator.userAgent
+    const lang = navigator.language
+    const screenRes = `${screen.width}x${screen.height}`
+    const data = `${ua}|${lang}|${screenRes}`
+    const encoder = new TextEncoder()
+    crypto.subtle.digest('SHA-256', encoder.encode(data)).then((buf) => {
+      setDeviceHash(Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join(''))
+    })
+  }, [])
 
   const {
     register,
@@ -35,9 +48,16 @@ export function LoginPage() {
 
   const onSubmit = (data: LoginForm) => {
     loginMutation.mutate(
-      { email: data.email, password: data.password },
+      { email: data.email, password: data.password, device_hash: deviceHash || undefined },
       {
-        onSuccess: (response) => {
+        onSuccess: (response: any) => {
+          // Feature 1: Check if OTP verification is required
+          if (response.requires_otp) {
+            setPendingOtp(response.temp_token)
+            navigate('/admin/verify-otp')
+            return
+          }
+
           const { token, user } = response
           const rawRole = (user as { role?: unknown }).role
           const roleSlug = typeof rawRole === 'object' && rawRole

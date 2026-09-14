@@ -25,10 +25,12 @@ use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\StaffController;
 use App\Http\Controllers\Api\TechnicianController;
+use App\Http\Controllers\Api\TrustedDeviceController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:staff-login');
+Route::post('/login/verify-otp', [AuthController::class, 'verifyLoginOtp'])->middleware('throttle:staff-otp');
 
 // Payment gateway webhook (server-to-server, no Sanctum — verified via shared secret header)
 Route::post('/webhooks/payment', [PublicOnlinePaymentGatewayController::class, 'webhook']);
@@ -43,6 +45,15 @@ Route::middleware(['auth:sanctum', 'role:admin,staff'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::put('/profile', [AuthController::class, 'updateProfile']);
     Route::put('/password', [AuthController::class, 'updatePassword']);
+    Route::get('/auth/token-info', [AuthController::class, 'tokenInfo']);
+    Route::get('/auth/login-history', [AuthController::class, 'loginHistory']);
+    Route::post('/auth/refresh-token', [AuthController::class, 'refreshToken'])->middleware('throttle:auth-refresh');
+    Route::post('/auth/revoke-all-sessions', [AuthController::class, 'revokeAllSessions']);
+
+    // Trusted Devices
+    Route::get('/auth/trusted-devices', [TrustedDeviceController::class, 'index']);
+    Route::delete('/auth/trusted-devices/{trustedDevice}', [TrustedDeviceController::class, 'destroy']);
+    Route::post('/auth/trusted-devices/revoke-all', [TrustedDeviceController::class, 'revokeAll']);
 
     // Dashboard
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
@@ -149,6 +160,7 @@ Route::middleware(['auth:sanctum', 'role:admin,staff'])->group(function () {
         Route::post('/staff', [StaffController::class, 'store']);
         Route::get('/staff/{user}', [StaffController::class, 'show']);
         Route::put('/staff/{user}', [StaffController::class, 'update']);
+        Route::post('/staff/{user}/revoke-sessions', [AuthController::class, 'revokeAllSessions']);
         Route::get('/roles', [StaffController::class, 'roles']);
         Route::get('/staff-schedules', [StaffController::class, 'schedules']);
         Route::post('/staff-schedules', [StaffController::class, 'storeSchedule']);

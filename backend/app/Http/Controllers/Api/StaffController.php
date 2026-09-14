@@ -151,7 +151,23 @@ class StaffController extends Controller
             unset($data['password']);
         }
 
+        $wasActive = $user->is_active;
         $user->update($data);
+
+        // When deactivating: revoke all tokens + trusted devices
+        if ($wasActive && isset($data['is_active']) && ! $data['is_active']) {
+            $user->tokens()->delete();
+            $user->trustedDevices()->active()->update(['revoked_at' => now()]);
+
+            ActivityLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'updated',
+                'module' => 'auth',
+                'model_type' => 'User',
+                'model_id' => $user->id,
+                'description' => "{$request->user()->name} deactivated {$user->name} — all sessions and devices revoked",
+            ]);
+        }
 
         ActivityLog::create([
             'user_id' => $request->user()->id,
