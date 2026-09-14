@@ -72,10 +72,14 @@ export function PublicFooter() {
   const facebook = (hotel['contact_facebook'] as string) || ''
   const instagram = (hotel['contact_instagram'] as string) || ''
   const tiktok = (hotel['contact_tiktok'] as string) || ''
+
+  // Only allow https:// URLs for social links (prevent javascript: injection)
+  const safeUrl = (url: string) => /^https:\/\//i.test(url) ? url : '#'
+
   const SOCIALS = [
-    { icon: FacebookIcon, href: facebook, label: 'Facebook' },
-    { icon: InstagramIcon, href: instagram, label: 'Instagram' },
-    { icon: TikTokIcon, href: tiktok, label: 'TikTok' },
+    { icon: FacebookIcon, href: safeUrl(facebook), label: 'Facebook' },
+    { icon: InstagramIcon, href: safeUrl(instagram), label: 'Instagram' },
+    { icon: TikTokIcon, href: safeUrl(tiktok), label: 'TikTok' },
   ].filter((s) => s.href && s.href !== '#')
 
   function handleSignOut() {

@@ -21,11 +21,12 @@ class PaymentController extends Controller
         $query = Payment::with(['reservation.guest', 'reservation.room.roomType']);
 
         if ($search = $request->search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('reference_number', 'like', "%{$search}%")
-                    ->orWhereHas('reservation.guest', function ($gq) use ($search) {
-                        $gq->where('first_name', 'like', "%{$search}%")
-                            ->orWhere('last_name', 'like', "%{$search}%");
+            $safe = addcslashes($search, '%_\\');
+            $query->where(function ($q) use ($safe) {
+                $q->where('reference_number', 'like', "%{$safe}%")
+                    ->orWhereHas('reservation.guest', function ($gq) use ($safe) {
+                        $gq->where('first_name', 'like', "%{$safe}%")
+                            ->orWhere('last_name', 'like', "%{$safe}%");
                     });
             });
         }

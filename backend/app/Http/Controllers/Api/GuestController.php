@@ -15,11 +15,12 @@ class GuestController extends Controller
         $query = Guest::query();
 
         if ($search = $request->search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
+            $safe = addcslashes($search, '%_\\');
+            $query->where(function ($q) use ($safe) {
+                $q->where('first_name', 'like', "%{$safe}%")
+                    ->orWhere('last_name', 'like', "%{$safe}%")
+                    ->orWhere('email', 'like', "%{$safe}%")
+                    ->orWhere('phone', 'like', "%{$safe}%");
             });
         }
 

@@ -34,7 +34,6 @@ class ContactController extends Controller
 
         return response()->json([
             'message' => 'Message sent successfully.',
-            'data' => $message,
         ], 201);
     }
 }

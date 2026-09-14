@@ -44,5 +44,10 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('auth-refresh', function (Request $request) {
             return Limit::perMinute(10)->by($request->user()?->id ?? $request->ip());
         });
+
+        // Global API rate limit — 60 requests per minute per IP
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->ip());
+        });
     }
 }

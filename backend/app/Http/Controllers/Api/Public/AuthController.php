@@ -7,6 +7,7 @@ use App\Mail\OtpMail;
 use App\Models\ActivityLog;
 use App\Models\Guest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -165,10 +166,11 @@ class AuthController extends Controller
             DB::table('otp_codes')->where('email', $guest->email)->delete();
 
             $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $hashedCode = hash('sha256', $code);
 
             DB::table('otp_codes')->insert([
                 'email' => $guest->email,
-                'code' => $code,
+                'code' => $hashedCode,
                 'expires_at' => now()->addMinutes(15),
                 'used' => false,
                 'created_at' => now(),
@@ -197,14 +199,25 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
         ]);
 
+        // Per-email OTP attempt limiting (max 5 per 15 minutes)
+        $attemptKey = "otp_reset_attempts:{$data['email']}";
+        $attempts = (int) Cache::get($attemptKey, 0);
+        if ($attempts >= 5) {
+            throw ValidationException::withMessages([
+                'code' => ['Too many failed attempts. Please request a new code.'],
+            ]);
+        }
+
         $otp = DB::table('otp_codes')
             ->where('email', $data['email'])
-            ->where('code', $data['code'])
             ->where('used', false)
             ->where('expires_at', '>', now())
             ->first();
 
-        if (! $otp) {
+        if (! $otp || ! hash_equals($otp->code, hash('sha256', $data['code']))) {
+            // Track failed attempts
+            Cache::put($attemptKey, $attempts + 1, now()->addMinutes(15));
+
             throw ValidationException::withMessages([
                 'code' => ['The code is invalid or has expired.'],
             ]);
@@ -221,6 +234,7 @@ class AuthController extends Controller
         $guest->update(['password' => Hash::make($data['password'])]);
 
         DB::table('otp_codes')->where('id', $otp->id)->update(['used' => true]);
+        Cache::forget("otp_reset_attempts:{$data['email']}");
 
         $guest->tokens()->delete();
 

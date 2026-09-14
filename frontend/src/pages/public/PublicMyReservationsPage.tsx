@@ -200,7 +200,20 @@ export default function PublicMyReservationsPage() {
     if (!paymentModal) return
     initiateOnline.mutate(paymentModal.id, {
       onSuccess: (res) => {
-        if (res.redirect_url) window.location.href = res.redirect_url
+        if (res.redirect_url) {
+          // Validate redirect URL is from the payment gateway (prevent open redirect)
+          try {
+            const url = new URL(res.redirect_url)
+            const allowedHosts = ['checkout.paymongo.com', 'paymongo.com']
+            if (url.protocol === 'https:' && allowedHosts.some(h => url.hostname.endsWith(h))) {
+              window.location.href = res.redirect_url
+            } else {
+              addToast('Invalid payment URL. Please try again.', 'error')
+            }
+          } catch {
+            addToast('Invalid payment URL. Please try again.', 'error')
+          }
+        }
       },
     })
   }

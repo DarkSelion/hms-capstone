@@ -11,6 +11,14 @@ use Illuminate\Http\Request;
 
 class SearchController extends Controller
 {
+    /**
+     * Escape LIKE wildcard characters to prevent pattern injection.
+     */
+    private function escapeLike(string $value): string
+    {
+        return addcslashes($value, '%_\\');
+    }
+
     public function index(Request $request)
     {
         $query = $request->input('q', '');
@@ -19,14 +27,15 @@ class SearchController extends Controller
             return response()->json(['results' => []]);
         }
 
+        $safe = $this->escapeLike($query);
         $results = [];
 
         // Guests
-        $guests = Guest::where(function ($q) use ($query) {
-            $q->where('first_name', 'like', "%{$query}%")
-              ->orWhere('last_name', 'like', "%{$query}%")
-              ->orWhere('email', 'like', "%{$query}%")
-              ->orWhere('phone', 'like', "%{$query}%");
+        $guests = Guest::where(function ($q) use ($safe) {
+            $q->where('first_name', 'like', "%{$safe}%")
+              ->orWhere('last_name', 'like', "%{$safe}%")
+              ->orWhere('email', 'like', "%{$safe}%")
+              ->orWhere('phone', 'like', "%{$safe}%");
         })->limit(5)->get(['id', 'first_name', 'last_name', 'email', 'phone']);
 
         foreach ($guests as $guest) {
@@ -42,11 +51,11 @@ class SearchController extends Controller
 
         // Reservations
         $reservations = Reservation::with('guest')
-            ->where(function ($q) use ($query) {
-                $q->where('reservation_number', 'like', "%{$query}%")
-                  ->orWhereHas('guest', function ($gq) use ($query) {
-                      $gq->where('first_name', 'like', "%{$query}%")
-                         ->orWhere('last_name', 'like', "%{$query}%");
+            ->where(function ($q) use ($safe) {
+                $q->where('reservation_number', 'like', "%{$safe}%")
+                  ->orWhereHas('guest', function ($gq) use ($safe) {
+                      $gq->where('first_name', 'like', "%{$safe}%")
+                         ->orWhere('last_name', 'like', "%{$safe}%");
                   });
             })->limit(5)->get(['id', 'reservation_number', 'guest_id', 'status']);
 
@@ -63,10 +72,10 @@ class SearchController extends Controller
 
         // Rooms
         $rooms = Room::with('roomType')
-            ->where(function ($q) use ($query) {
-                $q->where('room_number', 'like', "%{$query}%")
-                  ->orWhereHas('roomType', function ($rtq) use ($query) {
-                      $rtq->where('name', 'like', "%{$query}%");
+            ->where(function ($q) use ($safe) {
+                $q->where('room_number', 'like', "%{$safe}%")
+                  ->orWhereHas('roomType', function ($rtq) use ($safe) {
+                      $rtq->where('name', 'like', "%{$safe}%");
                   });
             })->limit(5)->get(['id', 'room_number', 'status', 'room_type_id']);
 
@@ -82,7 +91,7 @@ class SearchController extends Controller
         }
 
         // Room Types
-        $roomTypes = RoomType::where('name', 'like', "%{$query}%")
+        $roomTypes = RoomType::where('name', 'like', "%{$safe}%")
             ->limit(3)->get(['id', 'name', 'base_price']);
 
         foreach ($roomTypes as $rt) {

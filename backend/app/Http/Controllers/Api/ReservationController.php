@@ -22,14 +22,15 @@ class ReservationController extends Controller
         $query = Reservation::with(['guest', 'room.roomType', 'payments']);
 
         if ($search = $request->search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('reservation_number', 'like', "%{$search}%")
-                    ->orWhereHas('guest', function ($q) use ($search) {
-                        $q->where('first_name', 'like', "%{$search}%")
-                            ->orWhere('last_name', 'like', "%{$search}%");
+            $safe = addcslashes($search, '%_\\');
+            $query->where(function ($q) use ($safe) {
+                $q->where('reservation_number', 'like', "%{$safe}%")
+                    ->orWhereHas('guest', function ($q) use ($safe) {
+                        $q->where('first_name', 'like', "%{$safe}%")
+                            ->orWhere('last_name', 'like', "%{$safe}%");
                     })
-                    ->orWhereHas('room', function ($q) use ($search) {
-                        $q->where('room_number', 'like', "%{$search}%");
+                    ->orWhereHas('room', function ($q) use ($safe) {
+                        $q->where('room_number', 'like', "%{$safe}%");
                     });
             });
         }

@@ -39,7 +39,7 @@ Route::post('/webhooks/payment', [PublicOnlinePaymentGatewayController::class, '
 Route::get('/webhooks/payment', fn () => response()->json(['error' => 'This endpoint accepts POST only.'], 405));
 
 // Protected routes (admin/staff)
-Route::middleware(['auth:sanctum', 'role:admin,staff'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin,staff', 'throttle:api'])->group(function () {
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
@@ -196,7 +196,7 @@ Route::middleware(['auth:sanctum', 'role:admin,staff'])->group(function () {
 });
 
 // Guest Public Routes
-Route::prefix('public')->group(function () {
+Route::prefix('public')->middleware('throttle:api')->group(function () {
     Route::post('/register', [PublicAuthController::class, 'register'])->middleware('throttle:6,1');
     Route::post('/login', [PublicAuthController::class, 'login'])->middleware('throttle:6,1');
     Route::get('/rooms', [PublicRoomController::class, 'index']);

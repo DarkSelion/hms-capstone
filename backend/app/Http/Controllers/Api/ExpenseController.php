@@ -15,9 +15,10 @@ class ExpenseController extends Controller
         $query = Expense::with('createdBy');
 
         if ($search = $request->search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('description', 'like', "%{$search}%")
-                    ->orWhere('category', 'like', "%{$search}%");
+            $safe = addcslashes($search, '%_\\');
+            $query->where(function ($q) use ($safe) {
+                $q->where('description', 'like', "%{$safe}%")
+                    ->orWhere('category', 'like', "%{$safe}%");
             });
         }
 
@@ -53,9 +54,10 @@ class ExpenseController extends Controller
         $query = Expense::query();
 
         if ($search = $request->search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('description', 'like', "%{$search}%")
-                    ->orWhere('category', 'like', "%{$search}%");
+            $safe = addcslashes($search, '%_\\');
+            $query->where(function ($q) use ($safe) {
+                $q->where('description', 'like', "%{$safe}%")
+                    ->orWhere('category', 'like', "%{$safe}%");
             });
         }
 

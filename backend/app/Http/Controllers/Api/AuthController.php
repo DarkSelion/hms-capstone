@@ -116,10 +116,11 @@ class AuthController extends Controller
         DB::table('otp_codes')->where('email', $user->email)->delete();
 
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $hashedCode = hash('sha256', $code);
 
         DB::table('otp_codes')->insert([
             'email' => $user->email,
-            'code' => $code,
+            'code' => $hashedCode,
             'expires_at' => now()->addMinutes(5),
             'used' => false,
             'created_at' => now(),
@@ -190,12 +191,11 @@ class AuthController extends Controller
 
         $otp = DB::table('otp_codes')
             ->where('email', $user->email)
-            ->where('code', $data['otp'])
             ->where('used', false)
             ->where('expires_at', '>', now())
             ->first();
 
-        if (! $otp) {
+        if (! $otp || ! hash_equals($otp->code, hash('sha256', $data['otp']))) {
             // Increment OTP attempts and re-store (don't delete the temp token yet)
             Cache::put("staff_otp_user:{$data['temp_token']}", [
                 ...$tempData,
@@ -411,11 +411,11 @@ class AuthController extends Controller
         // Single session — revoke all existing tokens before issuing new one
         $user->tokens()->delete();
 
-        $user->update([
+        $user->forceFill([
             'last_login_at' => now(),
             'last_login_ip' => $request->ip(),
             'last_login_user_agent' => $request->userAgent(),
-        ]);
+        ])->save();
 
         $token = $user->createToken('api-token')->plainTextToken;
 

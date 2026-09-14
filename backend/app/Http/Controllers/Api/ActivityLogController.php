@@ -13,10 +13,11 @@ class ActivityLogController extends Controller
         $query = ActivityLog::with('user');
 
         if ($search = $request->search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('description', 'like', "%{$search}%")
-                    ->orWhereHas('user', function ($u) use ($search) {
-                        $u->where('name', 'like', "%{$search}%");
+            $safe = addcslashes($search, '%_\\');
+            $query->where(function ($q) use ($safe) {
+                $q->where('description', 'like', "%{$safe}%")
+                    ->orWhereHas('user', function ($u) use ($safe) {
+                        $u->where('name', 'like', "%{$safe}%");
                     });
             });
         }

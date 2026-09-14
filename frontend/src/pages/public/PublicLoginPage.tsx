@@ -13,7 +13,12 @@ export default function PublicLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
 
-  const redirect = searchParams.get('redirect') || '/public'
+  const redirect = (() => {
+    const r = searchParams.get('redirect') || '/public'
+    // Prevent open redirect — only allow relative paths starting with /
+    if (!r.startsWith('/') || r.startsWith('//')) return '/public'
+    return r
+  })()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
