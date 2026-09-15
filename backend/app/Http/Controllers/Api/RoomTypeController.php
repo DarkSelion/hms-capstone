@@ -32,6 +32,10 @@ class RoomTypeController extends Controller
             'bed_type' => 'nullable|string|max:50',
             'amenities' => 'nullable|array',
             'is_active' => 'sometimes|boolean',
+            'max_adults' => 'sometimes|integer|min:1',
+            'max_children' => 'sometimes|integer|min:0',
+            'flexible_cancellation_days' => 'sometimes|integer|min:0',
+            'non_refundable_discount' => 'sometimes|numeric|min:0|max:100',
         ]);
 
         $roomType = RoomType::create($data + ['slug' => $this->uniqueSlug($data['name'])]);
@@ -55,6 +59,10 @@ class RoomTypeController extends Controller
             'bed_type' => 'nullable|string|max:50',
             'amenities' => 'nullable|array',
             'is_active' => 'sometimes|boolean',
+            'max_adults' => 'sometimes|integer|min:1',
+            'max_children' => 'sometimes|integer|min:0',
+            'flexible_cancellation_days' => 'sometimes|integer|min:0',
+            'non_refundable_discount' => 'sometimes|numeric|min:0|max:100',
         ]);
 
         if (isset($data['name']) && $data['name'] !== $roomType->name) {

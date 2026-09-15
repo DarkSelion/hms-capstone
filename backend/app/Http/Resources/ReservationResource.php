@@ -31,6 +31,7 @@ class ReservationResource extends JsonResource
             'due_amount' => $this->due_amount,
             'payment_status' => $this->payment_status,
             'special_requests' => $this->special_requests,
+            'cancellation_tier' => $this->cancellation_tier,
             'notes' => $this->notes,
             'source' => $this->source,
             'payments' => PaymentResource::collection($this->whenLoaded('payments')),

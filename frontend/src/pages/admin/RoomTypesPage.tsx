@@ -21,6 +21,10 @@ const defaultForm = {
   capacity: '',
   size_sqm: '',
   bed_type: '',
+  max_adults: '',
+  max_children: '',
+  flexible_cancellation_days: '1',
+  non_refundable_discount: '10',
 }
 
 export default function RoomTypesPage() {
@@ -85,6 +89,10 @@ export default function RoomTypesPage() {
       capacity: String(rt.capacity),
       size_sqm: rt.size_sqm != null ? String(rt.size_sqm) : '',
       bed_type: rt.bed_type ?? '',
+      max_adults: rt.max_adults != null ? String(rt.max_adults) : '',
+      max_children: rt.max_children != null ? String(rt.max_children) : '',
+      flexible_cancellation_days: rt.flexible_cancellation_days != null ? String(rt.flexible_cancellation_days) : '1',
+      non_refundable_discount: rt.non_refundable_discount != null ? String(rt.non_refundable_discount) : '10',
     })
   }
 
@@ -100,6 +108,10 @@ export default function RoomTypesPage() {
       capacity: Number(form.capacity),
       size_sqm: form.size_sqm ? Number(form.size_sqm) : null,
       bed_type: form.bed_type || null,
+      max_adults: form.max_adults ? Number(form.max_adults) : undefined,
+      max_children: form.max_children != null && form.max_children !== '' ? Number(form.max_children) : undefined,
+      flexible_cancellation_days: Number(form.flexible_cancellation_days) || 0,
+      non_refundable_discount: Number(form.non_refundable_discount) || 0,
     }
     try {
       if (modalMode === 'create') {
@@ -162,6 +174,12 @@ export default function RoomTypesPage() {
       label: 'Bed Type',
       sortable: true,
       render: (r) => <span>{r.bed_type ?? '-'}</span>,
+    },
+    {
+      key: 'non_refundable_discount',
+      label: 'Non-Refundable Discount',
+      sortable: true,
+      render: (r) => <span>{r.non_refundable_discount ? `${r.non_refundable_discount}%` : '-'}</span>,
     },
     {
       key: 'actions',
@@ -332,6 +350,39 @@ export default function RoomTypesPage() {
               className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm placeholder:text-muted focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
               placeholder="Describe the room type..."
             />
+          </div>
+          <div className="border-t border-border pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">Cancellation Policy</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-foreground">
+                  Free Cancellation (days before check-in)
+                </label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={form.flexible_cancellation_days}
+                  onChange={(e) => setForm(f => ({ ...f, flexible_cancellation_days: e.target.value }))}
+                  placeholder="1"
+                />
+                <p className="text-[11px] text-muted mt-1">0 = no free cancellation for flexible bookings</p>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-foreground">
+                  Non-Refundable Discount (%)
+                </label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  value={form.non_refundable_discount}
+                  onChange={(e) => setForm(f => ({ ...f, non_refundable_discount: e.target.value }))}
+                  placeholder="10"
+                />
+                <p className="text-[11px] text-muted mt-1">Discount guests get for choosing non-refundable rate</p>
+              </div>
+            </div>
           </div>
         </div>
       </Modal>
