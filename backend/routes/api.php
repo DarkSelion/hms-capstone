@@ -209,6 +209,7 @@ Route::prefix('public')->middleware('throttle:api')->group(function () {
 
     Route::post('/forgot-password', [PublicAuthController::class, 'forgotPassword'])->middleware('throttle:forgot-password');
     Route::post('/reset-password', [PublicAuthController::class, 'resetPassword'])->middleware('throttle:forgot-password');
+    Route::post('/verify-email', [EmailVerificationController::class, 'verify']);
 
     Route::middleware(['auth:sanctum', 'role:guest'])->group(function () {
         Route::get('/me', [PublicAuthController::class, 'me']);
@@ -217,7 +218,6 @@ Route::prefix('public')->middleware('throttle:api')->group(function () {
         Route::put('/password', [PublicAuthController::class, 'updatePassword']);
         Route::delete('/profile', [PublicAuthController::class, 'destroyAccount']);
         Route::post('/send-verification', [EmailVerificationController::class, 'send'])->middleware('throttle:3,1');
-        Route::post('/verify-email', [EmailVerificationController::class, 'verify']);
         Route::post('/reservations', [PublicReservationController::class, 'store']);
         Route::get('/reservations', [PublicReservationController::class, 'index']);
         Route::get('/reservations/{reservation}', [PublicReservationController::class, 'show']);

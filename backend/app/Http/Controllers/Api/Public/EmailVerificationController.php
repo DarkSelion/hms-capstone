@@ -48,7 +48,7 @@ class EmailVerificationController extends Controller
         ]);
 
         // Build verification URL
-        $verificationUrl = url("/portal/verify-email?token={$token}&email=" . urlencode($guest->email));
+        $verificationUrl = url("/public/verify-email?token={$token}&email=" . urlencode($guest->email));
 
         // Send email
         try {
