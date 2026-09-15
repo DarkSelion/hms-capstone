@@ -32,19 +32,17 @@ export function PublicNavbar() {
   }
 
   const linkClass = (path: string) =>
-    `relative text-[12px] uppercase tracking-[0.2em] transition-colors duration-300 pb-1 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-gold after:transition-all after:duration-300 ${
+    `relative text-[12px] uppercase tracking-[0.2em] transition-all duration-300 pb-1 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-gold after:transition-all after:duration-300 ${
       isActive(path)
-        ? 'text-gold after:w-full'
+        ? 'text-gold after:w-full bg-white/[0.06] rounded-full px-3 py-1'
         : 'text-white/50 hover:text-white after:w-0 hover:after:w-full'
     }`
 
   const [brandFirst, ...brandRest] = hotelName.split(' ')
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-      scrolled
-        ? 'bg-dark/95 backdrop-blur-xl shadow-lg shadow-black/30'
-        : 'bg-dark/70 backdrop-blur-md'
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-shadow duration-500 backdrop-blur-md bg-dark/80 ${
+      scrolled ? 'shadow-lg shadow-black/20' : ''
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
@@ -77,19 +75,19 @@ export function PublicNavbar() {
             )}
           </div>
 
-          {/* Right side */}
-          <div className="hidden md:flex items-center gap-6">
+          {/* Right side: User pill + Book Now CTA */}
+          <div className="hidden md:flex items-center gap-4">
             {token ? (
               <div className="relative">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2.5 text-white/70 hover:text-gold transition-colors"
+                  className="flex items-center gap-2.5 bg-white/[0.06] border border-white/10 rounded-full pl-1.5 pr-3 py-1.5 hover:bg-white/[0.1] transition-colors"
                 >
                   <div className="w-8 h-8 rounded-full bg-dark border border-gold/30 flex items-center justify-center">
                     <User className="h-4 w-4 text-gold" />
                   </div>
-                  <span className="text-[13px] font-medium">{user?.first_name}</span>
-                  <ChevronDown className={`h-3 w-3 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
+                  <span className="text-[13px] font-medium text-white/80">{user?.first_name}</span>
+                  <ChevronDown className={`h-3 w-3 text-white/50 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-3 w-52 bg-dark border border-white/10 rounded-xl shadow-2xl py-2 animate-fade-in">
@@ -116,7 +114,7 @@ export function PublicNavbar() {
               <div className="relative">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2 border border-gold/40 hover:border-gold px-4 py-2 rounded-lg text-[12px] text-gold uppercase tracking-[0.15em] transition-colors"
+                  className="flex items-center gap-2 bg-white/[0.06] border border-white/10 hover:bg-white/[0.1] rounded-full px-4 py-1.5 text-[12px] text-white/70 uppercase tracking-[0.15em] transition-colors"
                 >
                   <User className="h-3.5 w-3.5" />
                   Guest
@@ -134,6 +132,15 @@ export function PublicNavbar() {
                 )}
               </div>
             )}
+
+            {/* Book Now CTA — far right */}
+            <Link
+              to={token ? '/public/book' : '/public/rooms'}
+              className="inline-flex items-center gap-2 bg-gold text-dark font-semibold text-[12px] uppercase tracking-[0.15em] px-5 py-2 rounded-lg hover:bg-gold-light hover:shadow-lg hover:shadow-gold/20 transition-all"
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              Book Now
+            </Link>
           </div>
 
           {/* Mobile hamburger */}
@@ -146,6 +153,15 @@ export function PublicNavbar() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden bg-dark/98 backdrop-blur-xl border-t border-white/5 px-6 py-6 space-y-1 animate-fade-in">
+          {/* Book Now CTA — top of mobile drawer */}
+          <Link
+            to={token ? '/public/book' : '/public/rooms'}
+            className="flex items-center justify-center gap-2 bg-gold text-dark font-semibold text-[12px] uppercase tracking-[0.15em] px-5 py-3 rounded-lg hover:bg-gold-light transition-colors mb-4"
+          >
+            <Calendar className="h-4 w-4" />
+            Book Now
+          </Link>
+
           <MobileLink to="/public" active={isActive('/public')}>Home</MobileLink>
           <MobileLink to="/public/rooms" active={isActive('/public/rooms')}>Rooms</MobileLink>
           <MobileLink to="/public/gallery" active={isActive('/public/gallery')}>Gallery</MobileLink>
@@ -185,7 +201,7 @@ function MobileLink({ to, active, children }: { to: string; active: boolean; chi
     <Link
       to={to}
       className={`block py-3.5 uppercase text-[12px] tracking-[0.15em] border-b border-white/5 transition-colors ${
-        active ? 'text-gold font-medium' : 'text-white/50 hover:text-gold'
+        active ? 'text-gold font-medium bg-white/[0.06] rounded-lg px-3' : 'text-white/50 hover:text-gold'
       }`}
     >
       {children}
