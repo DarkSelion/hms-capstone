@@ -30,7 +30,7 @@ class OnlinePaymentGatewayTest extends TestCase
         $defaults = [
             'online_gateway_enabled' => '1',
             'online_gateway_base_url' => 'https://www.hardreset.club',
-            'online_gateway_api_key' => 'REDACTED_GATEWAY_KEY',
+            'online_gateway_api_key' => '<GATEWAY_API_KEY>',
             'online_gateway_webhook_secret' => 'webhook-secret-abc',
             'online_gateway_self_settle' => '1',
         ];
@@ -146,7 +146,7 @@ class OnlinePaymentGatewayTest extends TestCase
 
         Http::assertSent(function ($request) use ($reservation) {
             return $request->url() === 'https://www.hardreset.club/api/initiate-payment'
-                && $request->hasHeader('X-API-KEY', 'REDACTED_GATEWAY_KEY')
+                && $request->hasHeader('X-API-KEY', '<GATEWAY_API_KEY>')
                 && in_array('application/json', $request->header('Content-Type'), true)
                 && $request['booking_ref'] === $reservation->reservation_number
                 && $request['total_amount'] === '2000.00'
@@ -700,7 +700,7 @@ class OnlinePaymentGatewayTest extends TestCase
 
         $this->getJson('/api/settings/payment')
             ->assertOk()
-            ->assertJsonPath('online_gateway_api_key', 'REDACTED_GATEWAY_KEY')
+            ->assertJsonPath('online_gateway_api_key', '<GATEWAY_API_KEY>')
             ->assertJsonPath('online_gateway_webhook_secret', 'webhook-secret-abc');
     }
 

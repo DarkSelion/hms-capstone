@@ -24,7 +24,7 @@ Cheat-sheet for defense-day fixes. Project lives at `C:\Users\<you>\hotel-manage
 
 - SSH: `ssh -i hotel.pem ubuntu@52.20.101.14`
 - Deploy: push to GitHub then `sudo bash /var/www/hotel/deploy.sh`
-- Live DB (direct): `mysql -h hotel-db.citymo8cssdy.us-east-1.rds.amazonaws.com -u hotel_admin -p'PalayJc103221100' hotel_management`
+- Live DB (direct): `mysql -h hotel-db.citymo8cssdy.us-east-1.rds.amazonaws.com -u hotel_admin -p'<RDS_PASSWORD>' hotel_management`
 - Live URLs: portal `https://pampangahomesuites.duckdns.org` · admin `/admin/login` · webhook `/api/webhooks/payment`
 - **The venue Wi-Fi likely blocks SSH/RDS (port 22/3306) — the offline local replica is your primary defense setup.**
 
@@ -55,14 +55,14 @@ Cheat-sheet for defense-day fixes. Project lives at `C:\Users\<you>\hotel-manage
 - `GET /rooms?all=1` returns `{ data: [...] }` (wrapped) — the frontend expects `roomsData?.data`.
 
 ### 6. Online payment demo
-- Gateway settings: Admin → Settings → **Payments** tab (`base_url=https://www.hardreset.club`, API key `REDACTED_GATEWAY_KEY`, webhook secret `REDACTED_WEBHOOK_SECRET`).
+- Gateway settings: Admin → Settings → **Payments** tab (`base_url=https://www.hardreset.club`, API key + webhook secret configured there).
 - **Allow Guest Self-Settlement** toggle must be **ON** for the demo auto-confirm to work (webhook from the partner is unreliable — that's expected).
 - Pay with test card **`4242 4242 4242 4242`** (any future expiry / CVC). No real money.
 - If not redirected back, visit homepage with `?booking_ref=<BK-...>&status=success` to settle.
 
 ### 7. Webhook URL (partner integration)
 - Correct URL: `POST https://pampangahomesuites.duckdns.org/api/webhooks/payment` (+ `/public/api/webhooks/payment` alias).
-- Header `X-Webhook-Secret: REDACTED_WEBHOOK_SECRET`. Returns `200 {"received":true}`.
+- Header `X-Webhook-Secret: <WEBHOOK_SECRET>` (from Settings → Payments). Returns `200 {"received":true}`.
 
 ### 8. Rooms page status / cleaning
 - Status enum: `available, occupied, reserved, dirty, maintenance`.

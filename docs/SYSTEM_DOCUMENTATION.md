@@ -1177,7 +1177,7 @@ DB_CONNECTION=mysql
 DB_HOST=hotel-db.citymo8cssdy.us-east-1.rds.amazonaws.com
 DB_DATABASE=hotel_management
 DB_USERNAME=hotel_admin
-DB_PASSWORD=PalayJc103221100
+DB_PASSWORD=<RDS_PASSWORD>
 
 MAIL_MAILER=smtp
 MAIL_HOST=smtp.gmail.com
@@ -1191,8 +1191,8 @@ MAIL_FROM_ADDRESS=noreply@pampangahomesuites.com
 ### Online payment gateway (production)
 
 - Base URL: `https://www.hardreset.club`
-- API Key: `REDACTED_GATEWAY_KEY` (via `X-API-KEY` header)
-- Webhook Secret: `REDACTED_WEBHOOK_SECRET` (via `X-Webhook-Secret` header)
+- API Key: stored in Settings → Payments (via `X-API-KEY` header)
+- Webhook Secret: stored in Settings → Payments (via `X-Webhook-Secret` header)
 - Webhook URL: `https://pampangahomesuites.duckdns.org/api/webhooks/payment`
 - Partner's alias URL also works: `https://pampangahomesuites.duckdns.org/public/api/webhooks/payment`
 - Redirect after payment: `https://pampangahomesuites.duckdns.org/?booking_ref={ref}&status={status}`

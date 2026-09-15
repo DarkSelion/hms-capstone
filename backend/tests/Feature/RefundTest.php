@@ -202,7 +202,7 @@ class RefundTest extends TestCase
     {
         $this->staff();
         Setting::updateOrCreate(['key' => 'online_gateway_base_url'], ['value' => 'https://www.hardreset.club', 'group' => 'payment']);
-        Setting::updateOrCreate(['key' => 'online_gateway_api_key'], ['value' => 'REDACTED_GATEWAY_KEY', 'group' => 'payment']);
+        Setting::updateOrCreate(['key' => 'online_gateway_api_key'], ['value' => '<GATEWAY_API_KEY>', 'group' => 'payment']);
 
         $reservation = $this->reservation();
         $payment = $this->completedPayment($reservation, 'online', 2000);
@@ -218,7 +218,7 @@ class RefundTest extends TestCase
 
         Http::assertSent(function ($request) {
             return $request->url() === 'https://www.hardreset.club/api/refund'
-                && $request->hasHeader('X-API-KEY', 'REDACTED_GATEWAY_KEY')
+                && $request->hasHeader('X-API-KEY', '<GATEWAY_API_KEY>')
                 && $request['refund_status'] === 'initiated';
         });
 
@@ -233,7 +233,7 @@ class RefundTest extends TestCase
     {
         $this->staff();
         Setting::updateOrCreate(['key' => 'online_gateway_base_url'], ['value' => 'https://www.hardreset.club', 'group' => 'payment']);
-        Setting::updateOrCreate(['key' => 'online_gateway_api_key'], ['value' => 'REDACTED_GATEWAY_KEY', 'group' => 'payment']);
+        Setting::updateOrCreate(['key' => 'online_gateway_api_key'], ['value' => '<GATEWAY_API_KEY>', 'group' => 'payment']);
 
         $reservation = $this->reservation();
         $payment = $this->completedPayment($reservation, 'online', 1000);
@@ -250,7 +250,7 @@ class RefundTest extends TestCase
     {
         $this->staff();
         Setting::updateOrCreate(['key' => 'online_gateway_base_url'], ['value' => 'https://www.hardreset.club', 'group' => 'payment']);
-        Setting::updateOrCreate(['key' => 'online_gateway_api_key'], ['value' => 'REDACTED_GATEWAY_KEY', 'group' => 'payment']);
+        Setting::updateOrCreate(['key' => 'online_gateway_api_key'], ['value' => '<GATEWAY_API_KEY>', 'group' => 'payment']);
 
         $reservation = $this->reservation();
         $payment = $this->completedPayment($reservation, 'online', 1000);
