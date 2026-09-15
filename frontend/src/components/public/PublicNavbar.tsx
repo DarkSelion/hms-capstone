@@ -32,10 +32,10 @@ export function PublicNavbar() {
   }
 
   const linkClass = (path: string) =>
-    `relative text-[12px] uppercase tracking-[0.2em] transition-all duration-300 pb-1 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-gold after:transition-all after:duration-300 ${
+    `relative text-[12px] uppercase tracking-[0.2em] transition-colors duration-300 px-3 py-1 pb-2 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-gold after:transition-all after:duration-300 ${
       isActive(path)
-        ? 'text-gold after:w-full bg-white/[0.06] rounded-full px-3 py-1'
-        : 'text-white/50 hover:text-white after:w-0 hover:after:w-full'
+        ? 'text-gold after:w-full bg-white/[0.06] rounded-full'
+        : 'text-white/50 hover:text-white hover:bg-white/[0.03] hover:rounded-full after:w-0 hover:after:w-full'
     }`
 
   const [brandFirst, ...brandRest] = hotelName.split(' ')
