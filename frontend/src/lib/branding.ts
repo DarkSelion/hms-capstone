@@ -57,6 +57,44 @@ export function buildHeroImages(settings: Record<string, unknown>): string[] {
   return urls.length > 0 ? urls : DEFAULT_HERO_IMAGES
 }
 
+export interface Amenity {
+  name: string
+  description: string
+  image: string
+}
+
+export const DEFAULT_AMENITIES: Amenity[] = [
+  { name: 'Swimming Pool', description: 'Cool off in our refreshing pool', image: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&h=600&fit=crop' },
+  { name: 'Restaurant', description: 'Filipino & international cuisine', image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop' },
+  { name: 'Free Wi-Fi', description: 'High-speed throughout the property', image: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&h=600&fit=crop' },
+  { name: 'Free Parking', description: 'Secure parking for all guests', image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800&h=600&fit=crop' },
+  { name: 'Event Hall', description: 'Perfect for celebrations', image: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&h=600&fit=crop' },
+  { name: 'Cozy Lounge', description: 'Relax & unwind in style', image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&h=600&fit=crop' },
+]
+
+export function buildAmenities(settings: Record<string, unknown>): Amenity[] {
+  const raw = settings['amenities_data']
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((a: any) => ({
+          name: a.name || '',
+          description: a.description || '',
+          image: a.image || '',
+        }))
+      }
+    } catch { /* fall through */ }
+  } else if (Array.isArray(raw)) {
+    return (raw as any[]).map((a) => ({
+      name: a.name || '',
+      description: a.description || '',
+      image: a.image || '',
+    }))
+  }
+  return DEFAULT_AMENITIES
+}
+
 export function buildGalleryPhotos(settings: Record<string, unknown>, hotelName: string): GalleryPhoto[] {
   const hasAnyConfigured = Array.from({ length: 12 }, (_, i) => `gallery_${i + 1}_image`)
     .some((key) => stringSetting(settings, key, '').length > 0)

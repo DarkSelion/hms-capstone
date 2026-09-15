@@ -95,6 +95,7 @@ export default function PublicBookingPage() {
   const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null)
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null)
   const [specialRequests, setSpecialRequests] = useState('')
+  const [cancellationTier, setCancellationTier] = useState<'flexible' | 'non_refundable'>('flexible')
 
   const roomTypeParam = searchParams.get('room_type')
 
@@ -190,10 +191,21 @@ export default function PublicBookingPage() {
   }, [filteredRooms, selectedRoomId])
 
   // The effective rate: per-room override if a specific room is picked, else the type base price.
-  const effectiveRate = useMemo(() => {
+  const baseRate = useMemo(() => {
     if (selectedRoom) return roomPrice(selectedRoom)
     return selectedGroup ? Number(selectedGroup.roomType.base_price) : 0
   }, [selectedRoom, selectedGroup])
+
+  const nonRefundableDiscount = useMemo(() => {
+    return Number(selectedGroup?.roomType.non_refundable_discount ?? 0)
+  }, [selectedGroup])
+
+  const effectiveRate = useMemo(() => {
+    if (cancellationTier === 'non_refundable' && nonRefundableDiscount > 0) {
+      return Math.round(baseRate * (1 - nonRefundableDiscount / 100) * 100) / 100
+    }
+    return baseRate
+  }, [baseRate, cancellationTier, nonRefundableDiscount])
 
   // Party-size limits come from the selected room type; oversized picks clamp automatically.
   const maxAdults = Math.max(1, Number(selectedGroup?.roomType.max_adults ?? 6))
@@ -236,6 +248,7 @@ export default function PublicBookingPage() {
         adults: adultsSafe,
         children: childrenSafe,
         special_requests: specialRequests || undefined,
+        cancellation_tier: cancellationTier,
       })
       navigate('/public/my-reservations')
     } catch (e) {
@@ -892,14 +905,63 @@ export default function PublicBookingPage() {
                           {/* Line items */}
                           <div className="space-y-3 text-sm">
                             <div className="flex justify-between">
-                              <span className="text-white/30">{fmt(rate)} × {nights} night{nights > 1 ? 's' : ''}</span>
-                              <span className="text-white/60 font-medium font-sans">{fmt(subtotal)}</span>
+                              <span className="text-white/30">{fmt(baseRate)} × {nights} night{nights > 1 ? 's' : ''}</span>
+                              <span className="text-white/60 font-medium font-sans">{fmt(baseRate * nights)}</span>
                             </div>
+                            {cancellationTier === 'non_refundable' && nonRefundableDiscount > 0 && (
+                              <div className="flex justify-between text-emerald-400">
+                                <span className="text-emerald-400/80 text-[11px]">Non-refundable discount ({nonRefundableDiscount}%)</span>
+                                <span className="font-medium font-sans">-{fmt(baseRate * nights * nonRefundableDiscount / 100)}</span>
+                              </div>
+                            )}
                             <div className="flex justify-between">
                               <span className="text-white/30">{taxLabel} ({taxPercent}%)</span>
                               <span className="text-white/60 font-medium font-sans">{fmt(tax)}</span>
                             </div>
                           </div>
+
+                          {/* Cancellation tier selector */}
+                          {nonRefundableDiscount > 0 && (
+                            <div className="mt-5 rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 space-y-3">
+                              <p className="text-[11px] uppercase tracking-[0.15em] text-white/40 font-medium">Rate Plan</p>
+                              <label className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
+                                cancellationTier === 'flexible' ? 'border-gold/40 bg-gold/5' : 'border-white/[0.06] hover:border-white/10'
+                              }`}>
+                                <input
+                                  type="radio"
+                                  name="cancellation_tier"
+                                  value="flexible"
+                                  checked={cancellationTier === 'flexible'}
+                                  onChange={() => setCancellationTier('flexible')}
+                                  className="mt-0.5 accent-[#C0A062]"
+                                />
+                                <div>
+                                  <p className="text-white/80 text-sm font-medium">Flexible</p>
+                                  <p className="text-white/40 text-[11px] mt-0.5">
+                                    Free cancellation up to {selectedGroup?.roomType.flexible_cancellation_days ?? 1} day{(selectedGroup?.roomType.flexible_cancellation_days ?? 1) > 1 ? 's' : ''} before check-in
+                                  </p>
+                                </div>
+                              </label>
+                              <label className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all border ${
+                                cancellationTier === 'non_refundable' ? 'border-gold/40 bg-gold/5' : 'border-white/[0.06] hover:border-white/10'
+                              }`}>
+                                <input
+                                  type="radio"
+                                  name="cancellation_tier"
+                                  value="non_refundable"
+                                  checked={cancellationTier === 'non_refundable'}
+                                  onChange={() => setCancellationTier('non_refundable')}
+                                  className="mt-0.5 accent-[#C0A062]"
+                                />
+                                <div>
+                                  <p className="text-white/80 text-sm font-medium">
+                                    Non-Refundable <span className="text-emerald-400 text-[11px] font-normal">Save {nonRefundableDiscount}%</span>
+                                  </p>
+                                  <p className="text-white/40 text-[11px] mt-0.5">No cancellation — full charge if you cancel</p>
+                                </div>
+                              </label>
+                            </div>
+                          )}
 
                           {/* Total */}
                           <div className="border-t border-white/10 mt-5 pt-5">
@@ -911,13 +973,22 @@ export default function PublicBookingPage() {
                           </div>
 
                           {/* Cancellation policy */}
-                          {cancellationLabel && (
-                            <div className="mt-5 rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
+                          <div className="mt-5 rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
+                            {cancellationTier === 'non_refundable' ? (
+                              <p className="text-[11px] leading-relaxed text-white/40">
+                                <span className="text-amber-400/80 font-medium">Non-refundable rate: </span>
+                                This rate cannot be cancelled or modified. Full charge applies for any cancellation.
+                              </p>
+                            ) : cancellationLabel ? (
                               <p className="text-[11px] leading-relaxed text-white/40">
                                 <span className="text-gold/70 font-medium">Cancellation: </span>{cancellationLabel}
                               </p>
-                            </div>
-                          )}
+                            ) : (
+                              <p className="text-[11px] leading-relaxed text-white/40">
+                                <span className="text-gold/70 font-medium">Cancellation: </span>Free cancellation up to {(selectedGroup?.roomType.flexible_cancellation_days ?? 1)} day{(selectedGroup?.roomType.flexible_cancellation_days ?? 1) > 1 ? 's' : ''} before check-in.
+                              </p>
+                            )}
+                          </div>
 
                           {/* Confirm button — richer gold + glow */}
                           <button

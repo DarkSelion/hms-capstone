@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { usePublicRoomTypes, useHotelName, usePublicSettings, useBrandingSettings, usePublicReservations, usePublicConfirmOnlinePayment, usePaymentSettings, usePortalCurrency } from '@/hooks/usePublicApi'
 import { usePublicAuthStore } from '@/stores/publicAuthStore'
-import { buildHeroImages, buildGalleryPhotos, stringSetting, replaceHotelName } from '@/lib/branding'
+import { buildHeroImages, buildGalleryPhotos, buildAmenities, stringSetting, replaceHotelName } from '@/lib/branding'
 import { toLocalDateStr, formatCurrencyWith } from '@/lib/format'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { GuestsPicker } from '@/components/ui/guests-picker'
@@ -65,17 +65,35 @@ function WaveDivider({ fill, flip = false, className = '' }: { fill: string; fli
   )
 }
 
-function WhyChooseSection({ title }: { title: string }) {
+const AMENITY_ICONS: Record<string, typeof Waves> = {
+  'swimming pool': Waves,
+  'pool': Waves,
+  'restaurant': UtensilsCrossed,
+  'free wi-fi': Wifi,
+  'wi-fi': Wifi,
+  'wifi': Wifi,
+  'free parking': Car,
+  'parking': Car,
+  'event hall': Building2,
+  'event': Building2,
+  'cozy lounge': Star,
+  'lounge': Star,
+}
+
+function getAmenityIcon(name: string): typeof Waves {
+  const lower = name.toLowerCase()
+  for (const [key, icon] of Object.entries(AMENITY_ICONS)) {
+    if (lower.includes(key)) return icon
+  }
+  return Sparkles
+}
+
+function WhyChooseSection({ title, amenities }: { title: string; amenities: Array<{ name: string; description: string; image: string }> }) {
   const sectionReveal = useScrollReveal(0.1)
   const [activeFeature, setActiveFeature] = useState(0)
   const [imageOffset, setImageOffset] = useState(0)
   const imgRef = useRef<HTMLDivElement>(null)
-  const WHY_FEATURES = [
-    { icon: Waves, title: 'Swimming Pool', desc: 'Cool off and relax by our refreshing pool — the perfect escape from the tropical heat.', img: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&h=1000&fit=crop' },
-    { icon: UtensilsCrossed, title: 'Restaurant', desc: 'Savor delicious Filipino and international cuisine at our on-site restaurant.', img: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=1000&fit=crop' },
-    { icon: Wifi, title: 'Free Wi-Fi', desc: 'Stay connected with complimentary high-speed internet throughout the property.', img: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&h=1000&fit=crop' },
-    { icon: Car, title: 'Free Parking', desc: 'Enjoy convenient and secure parking at no extra cost for all our guests.', img: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800&h=1000&fit=crop' },
-  ]
+  const displayAmenities = amenities.slice(0, 4)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -101,17 +119,20 @@ function WhyChooseSection({ title }: { title: string }) {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <div ref={imgRef} className="relative rounded-2xl overflow-hidden aspect-[4/5] lg:aspect-[3/4] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)]">
-            {WHY_FEATURES.map((feat, i) => (
-              <img
-                key={feat.title}
-                src={feat.img}
-                alt={feat.title}
-                className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${
-                  i === activeFeature ? 'opacity-100 scale-105' : 'opacity-0 scale-100'
-                }`}
-                style={i === activeFeature ? { transform: `scale(1.05) translateY(${imageOffset}px)` } : undefined}
-              />
-            ))}
+            {displayAmenities.map((feat, i) => {
+              const Icon = getAmenityIcon(feat.name)
+              return (
+                <img
+                  key={feat.name}
+                  src={feat.image}
+                  alt={feat.name}
+                  className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ${
+                    i === activeFeature ? 'opacity-100 scale-105' : 'opacity-0 scale-100'
+                  }`}
+                  style={i === activeFeature ? { transform: `scale(1.05) translateY(${imageOffset}px)` } : undefined}
+                />
+              )
+            })}
             <div className="absolute inset-0 bg-gradient-to-t from-dark/50 via-transparent to-dark/10" />
             <div className="absolute inset-0 border border-gold/10 rounded-2xl" />
             <div className="absolute top-5 left-5 font-serif text-6xl font-light text-gold/20">
@@ -119,11 +140,12 @@ function WhyChooseSection({ title }: { title: string }) {
             </div>
           </div>
           <div className="space-y-4">
-            {WHY_FEATURES.map((feat, i) => {
+            {displayAmenities.map((feat, i) => {
               const isActive = i === activeFeature
+              const Icon = getAmenityIcon(feat.name)
               return (
                 <div
-                  key={feat.title}
+                  key={feat.name}
                   className={`group flex items-start gap-5 p-6 rounded-2xl cursor-pointer transition-all duration-500 ${
                     isActive
                       ? 'bg-white/[0.06] border border-gold/20 shadow-[0_0_30px_-10px_rgba(192,160,98,0.15)]'
@@ -136,7 +158,7 @@ function WhyChooseSection({ title }: { title: string }) {
                       ? 'bg-gold/15 border border-gold/30'
                       : 'bg-white/5 border border-white/5 group-hover:bg-gold/10 group-hover:border-gold/15'
                   }`}>
-                    <feat.icon className={`h-5 w-5 transition-colors duration-500 ${isActive ? 'text-gold' : 'text-white/40 group-hover:text-gold/70'}`} />
+                    <Icon className={`h-5 w-5 transition-colors duration-500 ${isActive ? 'text-gold' : 'text-white/40 group-hover:text-gold/70'}`} />
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-3">
@@ -144,11 +166,11 @@ function WhyChooseSection({ title }: { title: string }) {
                         0{i + 1}
                       </span>
                       <h3 className={`font-serif text-lg font-light transition-colors duration-500 ${isActive ? 'text-white' : 'text-white/60 group-hover:text-white/80'}`}>
-                        {feat.title}
+                        {feat.name}
                       </h3>
                     </div>
                     <p className={`text-sm leading-relaxed mt-1 transition-colors duration-500 ${isActive ? 'text-white/50' : 'text-white/30'}`}>
-                      {feat.desc}
+                      {feat.description}
                     </p>
                   </div>
                 </div>
@@ -179,6 +201,7 @@ export default function PublicHomePage() {
   const sectionDiscoverTitle = stringSetting(branding, 'section_discover_title', 'Discover Our World')
   const sectionWhyTitle = stringSetting(branding, 'section_why_title', 'Why Stay With Us')
   const sectionAmenitiesTitle = stringSetting(branding, 'section_amenities_title', 'Comforts of Home')
+  const amenities = useMemo(() => buildAmenities(branding), [branding])
   const sectionGalleryTitle = replaceHotelName(
     stringSetting(branding, 'section_gallery_title', `A Glimpse of ${hotelName}`),
     hotelName
@@ -544,7 +567,7 @@ export default function PublicHomePage() {
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 3: WHY CHOOSE US — split layout with parallax + numbered features
           ═══════════════════════════════════════════════════════════════ */}
-      <WhyChooseSection title={sectionWhyTitle} />
+      <WhyChooseSection title={sectionWhyTitle} amenities={amenities} />
 
       {/* ═══════════════════════════════════════════════════════════════
           SECTION 4: GALLERY PREVIEW — masonry + category chips + scroll reveal
@@ -641,14 +664,6 @@ export default function PublicHomePage() {
           ═══════════════════════════════════════════════════════════════ */}
       {(() => {
         const amenitiesReveal = useScrollReveal(0.1)
-        const AMENITIES = [
-          { icon: Waves, label: 'Swimming Pool', desc: 'Cool off in our refreshing pool', img: 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500&h=400&fit=crop' },
-          { icon: UtensilsCrossed, label: 'Restaurant', desc: 'Filipino & international cuisine', img: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=500&h=400&fit=crop' },
-          { icon: Wifi, label: 'Free Wi-Fi', desc: 'High-speed throughout the property', img: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=500&h=400&fit=crop' },
-          { icon: Car, label: 'Free Parking', desc: 'Secure parking for all guests', img: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=500&h=400&fit=crop' },
-          { icon: Building2, label: 'Event Hall', desc: 'Perfect for celebrations', img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=500&h=400&fit=crop' },
-          { icon: Star, label: 'Cozy Lounge', desc: 'Relax & unwind in style', img: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=500&h=400&fit=crop' },
-        ]
         return (
           <section ref={amenitiesReveal.ref} className={`relative bg-dark py-24 md:py-32 px-4 overflow-hidden ${amenitiesReveal.className}`}>
             <div className="absolute inset-0 dot-pattern opacity-60 pointer-events-none" />
@@ -658,24 +673,27 @@ export default function PublicHomePage() {
                 <h2 className="section-heading">{sectionAmenitiesTitle}</h2>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
-                {AMENITIES.map((item, i) => (
-                  <div
-                    key={item.label}
-                    className="group relative rounded-2xl overflow-hidden aspect-[4/3] cursor-default transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_0_40px_8px_rgba(192,160,98,0.2)]"
-                    style={{ transitionDelay: `${i * 0.08}s` }}
-                  >
-                    <img src={item.img} alt={item.label} className="absolute inset-0 w-full h-full object-cover opacity-15 group-hover:opacity-40 transition-opacity duration-700" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-dark/90 via-dark/60 to-dark/30" />
-                    <div className="absolute inset-0 border border-white/5 group-hover:border-gold/30 rounded-2xl transition-colors duration-500" />
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-                      <div className="w-16 h-16 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mb-4 group-hover:bg-gold/20 group-hover:border-gold/50 group-hover:shadow-[0_0_30px_-5px_rgba(192,160,98,0.4)] group-hover:scale-110 transition-all duration-500">
-                        <item.icon className="h-7 w-7 text-gold" />
+                {amenities.map((item, i) => {
+                  const Icon = getAmenityIcon(item.name)
+                  return (
+                    <div
+                      key={item.name}
+                      className="group relative rounded-2xl overflow-hidden aspect-[4/3] cursor-default transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_0_40px_8px_rgba(192,160,98,0.2)]"
+                      style={{ transitionDelay: `${i * 0.08}s` }}
+                    >
+                      <img src={item.image} alt={item.name} className="absolute inset-0 w-full h-full object-cover opacity-15 group-hover:opacity-40 transition-opacity duration-700" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-dark/90 via-dark/60 to-dark/30" />
+                      <div className="absolute inset-0 border border-white/5 group-hover:border-gold/30 rounded-2xl transition-colors duration-500" />
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                        <div className="w-16 h-16 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mb-4 group-hover:bg-gold/20 group-hover:border-gold/50 group-hover:shadow-[0_0_30px_-5px_rgba(192,160,98,0.4)] group-hover:scale-110 transition-all duration-500">
+                          <Icon className="h-7 w-7 text-gold" />
+                        </div>
+                        <h3 className="text-white text-sm font-medium mb-1">{item.name}</h3>
+                        <p className="text-white/30 text-xs group-hover:text-white/50 transition-colors duration-500">{item.description}</p>
                       </div>
-                      <h3 className="text-white text-sm font-medium mb-1">{item.label}</h3>
-                      <p className="text-white/30 text-xs group-hover:text-white/50 transition-colors duration-500">{item.desc}</p>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
 

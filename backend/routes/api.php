@@ -171,6 +171,12 @@ Route::middleware(['auth:sanctum', 'role:admin,staff', 'throttle:api'])->group(f
         Route::post('/leave-requests', [StaffController::class, 'storeLeaveRequest']);
         Route::put('/leave-requests/{leaveRequest}', [StaffController::class, 'updateLeaveRequest']);
 
+        // Reviews (admin)
+        Route::get('/reviews', [\App\Http\Controllers\Api\ReviewController::class, 'index']);
+        Route::put('/reviews/{review}/approve', [\App\Http\Controllers\Api\ReviewController::class, 'approve']);
+        Route::delete('/reviews/{review}', [\App\Http\Controllers\Api\ReviewController::class, 'destroy']);
+        Route::post('/reviews/{review}/reply', [\App\Http\Controllers\Api\ReviewController::class, 'reply']);
+
         // Reports
         Route::get('/reports/revenue', [ReportController::class, 'revenue']);
         Route::get('/reports/occupancy', [ReportController::class, 'occupancy']);
@@ -204,6 +210,7 @@ Route::prefix('public')->middleware('throttle:api')->group(function () {
     Route::get('/rooms', [PublicRoomController::class, 'index']);
     Route::get('/rooms/available', [PublicRoomController::class, 'available']);
     Route::get('/rooms/{slug}', [PublicRoomController::class, 'show']);
+    Route::get('/rooms/{slug}/reviews', [\App\Http\Controllers\Api\ReviewController::class, 'publicRoomReviews']);
     Route::get('/settings/{group}', [SettingController::class, 'publicByGroup']);
     Route::post('/contact', [PublicContactController::class, 'store'])->middleware('throttle:contact');
 
@@ -225,5 +232,7 @@ Route::prefix('public')->middleware('throttle:api')->group(function () {
         Route::post('/reservations/{reservation}/refund-request', [PublicReservationController::class, 'refundRequest']);
         Route::post('/payments/initiate-online', [PublicOnlinePaymentGatewayController::class, 'initiate']);
         Route::post('/payments/confirm-online', [PublicOnlinePaymentGatewayController::class, 'confirmOnline']);
+        Route::post('/reviews', [\App\Http\Controllers\Api\ReviewController::class, 'store']);
+        Route::get('/reviews', [\App\Http\Controllers\Api\ReviewController::class, 'myReviews']);
     });
 });

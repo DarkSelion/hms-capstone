@@ -72,6 +72,10 @@ export interface RoomType {
   amenities_json?: Amenity[];
   is_active: boolean;
   rooms_count?: number;
+  flexible_cancellation_days?: number;
+  non_refundable_discount?: number;
+  avg_rating?: number;
+  review_count?: number;
 }
 
 export interface Room {
@@ -132,6 +136,7 @@ export interface Reservation {
   special_requests?: string;
   source?: string;
   payments?: Payment[];
+  cancellation_tier?: 'flexible' | 'non_refundable';
   created_at: string;
 }
 
@@ -384,6 +389,10 @@ export interface PublicRoomType {
   rooms_count?: number
   image_url?: string
   gallery?: string[]
+  flexible_cancellation_days?: number
+  non_refundable_discount?: number
+  avg_rating?: number
+  review_count?: number
 }
 
 export interface PublicRoom {
@@ -417,6 +426,33 @@ payment_status: string
   checked_out_at?: string
   special_requests?: string
   refund_requested_at?: string
+  cancellation_tier?: 'flexible' | 'non_refundable'
+  created_at: string
+}
+
+export interface Review {
+  id: number
+  guest_id: number
+  reservation_id: number
+  room_type_id: number
+  rating: number
+  title?: string
+  comment?: string
+  is_approved: boolean
+  admin_reply?: string
+  admin_replied_at?: string
+  guest?: Guest
+  room_type?: RoomType
+  reservation?: Reservation
+  created_at: string
+}
+
+export interface PublicReview {
+  id: number
+  rating: number
+  title?: string
+  comment?: string
+  guest?: { full_name: string }
   created_at: string
 }
 

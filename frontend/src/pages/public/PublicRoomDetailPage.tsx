@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { usePublicRoomType, usePortalCurrency, usePublicSettings, usePublicRoomTypes } from '@/hooks/usePublicApi'
+import { usePublicRoomType, usePortalCurrency, usePublicSettings, usePublicRoomTypes, usePublicRoomReviews } from '@/hooks/usePublicApi'
 import { usePublicAuthStore } from '@/stores/publicAuthStore'
 import { formatCurrencyWith, toLocalDateStr } from '@/lib/format'
 import { DatePicker } from '@/components/ui/date-picker'
@@ -58,6 +58,7 @@ export default function PublicRoomDetailPage() {
   const { data: allRoomTypes } = usePublicRoomTypes()
   const { data: bookingSettings } = usePublicSettings('booking')
   const { data: taxSettings } = usePublicSettings('tax')
+  const { data: reviewsData } = usePublicRoomReviews(slug || '')
   const currency = usePortalCurrency()
   const fmt = (amount: number) => formatCurrencyWith(amount, currency)
 
@@ -233,9 +234,18 @@ export default function PublicRoomDetailPage() {
               </span>
             </div>
             <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
-              <h1 className="font-serif text-white text-3xl sm:text-4xl lg:text-5xl font-light leading-tight">
-                {roomType.name}
-              </h1>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="font-serif text-white text-3xl sm:text-4xl lg:text-5xl font-light leading-tight">
+                  {roomType.name}
+                </h1>
+                {roomType.avg_rating > 0 && (
+                  <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-white/10 rounded-full px-3 py-1.5 text-sm shrink-0">
+                    <Star className="h-3.5 w-3.5 text-gold fill-gold" />
+                    <span className="text-white font-medium">{Number(roomType.avg_rating).toFixed(1)}</span>
+                    <span className="text-white/40 text-xs">({roomType.review_count})</span>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -699,6 +709,67 @@ function BookingWidget({
       >
         <ArrowLeft className="h-3 w-3" /> Back to all rooms
       </Link>
+
+      {/* Reviews Section */}
+      {roomType && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-white/5 mt-8">
+          <div className="flex items-center gap-4 mb-8">
+            <h2 className="font-serif text-2xl text-white">Guest Reviews</h2>
+            {roomType.avg_rating > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <Star
+                      key={i}
+                      className={`h-4 w-4 ${i < Math.round(roomType.avg_rating) ? 'text-gold fill-gold' : 'text-white/20'}`}
+                    />
+                  ))}
+                </div>
+                <span className="text-white/60 text-sm">{Number(roomType.avg_rating).toFixed(1)}</span>
+                <span className="text-white/30 text-sm">({roomType.review_count} review{roomType.review_count !== 1 ? 's' : ''})</span>
+              </div>
+            )}
+          </div>
+
+          {reviewsData && reviewsData.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {reviewsData.map((review) => (
+                <div key={review.id} className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-6">
+                  <div className="flex items-center gap-1 mb-3">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-3.5 w-3.5 ${i < review.rating ? 'text-gold fill-gold' : 'text-white/20'}`}
+                      />
+                    ))}
+                  </div>
+                  {review.title && (
+                    <h3 className="text-white font-medium text-sm mb-2">{review.title}</h3>
+                  )}
+                  {review.comment && (
+                    <p className="text-white/50 text-sm leading-relaxed mb-4">{review.comment}</p>
+                  )}
+                  <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
+                    <span className="text-white/30 text-xs">{review.guest?.first_name || 'Guest'}</span>
+                    <span className="text-white/20 text-xs">{new Date(review.created_at).toLocaleDateString()}</span>
+                  </div>
+                  {review.admin_reply && (
+                    <div className="mt-4 bg-gold/5 border border-gold/10 rounded-lg p-3">
+                      <p className="text-[10px] uppercase tracking-wider text-gold/60 font-medium mb-1">Hotel Reply</p>
+                      <p className="text-white/60 text-xs leading-relaxed">{review.admin_reply}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Star className="h-8 w-8 text-white/15 mx-auto mb-3" />
+              <p className="text-white/40 text-sm">No reviews yet. Be the first to share your experience!</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

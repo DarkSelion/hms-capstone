@@ -1,9 +1,8 @@
 import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   usePublicMe, usePublicReservations, usePublicCancelReservation, usePublicRequestRefund,
   usePublicInitiateOnlinePayment, usePublicSettings, usePaymentSettings, usePortalCurrency,
-  useSendVerificationEmail,
 } from '@/hooks/usePublicApi'
 import { usePublicAuthStore } from '@/stores/publicAuthStore'
 import { formatCurrencyWith, formatDateDisplay, formatCheckoutTime, toLocalDateStr } from '@/lib/format'
@@ -14,7 +13,7 @@ import type { PublicReservation } from '@/types'
 import {
   CalendarDays, MapPin, XCircle, Loader2, AlertTriangle,
   Clock, CheckCircle, RotateCcw, BedDouble, Users, Moon,
-  LogIn, LogOut, CalendarX, Wallet, ShieldCheck, Lock,
+  LogIn, LogOut, CalendarX, Wallet, ShieldCheck, Lock, Star,
   Search, ChevronRight, Calendar, TrendingUp, Sparkles, Mail, User,
 } from 'lucide-react'
 
@@ -115,6 +114,7 @@ function initialsOf(first: string, last: string): string {
 
 export default function PublicMyReservationsPage() {
   const { token } = usePublicAuthStore()
+  const navigate = useNavigate()
   const { addToast } = useToast()
   const { data: user } = usePublicMe()
   const { data, isLoading } = usePublicReservations()
@@ -132,9 +132,7 @@ export default function PublicMyReservationsPage() {
   const hasLateCheckoutFee = lateCheckoutFeeRaw !== '' && !isNaN(lateCheckoutFeeNum) && lateCheckoutFeeNum > 0
   const paymentSettings = usePaymentSettings()
   const onlineGatewayEnabled = paymentSettings['online_gateway_enabled'] === '1' || paymentSettings['online_gateway_enabled'] === true
-  const sendVerification = useSendVerificationEmail()
   const isEmailVerified = !!user?.email_verified_at
-  const [verificationSent, setVerificationSent] = useState(false)
 
   const [cancelTarget, setCancelTarget] = useState<PublicReservation | null>(null)
   const [cancelError, setCancelError] = useState('')
@@ -332,16 +330,10 @@ export default function PublicMyReservationsPage() {
               </div>
             </div>
             <button
-              onClick={() => {
-                sendVerification.mutate(undefined, {
-                  onSuccess: () => { setVerificationSent(true); addToast('Verification email sent. Check your inbox.', 'success') },
-                  onError: () => addToast('Failed to send verification email.', 'error'),
-                })
-              }}
-              disabled={sendVerification.isPending || verificationSent}
-              className="shrink-0 px-4 py-2 bg-amber-600 text-white text-xs font-semibold rounded-lg hover:bg-amber-700 disabled:opacity-50 transition-colors"
+              onClick={() => navigate('/public/verify-email')}
+              className="shrink-0 px-4 py-2 bg-amber-600 text-white text-xs font-semibold rounded-lg hover:bg-amber-700 transition-colors"
             >
-              {sendVerification.isPending ? 'Sending...' : verificationSent ? 'Email Sent' : 'Verify Email'}
+              Verify Email
             </button>
           </div>
         </section>
@@ -680,8 +672,9 @@ function ReservationCard({
   const hasBalance = (r.payment_status === 'unpaid' || r.payment_status === 'partial') && r.due_amount > 0
   const showPayButton = hasBalance && canPayOnline(r)
   const isAlive = r.status === 'pending' || r.status === 'confirmed' || r.status === 'checked_in'
-  const showCancelButton = !r.refund_requested_at && r.payment_status !== 'paid' && (r.status === 'pending' || r.status === 'confirmed')
-  const showRefundButton = !r.refund_requested_at && r.payment_status === 'paid' && isAlive
+  const showCancelButton = !r.refund_requested_at && r.payment_status !== 'paid' && (r.status === 'pending' || r.status === 'confirmed') && r.cancellation_tier !== 'non_refundable'
+  const showRefundButton = !r.refund_requested_at && r.payment_status === 'paid' && isAlive && r.cancellation_tier !== 'non_refundable'
+  const showWriteReview = r.status === 'checked_out'
 
   return (
     <div
@@ -836,6 +829,21 @@ function ReservationCard({
               <Clock className="h-3 w-3" />
               Refund Requested
             </span>
+          )}
+          {r.cancellation_tier === 'non_refundable' && isAlive && (
+            <span className="px-3 py-1.5 rounded-lg text-xs bg-sky-50 border border-sky-200 text-sky-700 inline-flex items-center gap-1.5">
+              <Lock className="h-3 w-3" />
+              Non-Refundable
+            </span>
+          )}
+          {showWriteReview && (
+            <Link
+              to={`/public/write-review/${r.id}`}
+              className="px-4 py-2 bg-gold text-dark rounded-lg text-xs font-semibold uppercase tracking-wider hover:bg-gold-light transition-colors inline-flex items-center gap-1.5 shadow-sm hover:shadow-md"
+            >
+              <Star className="h-3.5 w-3.5" />
+              Write Review
+            </Link>
           )}
           {showPayButton && (
             onlineGatewayEnabled ? (

@@ -1164,3 +1164,41 @@ export function useSearch(query: string) {
     staleTime: 30_000,
   })
 }
+
+export function useReviews(params?: Record<string, string | number | undefined>) {
+  return useQuery({
+    queryKey: ['reviews', params],
+    queryFn: () => api.get('/reviews', { params }),
+  })
+}
+
+export function useApproveReview() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api.put(`/reviews/${id}/approve`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reviews'] })
+    },
+  })
+}
+
+export function useDeleteReview() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/reviews/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reviews'] })
+    },
+  })
+}
+
+export function useReplyToReview() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { id: number; reply: string }) =>
+      api.post<{ message: string }>(`/reviews/${data.id}/reply`, { reply: data.reply }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reviews'] })
+    },
+  })
+}

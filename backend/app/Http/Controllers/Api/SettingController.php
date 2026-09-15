@@ -94,6 +94,7 @@ class SettingController extends Controller
         'gallery_12_image',
         'gallery_12_title',
         'gallery_12_category',
+        'amenities_data',
     ];
 
     public const BRANDING_IMAGE_KEYS = [
@@ -179,7 +180,8 @@ class SettingController extends Controller
             str_starts_with($key, 'stat_') ||
             str_starts_with($key, 'section_') ||
             str_starts_with($key, 'gallery_') ||
-            str_starts_with($key, 'footer_')) {
+            str_starts_with($key, 'footer_') ||
+            $key === 'amenities_data') {
             return 'branding';
         }
 
@@ -319,6 +321,19 @@ class SettingController extends Controller
         foreach (self::BRANDING_IMAGE_KEYS as $key) {
             if (!empty($settings[$key])) {
                 $settings[$key] = self::toStorageUrl($settings[$key]);
+            }
+        }
+
+        if (!empty($settings['amenities_data'])) {
+            $decoded = json_decode($settings['amenities_data'], true);
+            if (is_array($decoded)) {
+                foreach ($decoded as &$amenity) {
+                    if (!empty($amenity['image'])) {
+                        $amenity['image'] = self::toStorageUrl($amenity['image']);
+                    }
+                }
+                unset($amenity);
+                $settings['amenities_data'] = $decoded;
             }
         }
 

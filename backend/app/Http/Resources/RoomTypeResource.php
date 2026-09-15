@@ -23,6 +23,10 @@ class RoomTypeResource extends JsonResource
             'amenities_json' => $this->amenities_json,
             'is_active' => $this->is_active,
             'rooms_count' => $this->whenCounted('rooms'),
+            'flexible_cancellation_days' => $this->flexible_cancellation_days ?? 1,
+            'non_refundable_discount' => $this->non_refundable_discount ?? 10,
+            'avg_rating' => $this->avg_rating ?? 0,
+            'review_count' => $this->review_count ?? 0,
         ];
     }
 }

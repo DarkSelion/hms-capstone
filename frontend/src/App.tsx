@@ -32,6 +32,7 @@ const RoomTypesPage = lazy(() => import('./pages/admin/RoomTypesPage'))
 const AmenitiesPage = lazy(() => import('./pages/admin/AmenitiesPage'))
 const RoomImagesPage = lazy(() => import('./pages/admin/RoomImagesPage'))
 const StaffOtpVerificationPage = lazy(() => import('./pages/admin/StaffOtpVerificationPage'))
+const ReviewsPage = lazy(() => import('./pages/admin/ReviewsPage'))
 
 const PublicHomePage = lazy(() => import('./pages/public/PublicHomePage'))
 const PublicRoomsPage = lazy(() => import('./pages/public/PublicRoomsPage'))
@@ -46,6 +47,7 @@ const PublicProfilePage = lazy(() => import('./pages/public/PublicProfilePage'))
 const PublicGalleryPage = lazy(() => import('./pages/public/PublicGalleryPage'))
 const PublicContactPage = lazy(() => import('./pages/public/PublicContactPage'))
 const PublicVerifyEmailPage = lazy(() => import('./pages/public/PublicVerifyEmailPage'))
+const PublicWriteReviewPage = lazy(() => import('./pages/public/PublicWriteReviewPage'))
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuthStore()
@@ -146,6 +148,7 @@ export default function App() {
           <Route path="expenses" element={<RequireRole><Suspense fallback={<PageLoader />}><ExpensesPage /></Suspense></RequireRole>} />
           <Route path="reports" element={<RequireRole><Suspense fallback={<PageLoader />}><ReportsPage /></Suspense></RequireRole>} />
           <Route path="inquiries" element={<RequireRole><Suspense fallback={<PageLoader />}><InquiriesPage /></Suspense></RequireRole>} />
+          <Route path="reviews" element={<RequireRole><Suspense fallback={<PageLoader />}><ReviewsPage /></Suspense></RequireRole>} />
           <Route path="activity-logs" element={<RequireRole><Suspense fallback={<PageLoader />}><ActivityLogsPage /></Suspense></RequireRole>} />
           <Route path="settings" element={<RequireRole><Suspense fallback={<PageLoader />}><SettingsPage /></Suspense></RequireRole>} />
           <Route path="profile" element={<Suspense fallback={<PageLoader />}><ProfilePage /></Suspense>} />
@@ -163,6 +166,9 @@ export default function App() {
           } />
           <Route path="my-reservations" element={
             <ProtectedPublicRoute><Suspense fallback={<PageLoader />}><PublicMyReservationsPage /></Suspense></ProtectedPublicRoute>
+          } />
+          <Route path="write-review/:id" element={
+            <ProtectedPublicRoute><Suspense fallback={<PageLoader />}><PublicWriteReviewPage /></Suspense></ProtectedPublicRoute>
           } />
           <Route path="profile" element={
             <ProtectedPublicRoute><Suspense fallback={<PageLoader />}><PublicProfilePage /></Suspense></ProtectedPublicRoute>

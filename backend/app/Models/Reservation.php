@@ -47,6 +47,7 @@ class Reservation extends Model
         'checked_in_at',
         'checked_out_at',
         'refund_requested_at',
+        'cancellation_tier',
     ];
 
     protected $appends = [];

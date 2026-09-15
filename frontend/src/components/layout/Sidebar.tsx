@@ -20,6 +20,7 @@ import {
   ImageIcon,
   CreditCard,
   History,
+  Star,
 } from 'lucide-react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { cn } from '../../lib/utils'
@@ -91,6 +92,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       items: [
         { label: 'Reports', icon: <BarChart3 size={20} />, path: '/admin/reports', adminOnly: true },
         { label: 'Inquiries', icon: <Mail size={20} />, path: '/admin/inquiries', adminOnly: true },
+        { label: 'Reviews', icon: <Star size={20} />, path: '/admin/reviews', adminOnly: true },
         { label: 'Activity Logs', icon: <History size={20} />, path: '/admin/activity-logs', adminOnly: true },
       ],
     },

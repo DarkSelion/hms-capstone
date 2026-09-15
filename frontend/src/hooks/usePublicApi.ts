@@ -245,7 +245,26 @@ export function useSendVerificationEmail() {
 
 export function useVerifyEmail() {
   return useMutation({
-    mutationFn: (data: { token: string; email: string }) =>
+    mutationFn: (data: { email: string; code: string }) =>
       publicApi.post<{ message: string }>('/public/verify-email', data),
+  })
+}
+
+export function useSubmitReview() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { reservation_id: number; rating: number; title?: string; comment?: string }) =>
+      publicApi.post('/public/reviews', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['public-reservations'] })
+    },
+  })
+}
+
+export function usePublicRoomReviews(slug: string | undefined) {
+  return useQuery({
+    queryKey: ['public-room-reviews', slug],
+    queryFn: () => publicApi.get(`/public/rooms/${slug}/reviews`),
+    enabled: !!slug,
   })
 }

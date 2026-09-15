@@ -91,6 +91,14 @@ class SettingsSeeder extends Seeder
             ['key' => 'gallery_12_image', 'value' => '', 'group' => 'branding'],
             ['key' => 'gallery_12_title', 'value' => 'Cozy Lounge', 'group' => 'branding'],
             ['key' => 'gallery_12_category', 'value' => 'Amenities', 'group' => 'branding'],
+            ['key' => 'amenities_data', 'value' => json_encode([
+                ['name' => 'Swimming Pool', 'description' => 'Cool off in our refreshing pool', 'image' => 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&h=600&fit=crop'],
+                ['name' => 'Restaurant', 'description' => 'Filipino & international cuisine', 'image' => 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop'],
+                ['name' => 'Free Wi-Fi', 'description' => 'High-speed throughout the property', 'image' => 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&h=600&fit=crop'],
+                ['name' => 'Free Parking', 'description' => 'Secure parking for all guests', 'image' => 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=800&h=600&fit=crop'],
+                ['name' => 'Event Hall', 'description' => 'Perfect for celebrations', 'image' => 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&h=600&fit=crop'],
+                ['name' => 'Cozy Lounge', 'description' => 'Relax & unwind in style', 'image' => 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&h=600&fit=crop'],
+            ]), 'group' => 'branding'],
         ];
 
         foreach ($settings as $setting) {

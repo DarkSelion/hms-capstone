@@ -24,6 +24,7 @@ class ReservationController extends Controller
             'adults' => 'required|integer|min:1',
             'children' => 'nullable|integer|min:0',
             'special_requests' => 'nullable|string',
+            'cancellation_tier' => 'nullable|string|in:flexible,non_refundable',
         ]);
 
         $guest = $request->user();
@@ -93,6 +94,12 @@ class ReservationController extends Controller
                 ? (float) $room->price_override
                 : (float) $roomType->base_price;
 
+            // Apply non-refundable discount if selected
+            $cancellationTier = $data['cancellation_tier'] ?? 'flexible';
+            if ($cancellationTier === 'non_refundable' && (float) ($roomType->non_refundable_discount ?? 0) > 0) {
+                $rate = round($rate * (1 - (float) $roomType->non_refundable_discount / 100), 2);
+            }
+
             $subtotal = $rate * $nights;
             $taxSetting = Setting::where('key', 'tax_rate')->first();
             $taxRate = ((float)($taxSetting ? $taxSetting->value : '10')) / 100;
@@ -141,6 +148,7 @@ class ReservationController extends Controller
                 'payment_status' => 'unpaid',
                 'special_requests' => $data['special_requests'] ?? null,
                 'source' => 'booking_engine',
+                'cancellation_tier' => $cancellationTier,
             ]);
 
             $room->update(['status' => 'reserved']);
@@ -198,6 +206,10 @@ class ReservationController extends Controller
 
         if (in_array($reservation->status, ['checked_in', 'checked_out', 'cancelled', 'no_show'])) {
             return response()->json(['message' => 'Reservation cannot be cancelled.'], 422);
+        }
+
+        if ($reservation->cancellation_tier === 'non_refundable') {
+            return response()->json(['message' => 'This is a non-refundable reservation and cannot be cancelled.'], 422);
         }
 
         DB::transaction(function () use ($reservation) {
