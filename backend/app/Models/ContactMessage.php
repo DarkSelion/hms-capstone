@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ContactMessage extends Model
 {
@@ -16,4 +17,9 @@ class ContactMessage extends Model
         'message',
         'ip_address',
     ];
+
+    public function replies(): HasMany
+    {
+        return $this->hasMany(ContactMessageReply::class);
+    }
 }

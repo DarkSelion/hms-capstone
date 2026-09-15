@@ -163,6 +163,12 @@ export interface ContactMessage {
   message: string;
   ip_address?: string;
   created_at: string;
+  replies?: Array<{
+    id: number;
+    body: string;
+    user?: { id: number; name: string };
+    created_at: string;
+  }>;
 }
 
 export interface Payment {

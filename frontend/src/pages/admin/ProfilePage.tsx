@@ -173,9 +173,9 @@ export default function ProfilePage() {
     <div>
       <PageHeader title="Profile" />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 items-start lg:grid-cols-3">
         {/* User Info Card */}
-        <Card className="lg:col-span-1 lg:sticky lg:top-10 lg:self-start">
+        <Card className="lg:col-span-1 lg:sticky lg:top-10">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center text-center">
               <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -214,26 +214,28 @@ export default function ProfilePage() {
             <CardContent className="pt-6">
               <h4 className="mb-4 text-sm font-semibold text-foreground">Edit Profile</h4>
               <form onSubmit={handleProfileSubmit} className="space-y-4">
-                <Input
-                  label="Full Name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-                <Input
-                  label="Email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-                <Input
-                  label="Phone"
-                  value={phone}
-                  onChange={(e) => setPhone(stripPhoneInput(e.target.value))}
-                  placeholder="0917 123 4567 (optional)"
-                  maxLength={15}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="Full Name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="Email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="Phone"
+                    value={phone}
+                    onChange={(e) => setPhone(stripPhoneInput(e.target.value))}
+                    placeholder="0917 123 4567 (optional)"
+                    maxLength={15}
+                  />
+                </div>
                 <div className="flex justify-end">
                   <Button type="submit" disabled={updateProfile.isPending}>
                     {updateProfile.isPending ? (
@@ -254,27 +256,29 @@ export default function ProfilePage() {
               <h4 className="mb-4 text-sm font-semibold text-foreground">Change Password</h4>
               <p className="mb-4 text-xs text-muted">Changing your password will sign you out from all other devices.</p>
               <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                <Input
-                  label="Current Password"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  required
-                />
-                <Input
-                  label="New Password"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                />
-                <Input
-                  label="Confirm New Password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="Current Password"
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="New Password"
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="Confirm New Password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                </div>
                 <div className="flex justify-end">
                   <Button type="submit" disabled={updatePassword.isPending}>
                     {updatePassword.isPending ? (
@@ -461,7 +465,7 @@ export default function ProfilePage() {
                         )}
                       </div>
                       <span className="text-xs text-muted whitespace-nowrap">
-                        {formatDate(event.created_at)}
+                        {formatLongDateTime(event.created_at)}
                       </span>
                     </div>
                   ))}

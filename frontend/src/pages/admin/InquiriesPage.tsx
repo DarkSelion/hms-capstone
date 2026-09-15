@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
-import { useContactMessages, useDeleteContactMessage } from '@/hooks/useApi'
+import { useContactMessages, useDeleteContactMessage, useReplyToContactMessage } from '@/hooks/useApi'
+import { useToast } from '@/components/ui/toast'
 import type { ContactMessage } from '@/types'
 import { formatDateDisplay } from '@/lib/format'
 import { PageHeader } from '@/components/shared/PageHeader'
@@ -13,6 +14,7 @@ import { Modal } from '@/components/ui/modal'
 import { Badge } from '@/components/ui/badge'
 import {
   Eye, Trash2, AlertCircle, Mail, UserRound, Reply, MessageSquareText, Clock, Server,
+  Send, Loader2,
 } from 'lucide-react'
 
 function formatLongDate(dateStr: string) {
@@ -23,19 +25,14 @@ function formatLongDate(dateStr: string) {
   return `${formatDateDisplay(dateStr, 'long')} · ${time}`
 }
 
-function gmailReplyUrl(m: ContactMessage): string {
-  const to = encodeURIComponent(m.email)
-  const subject = encodeURIComponent(`Re: ${m.subject}`)
-  const body = encodeURIComponent(`Hi ${m.name},\n\n--- Original message ---\n\n${m.message}`)
-  return `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`
-}
-
 export default function InquiriesPage() {
+  const { addToast } = useToast()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<ContactMessage | null>(null)
   const [showDetail, setShowDetail] = useState(false)
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null)
+  const [replyText, setReplyText] = useState('')
 
   const queryParams = useMemo(() => {
     const params: Record<string, string | number | undefined> = { page }
@@ -45,12 +42,14 @@ export default function InquiriesPage() {
 
   const { data: messagesData, isLoading, error, refetch } = useContactMessages(queryParams)
   const deleteMessage = useDeleteContactMessage()
+  const replyToMessage = useReplyToContactMessage()
 
   const messages = messagesData?.data ?? []
   const totalPages = messagesData?.last_page ?? 1
 
   function openDetail(message: ContactMessage) {
     setSelected(message)
+    setReplyText('')
     setShowDetail(true)
   }
 
@@ -63,6 +62,20 @@ export default function InquiriesPage() {
         setShowDetail(false)
       },
     })
+  }
+
+  function handleSendReply() {
+    if (!selected || !replyText.trim()) return
+    replyToMessage.mutate(
+      { id: selected.id, reply: replyText.trim() },
+      {
+        onSuccess: () => {
+          addToast(`Reply sent to ${selected.name}`, 'success')
+          setReplyText('')
+        },
+        onError: () => addToast('Failed to send reply', 'error'),
+      }
+    )
   }
 
   const columns: Column<ContactMessage>[] = [
@@ -160,14 +173,6 @@ export default function InquiriesPage() {
         size="xl"
         footer={
           <>
-            <a
-              href={selected ? gmailReplyUrl(selected) : '#'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg bg-gold px-4 py-2 text-sm font-medium text-white hover:bg-gold-light"
-            >
-              <Reply className="h-4 w-4" /> Reply via Gmail
-            </a>
             <Button variant="outline" onClick={() => setShowDetail(false)}>Close</Button>
             <Button
               variant="danger"
@@ -247,6 +252,67 @@ export default function InquiriesPage() {
                   </p>
                   <p className="break-words text-sm font-semibold text-foreground">{selected.subject || '—'}</p>
                 </div>
+              </div>
+            </div>
+
+            {selected.replies && selected.replies.length > 0 && (
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <MessageSquareText className="h-4 w-4" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-foreground">Reply History</h4>
+                  <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                    {selected.replies.length}
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {selected.replies.map((reply) => (
+                    <div key={reply.id} className="rounded-xl border border-gray-100 bg-bg p-3">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                          {reply.user?.name ?? 'Staff'}
+                        </span>
+                        <span className="text-xs text-muted">{formatLongDate(reply.created_at)}</span>
+                      </div>
+                      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
+                        {reply.body}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/15 text-gold-dark">
+                  <Reply className="h-4 w-4" />
+                </div>
+                <h4 className="text-sm font-semibold text-foreground">Reply</h4>
+              </div>
+              <textarea
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder={`Type your reply to ${selected?.name}...`}
+                rows={4}
+                maxLength={5000}
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary resize-none"
+              />
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-xs text-muted">{replyText.length}/5,000</span>
+                <Button
+                  size="sm"
+                  onClick={handleSendReply}
+                  disabled={!replyText.trim() || replyToMessage.isPending}
+                >
+                  {replyToMessage.isPending ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Send className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  Send Reply
+                </Button>
               </div>
             </div>
           </div>

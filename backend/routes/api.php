@@ -192,6 +192,7 @@ Route::middleware(['auth:sanctum', 'role:admin,staff', 'throttle:api'])->group(f
         // Contact Messages (from public contact form)
         Route::get('/contact-messages', [ContactMessageController::class, 'index']);
         Route::get('/contact-messages/{contactMessage}', [ContactMessageController::class, 'show']);
+        Route::post('/contact-messages/{contactMessage}/reply', [ContactMessageController::class, 'reply']);
         Route::delete('/contact-messages/{contactMessage}', [ContactMessageController::class, 'destroy']);
     });
 });

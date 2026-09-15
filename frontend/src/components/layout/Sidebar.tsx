@@ -236,7 +236,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-3 [overflow-anchor:none]">
+      <nav className="flex-1 overflow-y-auto scrollbar-hide py-3 [overflow-anchor:none]">
         {sidebarSections.map((section) => {
           const visibleItems = section.items.filter((item) => !item.adminOnly || isAdminRole(role))
           if (visibleItems.length === 0) return null

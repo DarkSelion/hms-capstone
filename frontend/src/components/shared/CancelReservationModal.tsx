@@ -1,7 +1,7 @@
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
-import { AlertTriangle, BedDouble, CalendarDays, CreditCard, UserRound, XCircle } from 'lucide-react'
+import { AlertTriangle, BedDouble, CalendarDays, CreditCard, UserRound, XCircle, RotateCcw } from 'lucide-react'
 import type { Reservation } from '@/types'
 
 interface CancelReservationModalProps {
@@ -19,6 +19,8 @@ export function CancelReservationModal({
   isLoading,
   onConfirm,
 }: CancelReservationModalProps) {
+  const isPaid = reservation?.payment_status === 'paid'
+
   return (
     <Modal
       isOpen={isOpen}
@@ -36,12 +38,16 @@ export function CancelReservationModal({
       }
     >
       <div className="flex flex-col items-center text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-danger/10 text-danger">
-          <XCircle className="h-7 w-7" />
+        <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${isPaid ? 'bg-warning/10 text-warning' : 'bg-danger/10 text-danger'}`}>
+          {isPaid ? <RotateCcw className="h-7 w-7" /> : <XCircle className="h-7 w-7" />}
         </div>
-        <h3 className="mt-4 text-lg font-semibold text-foreground">Cancel Reservation</h3>
+        <h3 className="mt-4 text-lg font-semibold text-foreground">
+          {isPaid ? 'Cancel & Refund' : 'Cancel Reservation'}
+        </h3>
         <p className="mt-1 max-w-sm text-sm text-muted">
-          This will cancel the reservation and release the room for other guests.
+          {isPaid
+            ? 'This will cancel the reservation and process a full refund.'
+            : 'This will cancel the reservation and release the room for other guests.'}
         </p>
       </div>
 
@@ -94,19 +100,28 @@ export function CancelReservationModal({
                 {formatCurrency(reservation.total_amount)}
               </p>
               <p className="mt-0.5 text-xs text-muted">
-                {reservation.payment_status === 'paid' ? 'Fully paid' : `${formatCurrency(reservation.due_amount ?? 0)} due`}
+                {isPaid ? 'Fully paid' : `${formatCurrency(reservation.due_amount ?? 0)} due`}
               </p>
             </div>
           </div>
         </div>
       )}
 
-      <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-warning/25 bg-warning/5 px-3.5 py-3">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-        <p className="text-sm text-muted">
-          The room will be released and the reservation marked as cancelled. Refunds, if applicable, are processed separately.
-        </p>
-      </div>
+      {isPaid ? (
+        <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-success/25 bg-success/5 px-3.5 py-3">
+          <RotateCcw className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+          <p className="text-sm text-muted">
+            A full refund of <span className="font-semibold text-foreground">{formatCurrency(reservation?.total_amount ?? 0)}</span> will be processed for this paid reservation.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-warning/25 bg-warning/5 px-3.5 py-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+          <p className="text-sm text-muted">
+            The room will be released and the reservation marked as cancelled.
+          </p>
+        </div>
+      )}
     </Modal>
   )
 }

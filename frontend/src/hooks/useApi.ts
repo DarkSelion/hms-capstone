@@ -1012,6 +1012,17 @@ export function useDeleteContactMessage() {
   })
 }
 
+export function useReplyToContactMessage() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { id: number; reply: string }) =>
+      api.post<{ message: string }>(`/contact-messages/${data.id}/reply`, { reply: data.reply }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-messages'] })
+    },
+  })
+}
+
 // ── Auth ────────────────────────────────────────────────
 
 export function useLogin() {

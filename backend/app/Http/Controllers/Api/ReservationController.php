@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Guest;
+use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Room;
 use App\Models\Setting;
@@ -584,11 +585,43 @@ class ReservationController extends Controller
             return response()->json(['message' => 'Reservation cannot be cancelled.'], 422);
         }
 
-        $reservation->update([
-            'status' => 'cancelled',
-        ]);
+        DB::transaction(function () use ($reservation, $request) {
+            // Auto-refund fully paid reservations
+            $totalPaid = (float) $reservation->payments()
+                ->where('status', 'completed')
+                ->where('payment_type', '!=', 'refund')
+                ->sum('amount');
 
-        $this->reconcileRoomStatus($reservation->room);
+            $totalRefunded = (float) $reservation->payments()
+                ->where('status', 'completed')
+                ->where('payment_type', 'refund')
+                ->sum('amount');
+
+            $refundAmount = $totalPaid - $totalRefunded;
+
+            if ($refundAmount > 0) {
+                Payment::create([
+                    'reservation_id' => $reservation->id,
+                    'guest_id' => $reservation->guest_id,
+                    'amount' => -$refundAmount,
+                    'payment_method' => 'cash',
+                    'payment_type' => 'refund',
+                    'status' => 'completed',
+                    'reference_number' => 'REF-' . now()->format('Ymd') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6)),
+                    'notes' => 'Automatic refund on cancellation',
+                    'processed_by' => $request->user()->id,
+                    'paid_at' => now(),
+                ]);
+            }
+
+            $reservation->update(['status' => 'cancelled']);
+            $reservation->reconcileBalances();
+
+            $room = $reservation->room;
+            if ($room) {
+                $room->reconcileStatus();
+            }
+        });
 
         ActivityLog::create([
             'user_id' => $request->user()->id,
@@ -599,7 +632,7 @@ class ReservationController extends Controller
             'description' => "Cancelled reservation #{$reservation->reservation_number}",
         ]);
 
-        return response()->json($reservation->load(['guest', 'room.roomType']));
+        return response()->json($reservation->fresh()->load(['guest', 'room.roomType', 'payments']));
     }
 
     public function markNoShow(Request $request, Reservation $reservation)
