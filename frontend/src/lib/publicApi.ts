@@ -17,10 +17,15 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     (headers as Record<string, string>)['Content-Type'] = 'application/json'
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-  })
+  let response: Response
+  try {
+    response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers,
+    })
+  } catch (e) {
+    throw new Error('Network error. Please check your internet connection and try again.')
+  }
 
   if (!response.ok) {
     if (response.status === 401) {

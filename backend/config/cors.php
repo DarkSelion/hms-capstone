@@ -20,7 +20,7 @@ return [
     'allowed_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
 
     'allowed_origins' => [
-        env('FRONTEND_ORIGIN', 'http://localhost:5173'),
+        env('FRONTEND_ORIGIN', 'https://pampangahomesuites.duckdns.org'),
     ],
 
     'allowed_origins_patterns' => [],
