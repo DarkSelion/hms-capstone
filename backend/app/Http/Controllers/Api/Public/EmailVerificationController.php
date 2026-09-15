@@ -27,8 +27,9 @@ class EmailVerificationController extends Controller
 
         // Rate limit: max 3 per hour per guest
         $rateKey = "email_verify_sent:{$guest->id}";
-        if (Cache::has($rateKey)) {
-            return response()->json(['message' => 'Verification email already sent. Please check your inbox.']);
+        $sentCount = (int) Cache::get($rateKey, 0);
+        if ($sentCount >= 3) {
+            return response()->json(['message' => 'Maximum verification emails reached. Please try again later.']);
         }
 
         // Generate token
@@ -53,7 +54,7 @@ class EmailVerificationController extends Controller
         // Send email
         try {
             Mail::to($guest->email)->send(new VerificationEmailMail($verificationUrl));
-            Cache::put($rateKey, true, now()->addHour());
+            Cache::put($rateKey, $sentCount + 1, now()->addHour());
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Verification email failed', [
                 'guest' => $guest->id,
