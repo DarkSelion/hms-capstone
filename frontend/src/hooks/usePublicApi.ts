@@ -41,6 +41,7 @@ export function usePublicMe() {
     queryKey: ['public-me'],
     queryFn: () => publicApi.get<PublicUser>('/public/me'),
     enabled: !!token,
+    refetchOnMount: 'always',
   })
 }
 

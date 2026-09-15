@@ -14,6 +14,7 @@ interface PublicUser {
   date_of_birth?: string
   gender?: string
   is_blacklisted?: boolean
+  email_verified_at?: string | null
 }
 
 interface PublicAuthState {

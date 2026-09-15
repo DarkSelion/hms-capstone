@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useVerifyEmail, useHotelName } from '@/hooks/usePublicApi'
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
@@ -7,6 +8,7 @@ export default function PublicVerifyEmailPage() {
   const hotelName = useHotelName()
   const [searchParams] = useSearchParams()
   const verifyEmail = useVerifyEmail()
+  const queryClient = useQueryClient()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
 
@@ -26,6 +28,7 @@ export default function PublicVerifyEmailPage() {
         onSuccess: (res) => {
           setStatus('success')
           setMessage(res.message || 'Email verified successfully!')
+          queryClient.invalidateQueries({ queryKey: ['public-me'] })
         },
         onError: (err) => {
           setStatus('error')
@@ -33,7 +36,7 @@ export default function PublicVerifyEmailPage() {
         },
       }
     )
-  }, [searchParams])
+  }, [searchParams, verifyEmail, queryClient])
 
   return (
     <div className="min-h-screen flex">
