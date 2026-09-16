@@ -235,6 +235,7 @@ export default function StaffPage() {
     if (passwordFilled || confirmationFilled) {
       if (!passwordFilled) errors.password = 'New password is required'
       else if (editForm.password.length < 8) errors.password = 'Password must be at least 8 characters'
+      else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(editForm.password)) errors.password = 'Password must contain uppercase, lowercase, and a number'
       if (!confirmationFilled) errors.password_confirmation = 'Please confirm the new password'
       else if (editForm.password !== editForm.password_confirmation) errors.password_confirmation = 'Passwords do not match'
     }
@@ -271,6 +272,7 @@ export default function StaffPage() {
     if (!addForm.email.trim()) errors.email = 'Email is required'
     if (!addForm.password) errors.password = 'Password is required'
     else if (addForm.password.length < 8) errors.password = 'Password must be at least 8 characters'
+    else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(addForm.password)) errors.password = 'Password must contain uppercase, lowercase, and a number'
     if (!addForm.role_id) errors.role_id = 'Role is required'
     setAddFormErrors(errors)
     if (Object.keys(errors).length > 0) return

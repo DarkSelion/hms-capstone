@@ -74,7 +74,7 @@ class GuestController extends Controller
             'module' => 'guests',
             'model_type' => 'Guest',
             'model_id' => $guest->id,
-            'description' => "Added new guest {$guest->first_name} {$guest->last_name}",
+            'description' => "Added new guest " . \App\Helpers\DataMasker::maskName("{$guest->first_name} {$guest->last_name}"),
         ]);
 
         return response()->json(array_merge($guest->toArray(), ['generated_password' => $rawPassword]), 201);
@@ -125,7 +125,7 @@ class GuestController extends Controller
             'module' => 'guests',
             'model_type' => 'Guest',
             'model_id' => $guest->id,
-            'description' => "Updated guest {$guest->first_name} {$guest->last_name}",
+            'description' => "Updated guest " . \App\Helpers\DataMasker::maskName("{$guest->first_name} {$guest->last_name}"),
         ]);
 
         return response()->json($guest);
@@ -144,7 +144,7 @@ class GuestController extends Controller
             'user_id' => request()->user()->id,
             'action' => 'deleted',
             'module' => 'guests',
-            'description' => "Deleted guest {$name}",
+            'description' => "Deleted guest " . \App\Helpers\DataMasker::maskName($name),
         ]);
 
         return response()->json(['message' => 'Guest deleted successfully.']);

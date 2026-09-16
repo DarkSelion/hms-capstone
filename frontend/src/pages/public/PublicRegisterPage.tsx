@@ -125,7 +125,7 @@ export default function PublicRegisterPage() {
               <div>
                 <label htmlFor="reg_password" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Password</label>
                 <div className="relative">
-                  <input id="reg_password" type={showPassword ? 'text' : 'password'} value={form.password} onChange={(e) => update('password', e.target.value)} required minLength={8} className="input-public pr-10" placeholder="Min. 8 characters" />
+                  <input id="reg_password" type={showPassword ? 'text' : 'password'} value={form.password} onChange={(e) => update('password', e.target.value)} required minLength={8} className="input-public pr-10" placeholder="Min. 8 chars, uppercase + lowercase + number" />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>

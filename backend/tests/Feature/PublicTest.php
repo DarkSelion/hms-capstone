@@ -113,8 +113,8 @@ class PublicTest extends TestCase
             'last_name' => 'Wonder',
             'email' => 'alice@example.com',
             'phone' => '09171112222',
-            'password' => 'secret123',
-            'password_confirmation' => 'secret123',
+            'password' => 'Secret123',
+            'password_confirmation' => 'Secret123',
             'gender' => 'female',
         ]);
 
@@ -145,8 +145,8 @@ class PublicTest extends TestCase
             'last_name' => 'Builder',
             'email' => 'taken@example.com',
             'phone' => '09172223333',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
         ]);
 
         $response->assertStatus(422)
@@ -316,28 +316,28 @@ class PublicTest extends TestCase
 
     public function test_public_password_update_success(): void
     {
-        $guest = $this->guest(['password' => Hash::make('oldpass123')]);
+        $guest = $this->guest(['password' => Hash::make('Oldpass123')]);
         Sanctum::actingAs($guest);
 
         $this->putJson('/api/public/password', [
-            'current_password' => 'oldpass123',
-            'password' => 'newpass123',
-            'password_confirmation' => 'newpass123',
+            'current_password' => 'Oldpass123',
+            'password' => 'Newpass123',
+            'password_confirmation' => 'Newpass123',
         ])->assertStatus(200)
             ->assertJsonPath('message', 'Password updated successfully.');
 
-        $this->assertTrue(Hash::check('newpass123', $guest->fresh()->password));
+        $this->assertTrue(Hash::check('Newpass123', $guest->fresh()->password));
     }
 
     public function test_public_password_update_wrong_current(): void
     {
-        $guest = $this->guest(['password' => Hash::make('correct123')]);
+        $guest = $this->guest(['password' => Hash::make('Correct123')]);
         Sanctum::actingAs($guest);
 
         $response = $this->putJson('/api/public/password', [
             'current_password' => 'wrongpass',
-            'password' => 'newpass123',
-            'password_confirmation' => 'newpass123',
+            'password' => 'Newpass123',
+            'password_confirmation' => 'Newpass123',
         ]);
 
         $response->assertStatus(422)
@@ -1422,13 +1422,13 @@ class PublicTest extends TestCase
 
     public function test_guest_password_update_logs_activity(): void
     {
-        $guest = $this->guest(['password' => Hash::make('oldpass123')]);
+        $guest = $this->guest(['password' => Hash::make('Oldpass123')]);
         Sanctum::actingAs($guest);
 
         $this->putJson('/api/public/password', [
-            'current_password' => 'oldpass123',
-            'password' => 'newpass123',
-            'password_confirmation' => 'newpass123',
+            'current_password' => 'Oldpass123',
+            'password' => 'Newpass123',
+            'password_confirmation' => 'Newpass123',
         ]);
 
         $this->assertDatabaseHas('activity_logs', [
@@ -1440,23 +1440,23 @@ class PublicTest extends TestCase
 
     public function test_guest_can_login_after_password_change(): void
     {
-        $guest = $this->guest(['password' => Hash::make('oldpass123')]);
+        $guest = $this->guest(['password' => Hash::make('Oldpass123')]);
 
         $this->postJson('/api/public/login', [
             'email' => $guest->email,
-            'password' => 'oldpass123',
+            'password' => 'Oldpass123',
         ])->assertStatus(200);
 
         Sanctum::actingAs($guest);
         $this->putJson('/api/public/password', [
-            'current_password' => 'oldpass123',
-            'password' => 'newpass456',
-            'password_confirmation' => 'newpass456',
+            'current_password' => 'Oldpass123',
+            'password' => 'Newpass456',
+            'password_confirmation' => 'Newpass456',
         ])->assertStatus(200);
 
         $this->postJson('/api/public/login', [
             'email' => $guest->email,
-            'password' => 'newpass456',
+            'password' => 'Newpass456',
         ])->assertStatus(200);
     }
 

@@ -52,7 +52,7 @@ class StaffController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8',
+            'password' => 'required|string|min:8|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/',
             'role_id' => 'required|exists:roles,id',
             'phone' => 'nullable|string|max:20|regex:/^[+]?[0-9]{10,15}$/',
             'is_active' => 'sometimes|boolean',
@@ -83,7 +83,7 @@ class StaffController extends Controller
             'module' => 'staff',
             'model_type' => 'User',
             'model_id' => $user->id,
-            'description' => "Created staff account: {$user->name} ({$user->email})",
+            'description' => "Created staff account: {$user->name} (" . \App\Helpers\DataMasker::maskEmail($user->email) . ")",
         ]);
 
         return response()->json($user->load('role'), 201);
@@ -102,7 +102,7 @@ class StaffController extends Controller
             'phone' => 'nullable|string|max:20|regex:/^[+]?[0-9]{10,15}$/',
             'role_id' => 'sometimes|exists:roles,id',
             'is_active' => 'sometimes|boolean',
-            'password' => 'sometimes|nullable|string|min:8|confirmed',
+            'password' => 'sometimes|nullable|string|min:8|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/' . ($request->filled('password') ? '|confirmed' : ''),
         ]);
 
         $creatorRole = $request->user()->roleSlug();

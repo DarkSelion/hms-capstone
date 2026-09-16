@@ -318,7 +318,7 @@ class AuthController extends Controller
     {
         $data = $request->validate([
             'current_password' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:8|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/|confirmed',
         ]);
 
         $user = $request->user();

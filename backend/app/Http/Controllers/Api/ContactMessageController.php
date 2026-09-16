@@ -63,7 +63,7 @@ class ContactMessageController extends Controller
             'module' => 'inquiries',
             'model_type' => 'ContactMessage',
             'model_id' => $contactMessage->id,
-            'description' => "Replied to inquiry from {$contactMessage->name} ({$contactMessage->email})",
+            'description' => "Replied to inquiry from {$contactMessage->name} (" . \App\Helpers\DataMasker::maskEmail($contactMessage->email) . ")",
         ]);
 
         return response()->json($contactMessage->fresh()->load(['replies.user']));

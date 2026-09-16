@@ -162,7 +162,7 @@ class ReservationController extends Controller
             'module' => 'reservations',
             'model_type' => 'Reservation',
             'model_id' => $reservation->id,
-            'description' => "Guest {$guest->full_name} created reservation #{$reservation->reservation_number}",
+            'description' => "Guest " . \App\Helpers\DataMasker::maskName($guest->full_name) . " created reservation #{$reservation->reservation_number}",
         ]);
 
         return response()->json(
@@ -229,7 +229,7 @@ class ReservationController extends Controller
             'module' => 'reservations',
             'model_type' => 'Reservation',
             'model_id' => $reservation->id,
-            'description' => "Guest {$guest->full_name} cancelled reservation #{$reservation->reservation_number}",
+            'description' => "Guest " . \App\Helpers\DataMasker::maskName($guest->full_name) . " cancelled reservation #{$reservation->reservation_number}",
         ]);
 
         return response()->json($reservation->load(['room.roomType']));
@@ -267,7 +267,7 @@ class ReservationController extends Controller
             'module' => 'reservations',
             'model_type' => 'Reservation',
             'model_id' => $reservation->id,
-            'description' => "Guest {$guest->full_name} requested a refund for reservation #{$reservation->reservation_number} — Reason: {$data['reason']}",
+            'description' => "Guest " . \App\Helpers\DataMasker::maskName($guest->full_name) . " requested a refund for reservation #{$reservation->reservation_number} — Reason: {$data['reason']}",
         ]);
 
         return response()->json([

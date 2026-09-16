@@ -22,7 +22,7 @@ class AuthController extends Controller
             'last_name' => 'required|string|max:255',
             'email' => ['required', 'email', 'unique:guests,email', 'regex:/^[a-zA-Z0-9._%+-]+@(gmail|yahoo|outlook|hotmail|icloud|aol|protonmail|zoho|mail|live|msn|ymail|rocketmail)\.(com|ph)$/'],
             'phone' => 'required|string|max:20|regex:/^[+]?[0-9]{10,15}$/',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:8|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/|confirmed',
             'gender' => 'nullable|string|max:20',
         ]);
 
@@ -115,7 +115,7 @@ class AuthController extends Controller
     {
         $data = $request->validate([
             'current_password' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:8|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/|confirmed',
         ]);
 
         $guest = $request->user();
@@ -134,7 +134,7 @@ class AuthController extends Controller
             'module' => 'auth',
             'model_type' => 'Guest',
             'model_id' => $guest->id,
-            'description' => "Guest {$guest->full_name} changed password",
+            'description' => "Guest " . \App\Helpers\DataMasker::maskName($guest->full_name) . " changed password",
         ]);
 
         return response()->json(['message' => 'Password updated successfully.']);
@@ -196,7 +196,7 @@ class AuthController extends Controller
         $data = $request->validate([
             'email' => 'required|email',
             'code' => 'required|string|size:6',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:8|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/|confirmed',
         ]);
 
         // Per-email OTP attempt limiting (max 5 per 15 minutes)
@@ -244,7 +244,7 @@ class AuthController extends Controller
             'module' => 'auth',
             'model_type' => 'Guest',
             'model_id' => $guest->id,
-            'description' => "Guest {$guest->full_name} reset password via OTP",
+            'description' => "Guest " . \App\Helpers\DataMasker::maskName($guest->full_name) . " reset password via OTP",
         ]);
 
         return response()->json(['message' => 'Password reset successful. Please log in.']);

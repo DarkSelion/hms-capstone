@@ -58,7 +58,7 @@ class ReviewController extends Controller
             'module' => 'reviews',
             'model_type' => 'Review',
             'model_id' => $review->id,
-            'description' => "Guest {$guest->full_name} submitted a {$data['rating']}-star review for {$roomType->name}",
+            'description' => "Guest " . \App\Helpers\DataMasker::maskName($guest->full_name) . " submitted a {$data['rating']}-star review for {$roomType->name}",
         ]);
 
         return response()->json([
@@ -115,7 +115,7 @@ class ReviewController extends Controller
             'module' => 'reviews',
             'model_type' => 'Review',
             'model_id' => $review->id,
-            'description' => "Approved review #{$review->id} by {$review->guest->full_name}",
+            'description' => "Approved review #{$review->id} by " . \App\Helpers\DataMasker::maskName($review->guest->full_name),
         ]);
 
         return response()->json(['message' => 'Review approved.', 'review' => $review->fresh()->load(['guest', 'roomType'])]);
@@ -135,7 +135,7 @@ class ReviewController extends Controller
             'module' => 'reviews',
             'model_type' => 'Review',
             'model_id' => $review->id,
-            'description' => "Deleted review by {$guestName}",
+            'description' => "Deleted review by " . \App\Helpers\DataMasker::maskName($guestName),
         ]);
 
         return response()->json(['message' => 'Review deleted.']);
