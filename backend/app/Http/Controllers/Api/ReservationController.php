@@ -49,6 +49,10 @@ class ReservationController extends Controller
             $query->where('check_out', '<=', $to);
         }
 
+        if ($request->boolean('refund_requested')) {
+            $query->whereNotNull('refund_requested_at');
+        }
+
         $sortField = $request->sort_field ?? 'created_at';
         $sortDir = $request->sort_dir ?? 'desc';
 

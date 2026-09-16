@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
-  useReservations, useCancelReservation, useMarkNoShow, useExtendStay,
+  useReservations, useCancelReservation, useMarkNoShow, useExtendStay, usePayments,
 } from '@/hooks/useApi'
 import { useCheckInOutModal } from '@/hooks/useCheckInOutModal'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
@@ -17,6 +17,7 @@ import { ReservationFormModal } from '@/components/shared/ReservationFormModal'
 import { ReservationCheckInOutModal } from '@/components/shared/ReservationCheckInOutModal'
 import { ReservationRowActions } from '@/components/shared/ReservationRowActions'
 import { ExtendStayModal } from '@/components/shared/ExtendStayModal'
+import { RefundModal } from '@/components/shared/RefundModal'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,7 +25,7 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { Select } from '@/components/ui/select'
 import type { Reservation } from '@/types'
 import {
-  Plus, AlertTriangle, X, ArrowRight, CalendarX2,
+  Plus, AlertTriangle, X, ArrowRight, CalendarX2, RotateCcw,
 } from 'lucide-react'
 
 function formatDate(dateStr: string) {
@@ -53,6 +54,7 @@ export default function ReservationsPage() {
   const statusFilter = searchParams.get('status') ?? ''
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [refundRequestedOnly, setRefundRequestedOnly] = useState(false)
   const [sortBy, setSortBy] = useState('-created_at')
   const [page, setPage] = useState(1)
 
@@ -64,6 +66,7 @@ export default function ReservationsPage() {
   const [cancelTarget, setCancelTarget] = useState<Reservation | null>(null)
   const [noShowTarget, setNoShowTarget] = useState<Reservation | null>(null)
   const [extendTarget, setExtendTarget] = useState<Reservation | null>(null)
+  const [showRefundModal, setShowRefundModal] = useState(false)
 
   const checkInModal = useCheckInOutModal('check-in')
   const checkOutModal = useCheckInOutModal('check-out')
@@ -80,14 +83,17 @@ export default function ReservationsPage() {
     if (statusFilter) params.status = statusFilter
     if (dateFrom) params.date_from = dateFrom
     if (dateTo) params.date_to = dateTo
+    if (refundRequestedOnly) params.refund_requested = '1'
     return params
-  }, [page, sortBy, search, statusFilter, dateFrom, dateTo])
+  }, [page, sortBy, search, statusFilter, dateFrom, dateTo, refundRequestedOnly])
 
   const { data: reservationsData, isLoading, error, refetch } = useReservations(queryParams)
 
   const cancelReservation = useCancelReservation()
   const markNoShow = useMarkNoShow()
   const extendStay = useExtendStay()
+  const { data: refundablePaymentsData } = usePayments({ per_page: 100, status: 'completed' })
+  const refundablePayments = (refundablePaymentsData?.data ?? []) as any[]
 
   const reservations = reservationsData?.data ?? []
   const totalPages = reservationsData?.last_page ?? 1
@@ -113,12 +119,13 @@ export default function ReservationsPage() {
     handleStatusFilterValue(e.target.value)
   }, [handleStatusFilterValue])
 
-  const hasActiveFilters = Boolean(search || statusFilter || dateFrom || dateTo)
+  const hasActiveFilters = Boolean(search || statusFilter || dateFrom || dateTo || refundRequestedOnly)
 
   const clearAllFilters = useCallback(() => {
     setSearch('')
     setDateFrom('')
     setDateTo('')
+    setRefundRequestedOnly(false)
     setPage(1)
     setSearchParams((prev) => {
       prev.delete('status')
@@ -278,12 +285,18 @@ export default function ReservationsPage() {
       sortable: true,
       className: 'whitespace-nowrap',
       render: (r) => (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <StatusBadge status={r.status} />
           {r.status === 'confirmed' && r.is_overdue && (
             <Badge variant="warning">
               <AlertTriangle className="h-3 w-3" />
               Overdue
+            </Badge>
+          )}
+          {r.refund_requested_at && (
+            <Badge variant="info" className="gap-1">
+              <RotateCcw className="h-3 w-3" />
+              Refund Requested
             </Badge>
           )}
         </div>
@@ -310,6 +323,7 @@ export default function ReservationsPage() {
           onCheckOut={() => openCheckOut(r)}
           onMarkNoShow={() => setNoShowTarget(r)}
           onExtendStay={() => openExtendStay(r)}
+          onProcessRefund={() => setShowRefundModal(true)}
         />
       ),
     },
@@ -347,6 +361,17 @@ export default function ReservationsPage() {
                 ))}
               </Select>
             </div>
+            <button
+              onClick={() => { setRefundRequestedOnly(v => !v); setPage(1) }}
+              className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[12px] font-medium transition-colors ${
+                refundRequestedOnly
+                  ? 'border-warning bg-warning/10 text-warning'
+                  : 'border-border text-muted hover:border-warning/50 hover:text-warning'
+              }`}
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Refund Requested
+            </button>
             <div className="w-44">
               <DatePicker
                 value={dateFrom}
@@ -397,6 +422,14 @@ export default function ReservationsPage() {
                 <Badge variant="secondary" className="gap-1">
                   To: {dateTo}
                   <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setDateTo(''); setPage(1) }}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              )}
+              {refundRequestedOnly && (
+                <Badge variant="secondary" className="gap-1">
+                  Refund Requested
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setRefundRequestedOnly(false); setPage(1) }}>
                     <X className="h-3 w-3" />
                   </Button>
                 </Badge>
@@ -499,6 +532,12 @@ export default function ReservationsPage() {
         reservation={noShowTarget}
         isLoading={markNoShow.isPending}
         onConfirm={handleMarkNoShowConfirm}
+      />
+
+      <RefundModal
+        isOpen={showRefundModal}
+        onClose={() => setShowRefundModal(false)}
+        payments={refundablePayments}
       />
     </div>
   )

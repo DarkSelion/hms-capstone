@@ -8,6 +8,7 @@ const {
   mockUseCancelReservation,
   mockUseMarkNoShow,
   mockUseExtendStay,
+  mockUsePayments,
   mockUseCheckInOutModal,
   mockUseSearchParams,
 } = vi.hoisted(() => ({
@@ -15,6 +16,7 @@ const {
   mockUseCancelReservation: vi.fn(),
   mockUseMarkNoShow: vi.fn(),
   mockUseExtendStay: vi.fn(),
+  mockUsePayments: vi.fn(),
   mockUseCheckInOutModal: vi.fn(),
   mockUseSearchParams: vi.fn(),
 }))
@@ -24,6 +26,7 @@ vi.mock('@/hooks/useApi', () => ({
   useCancelReservation: () => mockUseCancelReservation(),
   useMarkNoShow: () => mockUseMarkNoShow(),
   useExtendStay: () => mockUseExtendStay(),
+  usePayments: (params?: Record<string, unknown>) => mockUsePayments(params),
 }))
 
 vi.mock('@/hooks/useCheckInOutModal', () => ({
@@ -60,6 +63,7 @@ vi.mock('@/components/shared/CancelReservationModal', () => ({
     reservation ? <div>Cancel dialog for {reservation.reservation_number}</div> : null,
 }))
 vi.mock('@/components/shared/ExtendStayModal', () => ({ ExtendStayModal: () => null }))
+vi.mock('@/components/shared/RefundModal', () => ({ RefundModal: () => null }))
 
 const reservationArg: Reservation = { id: 0 } as Reservation
 
@@ -100,6 +104,7 @@ function renderPage(data: ReturnType<typeof paginated> = paginated([reservation(
   mockUseCancelReservation.mockReturnValue({ mutateAsync: vi.fn() })
   mockUseMarkNoShow.mockReturnValue({ mutateAsync: vi.fn() })
   mockUseExtendStay.mockReturnValue({ mutateAsync: vi.fn() })
+  mockUsePayments.mockReturnValue({ data: { data: [] }, isLoading: false, error: null })
   const modal = {
     target: null,
     error: null,

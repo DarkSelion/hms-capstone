@@ -137,6 +137,7 @@ export interface Reservation {
   source?: string;
   payments?: Payment[];
   cancellation_tier?: 'flexible' | 'non_refundable';
+  refund_requested_at?: string;
   created_at: string;
 }
 
