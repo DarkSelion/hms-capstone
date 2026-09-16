@@ -8,7 +8,7 @@ import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { RotateCcw, Loader2, AlertCircle, UserRound, BedDouble, CalendarDays, CreditCard, ChevronDown, Search, ReceiptText, Info } from 'lucide-react'
-import type { Payment } from '@/types'
+import type { Payment, Reservation } from '@/types'
 
 interface PaymentExtended extends Payment {
   reservation?: {
@@ -27,6 +27,7 @@ interface RefundModalProps {
   onClose: () => void
   payments: PaymentExtended[]
   onSuccess?: (payment: Payment) => void
+  reservation?: Reservation | null
 }
 
 const METHOD_LABELS: Record<string, string> = {
@@ -199,6 +200,7 @@ export function RefundModal({
   onClose,
   payments,
   onSuccess,
+  reservation,
 }: RefundModalProps) {
   const { addToast } = useToast()
   const queryClient = useQueryClient()
@@ -229,8 +231,27 @@ export function RefundModal({
       setReason('')
       setError(null)
       refundMutation.reset()
+      return
     }
-  }, [isOpen])
+    // Auto-select: pick first completed payment from the reservation
+    if (reservation?.payments?.length) {
+      const completed = reservation.payments.find((p) => p.status === 'completed')
+      if (completed) {
+        const enriched: PaymentExtended = {
+          ...completed,
+          reservation: {
+            id: reservation.id,
+            reservation_number: reservation.reservation_number,
+            guest: reservation.guest,
+            room: reservation.room,
+            check_in: reservation.check_in,
+            check_out: reservation.check_out,
+          },
+        }
+        setSelectedPayment(enriched)
+      }
+    }
+  }, [isOpen, reservation])
 
   const paymentAmount = selectedPayment?.amount ?? 0
   const isCompleted = selectedPayment?.status === 'completed'
