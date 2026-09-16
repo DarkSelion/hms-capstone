@@ -174,7 +174,8 @@ class RefundTest extends TestCase
 
         $reservation->refresh();
         $this->assertSame(0.0, (float) $reservation->paid_amount);
-        $this->assertSame(2000.0, (float) $reservation->due_amount);
+        $this->assertSame(0.0, (float) $reservation->due_amount);
+        $this->assertSame('refunded', $reservation->payment_status);
     }
 
     public function test_local_refund_logs_activity(): void

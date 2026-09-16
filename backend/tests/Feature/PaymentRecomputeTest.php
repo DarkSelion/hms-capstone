@@ -275,8 +275,8 @@ class PaymentRecomputeTest extends TestCase
         $this->assertDatabaseHas('reservations', [
             'id' => $reservation->id,
             'paid_amount' => 0,
-            'payment_status' => 'unpaid',
-            'due_amount' => 275,
+            'payment_status' => 'refunded',
+            'due_amount' => 0,
         ]);
     }
 

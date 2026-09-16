@@ -640,8 +640,8 @@ class OnlinePaymentGatewayTest extends TestCase
         $this->assertSame('refunded', $payment->status);
 
         $reservation->refresh();
-        $this->assertSame('unpaid', $reservation->payment_status);
-        $this->assertEqualsWithDelta(2000, (float) $reservation->due_amount, 0.001);
+        $this->assertSame('refunded', $reservation->payment_status);
+        $this->assertEqualsWithDelta(0, (float) $reservation->due_amount, 0.001);
     }
 
     public function test_webhook_unknown_reservation_is_rejected(): void
