@@ -66,7 +66,7 @@ export default function ReservationsPage() {
   const [cancelTarget, setCancelTarget] = useState<Reservation | null>(null)
   const [noShowTarget, setNoShowTarget] = useState<Reservation | null>(null)
   const [extendTarget, setExtendTarget] = useState<Reservation | null>(null)
-  const [showRefundModal, setShowRefundModal] = useState(false)
+  const [refundTarget, setRefundTarget] = useState<Reservation | null>(null)
 
   const checkInModal = useCheckInOutModal('check-in')
   const checkOutModal = useCheckInOutModal('check-out')
@@ -293,7 +293,7 @@ export default function ReservationsPage() {
               Overdue
             </Badge>
           )}
-          {r.refund_requested_at && (
+          {r.refund_requested_at && r.payment_status !== 'refunded' && (
             <Badge variant="info" className="gap-1">
               <RotateCcw className="h-3 w-3" />
               Refund Requested
@@ -323,7 +323,7 @@ export default function ReservationsPage() {
           onCheckOut={() => openCheckOut(r)}
           onMarkNoShow={() => setNoShowTarget(r)}
           onExtendStay={() => openExtendStay(r)}
-          onProcessRefund={() => setShowRefundModal(true)}
+          onProcessRefund={() => setRefundTarget(r)}
         />
       ),
     },
@@ -535,9 +535,10 @@ export default function ReservationsPage() {
       />
 
       <RefundModal
-        isOpen={showRefundModal}
-        onClose={() => setShowRefundModal(false)}
+        isOpen={!!refundTarget}
+        onClose={() => setRefundTarget(null)}
         payments={refundablePayments}
+        reservation={refundTarget}
       />
     </div>
   )

@@ -60,7 +60,7 @@ export function ReservationRowActions({
   if (status === 'checked_in' && onExtendStay) {
     buttons.push(<RowActionButton key="extend" tone="warning" title="Extend Stay" icon={<CalendarPlus className="h-4 w-4" />} onClick={onExtendStay} />)
   }
-  if (reservation.refund_requested_at && onProcessRefund) {
+  if (reservation.refund_requested_at && reservation.payment_status !== 'refunded' && onProcessRefund) {
     buttons.push(<RowActionButton key="refund" tone="danger" title="Process Refund" icon={<RotateCcw className="h-4 w-4" />} onClick={onProcessRefund} />)
   }
 
