@@ -111,7 +111,7 @@ class PublicTest extends TestCase
         $response = $this->postJson('/api/public/register', [
             'first_name' => 'Alice',
             'last_name' => 'Wonder',
-            'email' => 'alice@example.com',
+            'email' => 'alice@gmail.com',
             'phone' => '09171112222',
             'password' => 'Secret123',
             'password_confirmation' => 'Secret123',

@@ -94,8 +94,8 @@ class ReservationsPageTest extends TestCase
             'guest_id' => $guest->id,
             'room_id' => $room->id,
             'status' => 'confirmed',
-            'check_in' => '2026-09-10',
-            'check_out' => '2026-09-12',
+            'check_in' => now()->addDays(3)->toDateString(),
+            'check_out' => now()->addDays(5)->toDateString(),
             'adults' => 2,
             'children' => 0,
             'price_per_night' => 1000,
@@ -190,8 +190,8 @@ class ReservationsPageTest extends TestCase
             'guest_id' => $guest->id,
             'room_id' => $room->id,
             'status' => 'confirmed',
-            'check_in' => '2026-09-10',
-            'check_out' => '2026-09-12',
+            'check_in' => now()->addDays(3)->toDateString(),
+            'check_out' => now()->addDays(5)->toDateString(),
             'adults' => 1,
             'price_per_night' => 1000,
             'total_nights' => 2,
@@ -276,8 +276,8 @@ class ReservationsPageTest extends TestCase
             'guest_email' => 'juan@example.com',
             'guest_phone' => '09171234567',
             'room_id' => $room->id,
-            'check_in' => '2026-09-10',
-            'check_out' => '2026-09-12',
+            'check_in' => now()->addDays(3)->toDateString(),
+            'check_out' => now()->addDays(5)->toDateString(),
             'adults' => 2,
             'children' => 1,
             'price_per_night' => 1000,
@@ -309,8 +309,8 @@ class ReservationsPageTest extends TestCase
             'guest_email' => 'newguest@example.com',
             'guest_phone' => '09171234567',
             'room_id' => $room->id,
-            'check_in' => '2026-09-10',
-            'check_out' => '2026-09-12',
+            'check_in' => now()->addDays(3)->toDateString(),
+            'check_out' => now()->addDays(5)->toDateString(),
             'adults' => 1,
             'price_per_night' => 1000,
         ]);
@@ -343,8 +343,8 @@ class ReservationsPageTest extends TestCase
             'guest_email' => 'existing@example.com',
             'guest_phone' => '09171234567',
             'room_id' => $room->id,
-            'check_in' => '2026-09-10',
-            'check_out' => '2026-09-12',
+            'check_in' => now()->addDays(3)->toDateString(),
+            'check_out' => now()->addDays(5)->toDateString(),
             'adults' => 1,
             'price_per_night' => 1000,
         ]);
@@ -380,8 +380,8 @@ class ReservationsPageTest extends TestCase
             'guest_last_name' => 'Dela Cruz',
             'guest_phone' => '09171234567',
             'room_id' => $room->id,
-            'check_in' => '2026-09-12',
-            'check_out' => '2026-09-10',
+            'check_in' => now()->addDays(5)->toDateString(),
+            'check_out' => now()->addDays(3)->toDateString(),
             'adults' => 1,
             'price_per_night' => 1000,
         ]);
@@ -402,8 +402,8 @@ class ReservationsPageTest extends TestCase
             'guest_id' => $guest->id,
             'room_id' => $room->id,
             'status' => 'confirmed',
-            'check_in' => '2026-09-10',
-            'check_out' => '2026-09-15',
+            'check_in' => now()->addDays(3)->toDateString(),
+            'check_out' => now()->addDays(8)->toDateString(),
             'adults' => 1,
             'price_per_night' => 1000,
             'total_nights' => 5,
@@ -421,11 +421,11 @@ class ReservationsPageTest extends TestCase
         $response = $this->postJson('/api/reservations', [
             'guest_first_name' => 'Bob',
             'guest_last_name' => 'Smith',
-            'guest_email' => 'bob@example.com',
-            'guest_phone' => '0918',
+            'guest_email' => 'bob@gmail.com',
+            'guest_phone' => '09181234567',
             'room_id' => $room->id,
-            'check_in' => '2026-09-12',
-            'check_out' => '2026-09-14',
+            'check_in' => now()->addDays(5)->toDateString(),
+            'check_out' => now()->addDays(7)->toDateString(),
             'adults' => 1,
             'price_per_night' => 1000,
         ]);
@@ -479,8 +479,8 @@ class ReservationsPageTest extends TestCase
         Sanctum::actingAs($admin);
 
         $reservation = $this->reservation([
-            'check_in' => '2026-09-10',
-            'check_out' => '2026-09-12',
+            'check_in' => now()->addDays(3)->toDateString(),
+            'check_out' => now()->addDays(5)->toDateString(),
             'price_per_night' => 1000,
             'total_amount' => 2200,
             'tax_percent' => 10,
@@ -489,7 +489,7 @@ class ReservationsPageTest extends TestCase
         ]);
 
         $response = $this->putJson("/api/reservations/{$reservation->id}", [
-            'check_out' => '2026-09-13',
+            'check_out' => now()->addDays(6)->toDateString(),
         ]);
 
         $response->assertStatus(200);
@@ -504,12 +504,12 @@ class ReservationsPageTest extends TestCase
         Sanctum::actingAs($admin);
 
         $reservation = $this->reservation([
-            'check_in' => '2026-09-10',
-            'check_out' => '2026-09-12',
+            'check_in' => now()->addDays(3)->toDateString(),
+            'check_out' => now()->addDays(5)->toDateString(),
         ]);
 
         $response = $this->putJson("/api/reservations/{$reservation->id}", [
-            'check_out' => '2026-09-08',
+            'check_out' => now()->addDays(1)->toDateString(),
         ]);
 
         $response->assertStatus(422);
@@ -902,8 +902,8 @@ class ReservationsPageTest extends TestCase
             'guest_last_name' => 'Dela Cruz',
             'guest_phone' => '09171234567',
             'room_id' => $room->id,
-            'check_in' => '2026-09-10',
-            'check_out' => '2026-09-12',
+            'check_in' => now()->addDays(3)->toDateString(),
+            'check_out' => now()->addDays(5)->toDateString(),
             'adults' => 2,
             'price_per_night' => 1000,
             'status' => 'pending',
@@ -926,8 +926,8 @@ class ReservationsPageTest extends TestCase
             'guest_last_name' => 'Dela Cruz',
             'guest_phone' => '09171234567',
             'room_id' => $room->id,
-            'check_in' => '2026-09-10',
-            'check_out' => '2026-09-12',
+            'check_in' => now()->addDays(3)->toDateString(),
+            'check_out' => now()->addDays(5)->toDateString(),
             'adults' => 2,
             'price_per_night' => 1000,
             'status' => 'cancelled',
@@ -1151,8 +1151,8 @@ class ReservationsPageTest extends TestCase
             'guest_last_name' => 'Dela Cruz',
             'guest_phone' => '09171234567',
             'room_id' => $room->id,
-            'check_in' => '2026-09-10',
-            'check_out' => '2026-09-12',
+            'check_in' => now()->addDays(3)->toDateString(),
+            'check_out' => now()->addDays(5)->toDateString(),
             'adults' => 2,
             'price_per_night' => 1000,
             'total_amount' => 1,
@@ -1177,8 +1177,8 @@ class ReservationsPageTest extends TestCase
             'guest_last_name' => 'Dela Cruz',
             'guest_phone' => '09171234567',
             'room_id' => $room->id,
-            'check_in' => '2026-09-10',
-            'check_out' => '2026-09-12',
+            'check_in' => now()->addDays(3)->toDateString(),
+            'check_out' => now()->addDays(5)->toDateString(),
             'adults' => 2,
             'price_per_night' => 1000,
         ]);
@@ -1195,8 +1195,8 @@ class ReservationsPageTest extends TestCase
         Sanctum::actingAs($admin);
 
         $reservation = $this->reservation([
-            'check_in' => '2026-09-10',
-            'check_out' => '2026-09-12',
+            'check_in' => now()->addDays(3)->toDateString(),
+            'check_out' => now()->addDays(5)->toDateString(),
             'price_per_night' => 1000,
             'total_amount' => 2200,
         ]);
@@ -1219,8 +1219,8 @@ class ReservationsPageTest extends TestCase
         Sanctum::actingAs($admin);
 
         $reservation = $this->reservation([
-            'check_in' => '2026-09-10',
-            'check_out' => '2026-09-12',
+            'check_in' => now()->addDays(3)->toDateString(),
+            'check_out' => now()->addDays(5)->toDateString(),
             'price_per_night' => 1000,
             'total_amount' => 2200,
             'subtotal' => 2000,
@@ -1299,16 +1299,16 @@ class ReservationsPageTest extends TestCase
         Sanctum::actingAs($admin);
 
         $reservation = $this->reservation([
-            'check_in' => '2026-09-10',
-            'check_out' => '2026-09-12',
+            'check_in' => now()->addDays(3)->toDateString(),
+            'check_out' => now()->addDays(5)->toDateString(),
             'payment_status' => 'unpaid',
             'paid_amount' => 0,
             'due_amount' => 2200,
         ]);
 
         $response = $this->putJson("/api/reservations/{$reservation->id}", [
-            'check_in' => '2026-09-12',
-            'check_out' => '2026-09-13',
+            'check_in' => now()->addDays(5)->toDateString(),
+            'check_out' => now()->addDays(6)->toDateString(),
         ]);
 
         $response->assertStatus(200);

@@ -48,7 +48,7 @@ class SettingsBrandingTest extends TestCase
     {
         $this->seed(\Database\Seeders\SettingsSeeder::class);
 
-        $this->assertDatabaseHas('settings', ['key' => 'theme_preset', 'value' => 'gold', 'group' => 'branding']);
+        $this->assertDatabaseHas('settings', ['key' => 'theme_preset', 'value' => 'navy', 'group' => 'branding']);
         $this->assertDatabaseHas('settings', ['key' => 'hero_title', 'value' => 'Comfortable Stays, Warm Smiles', 'group' => 'branding']);
         $this->assertDatabaseHas('settings', ['key' => 'footer_tagline', 'group' => 'branding']);
         $this->assertDatabaseHas('settings', ['key' => 'gallery_1_image', 'group' => 'branding']);

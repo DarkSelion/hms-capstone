@@ -66,11 +66,11 @@ class ReservationIntegrityTest extends TestCase
         $first = $this->postJson('/api/reservations', [
             'guest_first_name' => 'Jane',
             'guest_last_name' => 'Doe',
-            'guest_email' => 'jane@example.com',
-            'guest_phone' => '0917',
+            'guest_email' => 'jane@gmail.com',
+            'guest_phone' => '09171234567',
             'room_id' => $room->id,
-            'check_in' => '2026-09-10',
-            'check_out' => '2026-09-12',
+            'check_in' => now()->addDays(3)->toDateString(),
+            'check_out' => now()->addDays(5)->toDateString(),
             'adults' => 2,
             'price_per_night' => 1000,
         ]);
@@ -79,11 +79,11 @@ class ReservationIntegrityTest extends TestCase
         $second = $this->postJson('/api/reservations', [
             'guest_first_name' => 'Bob',
             'guest_last_name' => 'Smith',
-            'guest_email' => 'bob@example.com',
-            'guest_phone' => '0918',
+            'guest_email' => 'bob@gmail.com',
+            'guest_phone' => '09181234567',
             'room_id' => $room->id,
-            'check_in' => '2026-09-11',
-            'check_out' => '2026-09-13',
+            'check_in' => now()->addDays(4)->toDateString(),
+            'check_out' => now()->addDays(6)->toDateString(),
             'adults' => 1,
             'price_per_night' => 1000,
         ]);

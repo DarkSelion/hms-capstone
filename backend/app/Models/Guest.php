@@ -29,6 +29,7 @@ class Guest extends Authenticatable
         'is_blacklisted',
         'blacklist_reason',
         'notes',
+        'email_verified_at',
     ];
 
     protected $hidden = [
