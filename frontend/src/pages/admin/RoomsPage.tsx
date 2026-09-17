@@ -96,19 +96,21 @@ export default function RoomsPage() {
   }
 
   const { data: roomsData, isLoading: roomsLoading, error: roomsError, refetch: refetchRooms } = useRooms(params)
+  const { data: allRoomsData } = useRooms({ all: 1 })
 
   const { data: roomTypesData } = useRoomTypes(undefined, { enabled: isAdmin })
   const updateRoom = useUpdateRoom()
 
   const rooms = roomsData?.data ?? []
+  const allRooms = allRoomsData?.data ?? []
   const statusCounts = useMemo(() => ({
-    all: roomsData?.total ?? 0,
-    available: rooms.filter(r => r.status === 'available').length,
-    occupied: rooms.filter(r => r.status === 'occupied').length,
-    reserved: rooms.filter(r => r.status === 'reserved').length,
-    dirty: rooms.filter(r => r.status === 'dirty').length,
-    maintenance: rooms.filter(r => r.status === 'maintenance').length,
-  }), [rooms, roomsData])
+    all: allRooms.length,
+    available: allRooms.filter(r => r.status === 'available').length,
+    occupied: allRooms.filter(r => r.status === 'occupied').length,
+    reserved: allRooms.filter(r => r.status === 'reserved').length,
+    dirty: allRooms.filter(r => r.status === 'dirty').length,
+    maintenance: allRooms.filter(r => r.status === 'maintenance').length,
+  }), [allRooms])
   const paginationInfo = roomsData
     ? { currentPage: roomsData.current_page, lastPage: roomsData.last_page, total: roomsData.total, per_page: roomsData.per_page }
     : null
