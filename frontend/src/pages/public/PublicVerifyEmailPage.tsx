@@ -161,10 +161,11 @@ export default function PublicVerifyEmailPage() {
 
                 {/* OTP Section */}
                 <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 mb-6">
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
                     <Mail className="h-4 w-4 text-gold/70" />
                     <span className="text-xs uppercase tracking-[0.12em] text-white/50 font-medium">Verification Code</span>
                   </div>
+                  <p className="text-gold/70 text-xs mb-4">Check your <span className="font-medium">spam/junk folder</span> if you don&apos;t see the email.</p>
 
                   <OTPInput
                     length={OTP_LENGTH}
@@ -179,7 +180,6 @@ export default function PublicVerifyEmailPage() {
                       <span className="text-[11px] text-success/70 animate-fade-in">{code}</span>
                     )}
                   </div>
-                  <p className="text-gold/60 text-[11px] text-center mt-3">Check your spam/junk folder if you don&apos;t see the email.</p>
                 </div>
 
                 {/* Verify Button */}

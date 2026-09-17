@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { usePublicResetPassword, useHotelName } from '@/hooks/usePublicApi'
-import { Loader2, ShieldCheck, CheckCircle, Mail, Eye, EyeOff } from 'lucide-react'
+import { Loader2, ShieldCheck, CheckCircle, Mail, Eye, EyeOff, CircleCheck, Circle } from 'lucide-react'
 
 const OTP_LENGTH = 6
 
@@ -71,6 +71,13 @@ export default function PublicResetPasswordPage() {
   }, [focusInput])
 
   const codeComplete = code.length === OTP_LENGTH
+
+  const pwChecks = [
+    { label: 'At least 8 characters', met: password.length >= 8 },
+    { label: 'Uppercase letter', met: /[A-Z]/.test(password) },
+    { label: 'Lowercase letter', met: /[a-z]/.test(password) },
+    { label: 'Number', met: /[0-9]/.test(password) },
+  ]
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -156,10 +163,11 @@ export default function PublicResetPasswordPage() {
 
                   {/* Section 1 — Verification Code */}
                   <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
-                    <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center gap-2 mb-2">
                       <Mail className="h-4 w-4 text-gold/70" />
                       <span className="text-xs uppercase tracking-[0.12em] text-white/50 font-medium">Verification Code</span>
                     </div>
+                    <p className="text-gold/70 text-xs mb-4">Check your <span className="font-medium">spam/junk folder</span> if you don&apos;t see the email.</p>
 
                     {/* Email */}
                     <div className="mb-4">
@@ -206,7 +214,6 @@ export default function PublicResetPasswordPage() {
                           <span className="text-[11px] text-success/70 animate-fade-in">{code}</span>
                         )}
                       </div>
-                      <p className="text-gold/60 text-[11px] text-center mt-3">Check your spam/junk folder if you don&apos;t see the email.</p>
                     </div>
                   </div>
 
@@ -242,6 +249,20 @@ export default function PublicResetPasswordPage() {
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
                         </div>
+                        {password.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {pwChecks.map((c) => (
+                              <div key={c.label} className="flex items-center gap-1.5">
+                                {c.met ? (
+                                  <CircleCheck className="h-3 w-3 text-success" />
+                                ) : (
+                                  <Circle className="h-3 w-3 text-white/20" />
+                                )}
+                                <span className={`text-[11px] ${c.met ? 'text-success' : 'text-white/30'}`}>{c.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div>
                         <label htmlFor="rp_password_confirmation" className="text-[11px] uppercase tracking-[0.12em] text-white/30 block mb-1.5">Confirm Password</label>
@@ -267,7 +288,7 @@ export default function PublicResetPasswordPage() {
                   {/* Submit */}
                   <button
                     type="submit"
-                    disabled={resetPassword.isPending || !codeComplete}
+                    disabled={resetPassword.isPending || !codeComplete || !pwChecks.every(c => c.met)}
                     className="btn-gold w-full flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {resetPassword.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
