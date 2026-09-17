@@ -22,12 +22,10 @@ import { ExtendStayModal } from '@/components/shared/ExtendStayModal'
 import { RefundModal } from '@/components/shared/RefundModal'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { DatePicker } from '@/components/ui/date-picker'
-import { Select } from '@/components/ui/select'
 import type { Reservation } from '@/types'
 import {
-  Plus, AlertTriangle, X, ArrowRight, CalendarX2, RotateCcw, CalendarDays,
+  Plus, AlertTriangle, X, ArrowRight, CalendarX2, RotateCcw, CalendarDays, Search,
 } from 'lucide-react'
 
 function formatDate(dateStr: string) {
@@ -40,14 +38,14 @@ function nightsBetween(checkIn?: string, checkOut?: string): number {
   return Number.isNaN(diff) ? 0 : Math.max(diff, 0)
 }
 
-const STATUS_OPTIONS = [
-  { value: '', label: 'All Statuses' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'confirmed', label: 'Confirmed' },
-  { value: 'checked_in', label: 'Checked In' },
-  { value: 'checked_out', label: 'Checked Out' },
-  { value: 'cancelled', label: 'Cancelled' },
-  { value: 'no_show', label: 'No Show' },
+const STATUS_TABS = [
+  { value: '', label: 'All', dot: 'bg-slate-400' },
+  { value: 'pending', label: 'Pending', dot: 'bg-yellow-500' },
+  { value: 'confirmed', label: 'Confirmed', dot: 'bg-sky-500' },
+  { value: 'checked_in', label: 'Checked In', dot: 'bg-emerald-500' },
+  { value: 'checked_out', label: 'Checked Out', dot: 'bg-slate-400' },
+  { value: 'cancelled', label: 'Cancelled', dot: 'bg-red-500' },
+  { value: 'no_show', label: 'No Show', dot: 'bg-rose-500' },
 ]
 
 export default function ReservationsPage() {
@@ -116,10 +114,6 @@ export default function ReservationsPage() {
       return prev
     })
   }, [setSearchParams])
-
-  const handleStatusFilterChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    handleStatusFilterValue(e.target.value)
-  }, [handleStatusFilterValue])
 
   const hasActiveFilters = Boolean(search || statusFilter || dateFrom || dateTo || refundRequestedOnly)
 
@@ -352,32 +346,55 @@ export default function ReservationsPage() {
 
       <Card>
         <CardContent className="pt-6">
+          {/* ── Row 1: Status Tabs ── */}
+          <div className="mb-5 inline-flex flex-wrap items-center gap-0.5 rounded-xl bg-slate-100 p-1">
+            {STATUS_TABS.map((tab) => {
+              const isActive = statusFilter === tab.value
+              return (
+                <button
+                  key={tab.value}
+                  onClick={() => handleStatusFilterValue(tab.value)}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                    isActive
+                      ? 'bg-[#1A2238] text-white shadow-sm'
+                      : 'bg-transparent text-slate-600 hover:bg-white/80 hover:text-slate-900'
+                  }`}
+                >
+                  <span className={`h-2 w-2 rounded-full ${tab.dot}`} />
+                  {tab.label}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* ── Row 2: Search + Controls ── */}
           <div className="mb-4 flex flex-wrap items-center gap-3">
-            <div className="relative max-w-sm flex-1">
-              <Input
+            {/* Search */}
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
                 placeholder="Search by reservation # or guest name..."
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
+                className="w-full h-11 pl-10 pr-4 rounded-lg border border-slate-200 bg-white text-sm text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
               />
             </div>
-            <div className="w-44">
-              <Select value={statusFilter} onChange={handleStatusFilterChange}>
-                {STATUS_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </Select>
-            </div>
+
+            {/* Refund Requested Toggle */}
             <button
               onClick={() => { setRefundRequestedOnly(v => !v); setPage(1) }}
-              className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[12px] font-medium transition-colors ${
+              className={`flex items-center gap-1.5 h-11 rounded-lg border px-3.5 text-xs font-medium transition-colors ${
                 refundRequestedOnly
-                  ? 'border-warning bg-warning/10 text-warning'
-                  : 'border-border text-muted hover:border-warning/50 hover:text-warning'
+                  ? 'border-amber-300 bg-amber-50 text-amber-700'
+                  : 'border-slate-200 bg-white text-slate-500 hover:border-amber-300 hover:text-amber-600'
               }`}
             >
               <RotateCcw className="h-3.5 w-3.5" />
               Refund Requested
             </button>
+
+            {/* Date Pickers */}
             <div className="w-44">
               <DatePicker
                 value={dateFrom}
@@ -398,51 +415,54 @@ export default function ReservationsPage() {
 
           {/* Active Filter Bar */}
           {hasActiveFilters && (
-            <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted">
-              <span>Active filters:</span>
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <span className="text-xs text-slate-400 font-medium">Active:</span>
               {search && (
-                <Badge variant="secondary" className="gap-1">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-xs font-medium text-amber-700">
                   Search: {search}
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => handleSearchChange('')}>
+                  <button onClick={() => handleSearchChange('')} className="hover:text-red-500 transition-colors">
                     <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
+                  </button>
+                </span>
               )}
               {statusFilter && (
-                <Badge variant="secondary" className="gap-1">
-                  Status: {STATUS_OPTIONS.find(o => o.value === statusFilter)?.label}
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => handleStatusFilterValue('')}>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-xs font-medium text-amber-700">
+                  Status: {STATUS_TABS.find(o => o.value === statusFilter)?.label}
+                  <button onClick={() => handleStatusFilterValue('')} className="hover:text-red-500 transition-colors">
                     <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
+                  </button>
+                </span>
               )}
               {dateFrom && (
-                <Badge variant="secondary" className="gap-1">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-xs font-medium text-amber-700">
                   From: {dateFrom}
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setDateFrom(''); setPage(1) }}>
+                  <button onClick={() => { setDateFrom(''); setPage(1) }} className="hover:text-red-500 transition-colors">
                     <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
+                  </button>
+                </span>
               )}
               {dateTo && (
-                <Badge variant="secondary" className="gap-1">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-xs font-medium text-amber-700">
                   To: {dateTo}
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setDateTo(''); setPage(1) }}>
+                  <button onClick={() => { setDateTo(''); setPage(1) }} className="hover:text-red-500 transition-colors">
                     <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
+                  </button>
+                </span>
               )}
               {refundRequestedOnly && (
-                <Badge variant="secondary" className="gap-1">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-xs font-medium text-amber-700">
                   Refund Requested
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => { setRefundRequestedOnly(false); setPage(1) }}>
+                  <button onClick={() => { setRefundRequestedOnly(false); setPage(1) }} className="hover:text-red-500 transition-colors">
                     <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
+                  </button>
+                </span>
               )}
-              <Button variant="ghost" size="sm" onClick={clearAllFilters}>
+              <button
+                onClick={clearAllFilters}
+                className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors"
+              >
                 Clear all
-              </Button>
+              </button>
             </div>
           )}
 
