@@ -12,21 +12,14 @@ import { useAuthStore } from '@/stores/authStore'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { RowActions, RowActionButton } from '@/components/shared/RowActions'
-import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
 import { Modal } from '@/components/ui/modal'
 import { DatePicker } from '@/components/ui/date-picker'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useToast } from '@/components/ui/toast'
 import {
   Plus, Edit, Search, Eye, Calendar, Save, Check, X, AlertCircle, Inbox, Loader2,
   UserPlus, UserCog, UserRound, CalendarPlus, CalendarOff, Trash2, Mail, Phone, ShieldCheck, Building2, Lock, Users,
-  ShieldAlert, LogOut, Clock, Globe,
+  ShieldAlert, LogOut, Clock, Globe, ChevronDown, CheckCircle,
 } from 'lucide-react'
 
 const ASSIGNABLE_ROLES: Record<string, string[]> = {
@@ -35,52 +28,75 @@ const ASSIGNABLE_ROLES: Record<string, string[]> = {
   hotel_manager: ['receptionist', 'housekeeping', 'cashier', 'staff'],
 }
 
-const ROLE_BADGE_VARIANT: Record<string, 'danger' | 'gold' | 'info' | 'success' | 'warning' | 'default'> = {
-  super_admin: 'danger',
-  admin: 'gold',
-  hotel_manager: 'info',
-  receptionist: 'success',
-  housekeeping: 'warning',
-  cashier: 'default',
-  staff: 'default',
+const ROLE_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  super_admin: { bg: 'bg-indigo-50', text: 'text-indigo-700', label: 'Super Admin' },
+  admin: { bg: 'bg-amber-50', text: 'text-amber-700', label: 'Admin' },
+  hotel_manager: { bg: 'bg-sky-50', text: 'text-sky-700', label: 'Hotel Manager' },
+  receptionist: { bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Receptionist' },
+  housekeeping: { bg: 'bg-orange-50', text: 'text-orange-700', label: 'Housekeeping' },
+  cashier: { bg: 'bg-purple-50', text: 'text-purple-700', label: 'Cashier' },
+  staff: { bg: 'bg-slate-50', text: 'text-slate-700', label: 'Staff' },
 }
 
-function StaffAvatar({ name }: { name: string }) {
+function StaffAvatar({ name, size = 'sm' }: { name: string; size?: 'sm' | 'md' | 'lg' }) {
   const initials = (name || '?')
     .split(' ')
     .map((n) => n[0])
     .slice(0, 2)
     .join('')
     .toUpperCase()
+  const sizeClasses = size === 'lg'
+    ? 'h-14 w-14 text-lg'
+    : size === 'md'
+      ? 'h-11 w-11 text-sm'
+      : 'h-9 w-9 text-xs'
   return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+    <div className={`flex ${sizeClasses} shrink-0 items-center justify-center rounded-xl bg-slate-100 font-semibold text-slate-700`}>
       {initials}
     </div>
   )
 }
 
-const STAFF_TABS = ['All Staff', 'Schedules', 'Leave Requests'] as const
-
-const LEAVE_TYPE_CONFIG: Record<string, { variant: 'info' | 'danger' | 'warning' | 'default'; label: string }> = {
-  annual: { variant: 'info', label: 'Annual' },
-  sick: { variant: 'danger', label: 'Sick' },
-  personal: { variant: 'warning', label: 'Personal' },
-  other: { variant: 'default', label: 'Other' },
+function RoleBadge({ slug }: { slug: string }) {
+  const style = ROLE_STYLES[slug] ?? ROLE_STYLES.staff
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${style.bg} ${style.text}`}>
+      {style.label}
+    </span>
+  )
 }
 
-const LEAVE_STATUS_CONFIG: Record<string, { variant: 'warning' | 'success' | 'danger' | 'default'; label: string }> = {
-  pending: { variant: 'warning', label: 'Pending' },
-  approved: { variant: 'success', label: 'Approved' },
-  rejected: { variant: 'danger', label: 'Rejected' },
-  cancelled: { variant: 'default', label: 'Cancelled' },
+function ActiveStatus({ active }: { active: boolean }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+      active ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+    }`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-emerald-500 animate-pulse' : 'bg-rose-400'}`} />
+      {active ? 'Active' : 'Inactive'}
+    </span>
+  )
+}
+
+const STAFF_TABS = ['All Staff', 'Schedules', 'Leave Requests'] as const
+
+const LEAVE_TYPE_CONFIG: Record<string, { bg: string; text: string; label: string }> = {
+  annual: { bg: 'bg-sky-50', text: 'text-sky-700', label: 'Annual' },
+  sick: { bg: 'bg-rose-50', text: 'text-rose-700', label: 'Sick' },
+  personal: { bg: 'bg-amber-50', text: 'text-amber-700', label: 'Personal' },
+  other: { bg: 'bg-slate-50', text: 'text-slate-700', label: 'Other' },
+}
+
+const LEAVE_STATUS_CONFIG: Record<string, { bg: string; text: string; label: string }> = {
+  pending: { bg: 'bg-amber-50', text: 'text-amber-700', label: 'Pending' },
+  approved: { bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Approved' },
+  rejected: { bg: 'bg-rose-50', text: 'text-rose-700', label: 'Rejected' },
+  cancelled: { bg: 'bg-slate-50', text: 'text-slate-700', label: 'Cancelled' },
 }
 
 function formatDate(dateStr: string) {
-  if (!dateStr) return '-'
+  if (!dateStr) return 'Not provided'
   return formatDateDisplay(dateStr)
 }
-
-
 
 export default function StaffPage() {
   const [activeTab, setActiveTab] = useState<string>('All Staff')
@@ -117,7 +133,6 @@ export default function StaffPage() {
   const [revokeSessionsUserId, setRevokeSessionsUserId] = useState<number | null>(null)
   const revokeStaffSessions = useRevokeStaffSessions()
 
-
   const { data: staffList, isLoading: staffLoading, error: staffError, refetch: refetchStaff } = useStaffList()
   const { data: rolesData } = useRoles()
   const createStaff = useCreateStaff()
@@ -137,14 +152,17 @@ export default function StaffPage() {
   const assignableRoleIds = roles.filter((r) => (ASSIGNABLE_ROLES[currentUserRole] ?? []).includes(r.slug)).map((r) => r.id)
   const canResetStaffPassword = editStaff ? assignableRoleIds.includes(editStaff.role?.id ?? -1) : false
 
+  const activeCount = staff.filter((s) => s.is_active).length
+  const pendingLeaveCount = leaveList.filter((l) => l.status === 'pending').length
+  const today = new Date().toISOString().split('T')[0]
+  const onLeaveCount = leaveList.filter((l) => l.status === 'approved' && l.start_date <= today && l.end_date >= today).length
+
   const filteredStaff = staff.filter((s) => {
     const q = search.toLowerCase()
-    if (q && !s.name.toLowerCase().includes(q) && !s.email.toLowerCase().includes(q)) return false
+    if (q && !s.name.toLowerCase().includes(q) && !s.email.toLowerCase().includes(q) && !(s.role?.name ?? '').toLowerCase().includes(q)) return false
     if (roleFilter && String(s.role?.id ?? '') !== roleFilter) return false
     return true
   })
-
-  const staffHasActiveFilters = Boolean(search || roleFilter)
 
   function clearStaffFilters() {
     setSearch('')
@@ -157,11 +175,11 @@ export default function StaffPage() {
       label: 'Name',
       sortable: true,
       render: (s) => (
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <StaffAvatar name={s.name} />
           <div className="min-w-0">
             <span className="block truncate text-sm font-medium text-foreground">{s.name}</span>
-            <span className="block truncate text-xs text-muted">{s.email}</span>
+            <span className="block truncate text-xs text-slate-500">{s.email}</span>
           </div>
         </div>
       ),
@@ -169,20 +187,17 @@ export default function StaffPage() {
     {
       key: 'role',
       label: 'Role',
-      render: (s) => {
-        const variant = ROLE_BADGE_VARIANT[s.role?.slug ?? ''] ?? 'info'
-        return <Badge variant={variant}>{s.role?.name ?? '-'}</Badge>
-      },
+      render: (s) => <RoleBadge slug={s.role?.slug ?? ''} />,
     },
     {
       key: 'phone',
       label: 'Phone',
-      render: (s) => <span className="text-muted">{s.phone || '-'}</span>,
+      render: (s) => <span className="text-sm text-slate-500">{s.phone || 'Not provided'}</span>,
     },
     {
       key: 'is_active',
       label: 'Status',
-      render: (s) => <StatusBadge status={s.is_active ? 'active' : 'inactive'} />,
+      render: (s) => <ActiveStatus active={s.is_active} />,
     },
     {
       key: 'actions',
@@ -440,9 +455,9 @@ export default function StaffPage() {
       key: 'staff_name',
       label: 'Staff Name',
       render: (l) => (
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <StaffAvatar name={l.user?.name ?? '?'} />
-          <span className="truncate text-sm font-medium text-foreground">{l.user?.name ?? '-'}</span>
+          <span className="truncate text-sm font-medium text-foreground">{l.user?.name ?? 'Unknown'}</span>
         </div>
       ),
     },
@@ -450,8 +465,12 @@ export default function StaffPage() {
       key: 'type',
       label: 'Type',
       render: (l) => {
-        const cfg = LEAVE_TYPE_CONFIG[l.type] ?? { variant: 'default' as const, label: l.type }
-        return <Badge variant={cfg.variant}>{cfg.label}</Badge>
+        const cfg = LEAVE_TYPE_CONFIG[l.type] ?? LEAVE_TYPE_CONFIG.other
+        return (
+          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${cfg.bg} ${cfg.text}`}>
+            {cfg.label}
+          </span>
+        )
       },
     },
     {
@@ -462,8 +481,8 @@ export default function StaffPage() {
         const days = Math.round((new Date(l.end_date).getTime() - new Date(l.start_date).getTime()) / 86400000) + 1
         return (
           <div>
-            <span className="font-medium text-foreground">{formatDate(l.start_date)} <span className="text-muted">→</span> {formatDate(l.end_date)}</span>
-            <span className="block text-xs text-muted">{days} day{days !== 1 ? 's' : ''}</span>
+            <span className="font-medium text-foreground">{formatDate(l.start_date)} <span className="text-slate-400">→</span> {formatDate(l.end_date)}</span>
+            <span className="block text-xs text-slate-500">{days} day{days !== 1 ? 's' : ''}</span>
           </div>
         )
       },
@@ -472,14 +491,18 @@ export default function StaffPage() {
       key: 'status',
       label: 'Status',
       render: (l) => {
-        const cfg = LEAVE_STATUS_CONFIG[l.status] ?? { variant: 'default' as const, label: l.status }
-        return <Badge variant={cfg.variant}>{cfg.label}</Badge>
+        const cfg = LEAVE_STATUS_CONFIG[l.status] ?? LEAVE_STATUS_CONFIG.pending
+        return (
+          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${cfg.bg} ${cfg.text}`}>
+            {cfg.label}
+          </span>
+        )
       },
     },
     {
       key: 'reason',
       label: 'Reason',
-      render: (l) => <span className="text-muted max-w-[200px] truncate">{l.reason || '-'}</span>,
+      render: (l) => <span className="text-sm text-slate-500 max-w-[200px] truncate">{l.reason || 'Not provided'}</span>,
     },
     {
       key: 'actions',
@@ -512,9 +535,9 @@ export default function StaffPage() {
       key: 'staff_name',
       label: 'Staff Name',
       render: (s) => (
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <StaffAvatar name={s.user?.name ?? '?'} />
-          <span className="truncate text-sm font-medium text-foreground">{s.user?.name ?? '-'}</span>
+          <span className="truncate text-sm font-medium text-foreground">{s.user?.name ?? 'Unknown'}</span>
         </div>
       ),
     },
@@ -525,14 +548,14 @@ export default function StaffPage() {
       render: (s) => (
         <div>
           <span className="font-medium text-foreground">{formatDate(s.date)}</span>
-          <span className="block text-xs text-muted">{s.start_time || '-'} – {s.end_time || '-'}</span>
+          <span className="block text-xs text-slate-500">{s.start_time || '—'} – {s.end_time || '—'}</span>
         </div>
       ),
     },
     {
       key: 'notes',
       label: 'Notes',
-      render: (s) => <span className="text-muted max-w-[200px] truncate">{s.notes || '-'}</span>,
+      render: (s) => <span className="text-sm text-slate-500 max-w-[200px] truncate">{s.notes || 'Not provided'}</span>,
     },
     {
       key: 'actions',
@@ -560,77 +583,145 @@ export default function StaffPage() {
 
   return (
     <div>
-      <PageHeader title="Staff Management" />
+      <PageHeader
+        title="Staff Management"
+        description="Manage team members, roles, shift schedules, and leave requests."
+      />
 
-      <div className="mb-6 flex gap-1 rounded-lg bg-border/50 p-0.5 w-fit">
+      {/* ── Segmented Tab Control ── */}
+      <div className="mb-6 inline-flex items-center gap-0.5 rounded-xl bg-slate-100 p-1">
         {STAFF_TABS.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
               activeTab === tab
-                ? 'bg-card text-primary shadow-sm'
-                : 'text-muted hover:text-foreground'
+                ? 'bg-[#1A2238] text-white shadow-sm'
+                : 'bg-transparent text-slate-600 hover:bg-white/80 hover:text-slate-900'
             }`}
           >
+            {tab === 'All Staff' && <Users className="h-3.5 w-3.5" />}
+            {tab === 'Schedules' && <Calendar className="h-3.5 w-3.5" />}
+            {tab === 'Leave Requests' && <CalendarOff className="h-3.5 w-3.5" />}
             {tab}
           </button>
         ))}
       </div>
 
+      {/* ── Summary Metric Cards ── */}
       {activeTab === 'All Staff' && (
-        <Card>
-          <CardContent className="pt-6">
+        <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                <Users className="h-4 w-4" />
+              </div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Staff</span>
+            </div>
+            <p className="mt-2.5 text-2xl font-bold tabular-nums text-foreground">{staff.length}</p>
+          </div>
+          <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                <CheckCircle className="h-4 w-4" />
+              </div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Active On Duty</span>
+            </div>
+            <p className="mt-2.5 text-2xl font-bold tabular-nums text-emerald-600">{activeCount}</p>
+          </div>
+          <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                <CalendarOff className="h-4 w-4" />
+              </div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">On Leave</span>
+            </div>
+            <p className="mt-2.5 text-2xl font-bold tabular-nums text-amber-600">{onLeaveCount}</p>
+          </div>
+          <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+                <Clock className="h-4 w-4" />
+              </div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Pending Requests</span>
+            </div>
+            <p className="mt-2.5 text-2xl font-bold tabular-nums text-sky-600">{pendingLeaveCount}</p>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'All Staff' && (
+        <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm">
+          <div className="p-6">
+            {/* ── Toolbar ── */}
             <div className="mb-4 flex flex-wrap items-center gap-3">
-              <div className="relative max-w-xs flex-1">
-                <Input
-                  placeholder="Search by name or email..."
-                  icon={<Search className="h-4 w-4" />}
+              <div className="relative flex-1 min-w-[200px] max-w-md">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search staff by name, email, or role..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  className="w-full h-11 pl-10 pr-4 rounded-lg border border-slate-200 bg-white text-sm text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
                 />
               </div>
-              <Select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="w-[160px]"
-              >
-                <option value="">All Roles</option>
-                {roles.map((r) => (
-                  <option key={r.id} value={String(r.id)}>{r.name}</option>
-                ))}
-              </Select>
+
+              <div className="relative">
+                <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="h-11 pl-9 pr-10 rounded-lg border border-slate-200 bg-white text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                >
+                  <option value="">All Roles</option>
+                  {roles.map((r) => (
+                    <option key={r.id} value={String(r.id)}>{r.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              </div>
+
               {canAddStaff && (
-                <Button variant="primary" className="ml-auto" onClick={() => setShowAddStaff(true)}>
-                  <UserPlus className="mr-2 h-4 w-4" />
+                <button
+                  onClick={() => setShowAddStaff(true)}
+                  className="h-11 px-5 rounded-lg bg-[#1A2238] text-white text-sm font-semibold inline-flex items-center gap-2 hover:bg-[#1A2238]/90 transition-colors shadow-sm"
+                >
+                  <UserPlus className="h-4 w-4" />
                   Add Staff
-                </Button>
+                </button>
+              )}
+
+              {(search || roleFilter) && (
+                <button
+                  onClick={clearStaffFilters}
+                  className="h-11 px-4 rounded-lg text-xs font-semibold text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all inline-flex items-center gap-1.5"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Clear all
+                </button>
               )}
             </div>
 
-            {/* Active Filter Bar */}
-            {staffHasActiveFilters && (
-              <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted">
-                <span>Active filters:</span>
+            {/* ── Active Filter Badges ── */}
+            {(search || roleFilter) && (
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <span className="text-xs text-slate-400 font-medium">Active filters:</span>
                 {search && (
-                  <Badge variant="secondary" className="gap-1">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-xs font-medium text-slate-600">
                     Search: {search}
-                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setSearch('')}>
+                    <button onClick={() => setSearch('')} className="hover:text-rose-500 transition-colors">
                       <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
+                    </button>
+                  </span>
                 )}
                 {roleFilter && (
-                  <Badge variant="secondary" className="gap-1">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-xs font-medium text-slate-600">
                     Role: {roles.find((r) => String(r.id) === roleFilter)?.name}
-                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setRoleFilter('')}>
+                    <button onClick={() => setRoleFilter('')} className="hover:text-rose-500 transition-colors">
                       <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
+                    </button>
+                  </span>
                 )}
-                <Button variant="ghost" size="sm" onClick={clearStaffFilters}>
-                  Clear all
-                </Button>
               </div>
             )}
 
@@ -643,31 +734,34 @@ export default function StaffPage() {
               keyExtractor={(s) => s.id}
               emptyState={
                 <div className="flex flex-col items-center justify-center py-12">
-                  <Users className="mb-3 h-10 w-10 text-muted/50" />
+                  <Users className="mb-3 h-10 w-10 text-slate-300" />
                   <p className="text-sm font-medium text-foreground">No staff match your filters</p>
-                  <p className="text-sm text-muted">Try adjusting your search or role filter.</p>
-                  {staffHasActiveFilters && (
-                    <Button variant="outline" className="mt-4" onClick={clearStaffFilters}>
+                  <p className="text-sm text-slate-500">Try adjusting your search or role filter.</p>
+                  {(search || roleFilter) && (
+                    <button onClick={clearStaffFilters} className="mt-4 text-sm font-medium text-slate-600 hover:text-foreground underline">
                       Clear all filters
-                    </Button>
+                    </button>
                   )}
                 </div>
               }
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {activeTab === 'Schedules' && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Staff Schedules</CardTitle>
-            <Button variant="primary" size="sm" onClick={openAddSchedule}>
-              <Plus className="h-4 w-4" />
+        <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm">
+          <div className="flex items-center justify-between p-6 pb-0">
+            <h3 className="text-sm font-semibold text-foreground">Staff Schedules</h3>
+            <button
+              onClick={openAddSchedule}
+              className="h-9 px-4 rounded-lg bg-[#1A2238] text-white text-xs font-semibold inline-flex items-center gap-1.5 hover:bg-[#1A2238]/90 transition-colors shadow-sm"
+            >
+              <Plus className="h-3.5 w-3.5" />
               Add Schedule
-            </Button>
-          </CardHeader>
-          <CardContent>
+            </button>
+          </div>
+          <div className="p-6">
             <div className="mb-4 flex flex-wrap items-center gap-3">
               <div className="w-44">
                 <DatePicker
@@ -676,36 +770,38 @@ export default function StaffPage() {
                   clearable
                 />
               </div>
-              <Select
-                value={scheduleStaffFilter}
-                onChange={(e) => setScheduleStaffFilter(e.target.value)}
-                className="w-44"
-              >
-                <option value="">All Staff</option>
-                {staff.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </Select>
+              <div className="relative">
+                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                <select
+                  value={scheduleStaffFilter}
+                  onChange={(e) => setScheduleStaffFilter(e.target.value)}
+                  className="h-11 pl-9 pr-10 rounded-lg border border-slate-200 bg-white text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                >
+                  <option value="">All Staff</option>
+                  {staff.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              </div>
             </div>
 
             {schedulesLoading ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-10 w-full" />
+                  <div key={i} className="h-12 w-full animate-pulse rounded-lg bg-slate-100" />
                 ))}
               </div>
             ) : schedulesError ? (
-              <div className="flex flex-col items-center justify-center rounded-xl border border-border py-12">
-                <AlertCircle className="mb-3 h-10 w-10 text-danger" />
+              <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 py-12">
+                <AlertCircle className="mb-3 h-10 w-10 text-rose-400" />
                 <p className="mb-2 text-sm font-medium text-foreground">Something went wrong</p>
-                <p className="mb-4 text-sm text-muted">{(schedulesError as Error).message}</p>
-                <Button variant="outline" onClick={() => refetchSchedules()}>
-                  Retry
-                </Button>
+                <p className="mb-4 text-sm text-slate-500">{(schedulesError as Error).message}</p>
+                <button onClick={() => refetchSchedules()} className="text-sm font-medium text-slate-600 hover:text-foreground underline">Retry</button>
               </div>
             ) : scheduleList.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
-                <Calendar className="mb-3 h-10 w-10 text-muted/50" />
+                <Calendar className="mb-3 h-10 w-10 text-slate-300" />
                 <p className="text-sm font-medium text-foreground">No schedules for this period</p>
               </div>
             ) : (
@@ -715,38 +811,39 @@ export default function StaffPage() {
                 keyExtractor={(s: any) => s.id}
               />
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {activeTab === 'Leave Requests' && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Leave Requests</CardTitle>
-            <Button variant="primary" size="sm" onClick={() => setShowAddLeave(true)}>
-              <Plus className="h-4 w-4" />
+        <div className="rounded-xl border border-slate-200/80 bg-white shadow-sm">
+          <div className="flex items-center justify-between p-6 pb-0">
+            <h3 className="text-sm font-semibold text-foreground">Leave Requests</h3>
+            <button
+              onClick={() => setShowAddLeave(true)}
+              className="h-9 px-4 rounded-lg bg-[#1A2238] text-white text-xs font-semibold inline-flex items-center gap-1.5 hover:bg-[#1A2238]/90 transition-colors shadow-sm"
+            >
+              <Plus className="h-3.5 w-3.5" />
               Request Leave
-            </Button>
-          </CardHeader>
-          <CardContent className="pt-6">
+            </button>
+          </div>
+          <div className="p-6">
             {leaveLoading ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-10 w-full" />
+                  <div key={i} className="h-12 w-full animate-pulse rounded-lg bg-slate-100" />
                 ))}
               </div>
             ) : leaveError ? (
-              <div className="flex flex-col items-center justify-center rounded-xl border border-border py-12">
-                <AlertCircle className="mb-3 h-10 w-10 text-danger" />
+              <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 py-12">
+                <AlertCircle className="mb-3 h-10 w-10 text-rose-400" />
                 <p className="mb-2 text-sm font-medium text-foreground">Something went wrong</p>
-                <p className="mb-4 text-sm text-muted">{(leaveError as Error).message}</p>
-                <Button variant="outline" onClick={() => refetchLeaves()}>
-                  Retry
-                </Button>
+                <p className="mb-4 text-sm text-slate-500">{(leaveError as Error).message}</p>
+                <button onClick={() => refetchLeaves()} className="text-sm font-medium text-slate-600 hover:text-foreground underline">Retry</button>
               </div>
             ) : leaveList.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12">
-                <Inbox className="mb-3 h-10 w-10 text-muted/50" />
+                <Inbox className="mb-3 h-10 w-10 text-slate-300" />
                 <p className="text-sm font-medium text-foreground">No leave requests found</p>
               </div>
             ) : (
@@ -756,156 +853,166 @@ export default function StaffPage() {
                 keyExtractor={(l: any) => l.id}
               />
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/*  MODALS                                                    */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+
+      {/* ── Staff Details Modal ── */}
       <Modal
         isOpen={viewStaffId !== null}
         onClose={() => setViewStaffId(null)}
         title="Staff Details"
         size="xl"
         footer={
-          <Button variant="outline" onClick={() => setViewStaffId(null)}>Close</Button>
+          <button
+            onClick={() => setViewStaffId(null)}
+            className="h-10 px-5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            Close
+          </button>
         }
       >
         {viewStaff ? (
           <div className="space-y-4">
+            {/* Header Profile */}
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg font-bold text-primary">
-                {viewStaff.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)}
-              </div>
+              <StaffAvatar name={viewStaff.name} size="lg" />
               <div className="min-w-0">
                 <h3 className="truncate text-lg font-semibold text-foreground">{viewStaff.name}</h3>
-                <p className="truncate text-sm text-muted">{viewStaff.email}</p>
-                <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                  <Badge variant="info">{viewStaff.role?.name ?? '-'}</Badge>
-                  <StatusBadge status={viewStaff.is_active ? 'active' : 'inactive'} />
+                <p className="truncate text-sm text-slate-500">{viewStaff.email}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <RoleBadge slug={viewStaff.role?.slug ?? ''} />
+                  <ActiveStatus active={viewStaff.is_active} />
                 </div>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            {/* Profile Card */}
+            <div className="rounded-xl border border-slate-200/80 bg-white p-4">
               <div className="mb-3 flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-[#1A2238]">
                   <UserRound className="h-4 w-4" />
                 </div>
                 <h4 className="text-sm font-semibold text-foreground">Profile</h4>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="rounded-xl bg-bg p-3">
-                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                <div className="rounded-lg border border-slate-100 p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-400">
                     <UserRound className="h-3.5 w-3.5" /> Full Name
                   </p>
-                  <p className="text-sm font-semibold text-foreground">{viewStaff.name}</p>
+                  <p className="text-sm font-medium text-foreground">{viewStaff.name}</p>
                 </div>
-                <div className="rounded-xl bg-bg p-3">
-                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                <div className="rounded-lg border border-slate-100 p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-400">
                     <Mail className="h-3.5 w-3.5" /> Email
                   </p>
-                  <a href={`mailto:${viewStaff.email}`} className="break-all text-sm font-semibold text-primary hover:underline">
+                  <a href={`mailto:${viewStaff.email}`} className="break-all text-sm font-medium text-[#1A2238] hover:underline">
                     {viewStaff.email}
                   </a>
                 </div>
-                <div className="rounded-xl bg-bg p-3">
-                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                <div className="rounded-lg border border-slate-100 p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-400">
                     <Phone className="h-3.5 w-3.5" /> Phone
                   </p>
-                  <p className="text-sm font-semibold text-foreground">{viewStaff.phone || '—'}</p>
+                  <p className="text-sm font-medium text-foreground">{viewStaff.phone || 'Not provided'}</p>
                 </div>
-                <div className="rounded-xl bg-bg p-3">
-                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                <div className="rounded-lg border border-slate-100 p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-400">
                     <Calendar className="h-3.5 w-3.5" /> Member Since
                   </p>
-                  <p className="text-sm font-semibold text-foreground">{formatDate(viewStaff.created_at)}</p>
+                  <p className="text-sm font-medium text-foreground">{formatDate(viewStaff.created_at)}</p>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            {/* Role & Access Card */}
+            <div className="rounded-xl border border-slate-200/80 bg-white p-4">
               <div className="mb-3 flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/15 text-gold-dark">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-[#1A2238]">
                   <ShieldCheck className="h-4 w-4" />
                 </div>
                 <h4 className="text-sm font-semibold text-foreground">Role & Access</h4>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="rounded-xl bg-bg p-3">
-                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                <div className="rounded-lg border border-slate-100 p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-400">
                     <ShieldCheck className="h-3.5 w-3.5" /> Role
                   </p>
-                  <Badge variant="info">{viewStaff.role?.name ?? '—'}</Badge>
+                  <RoleBadge slug={viewStaff.role?.slug ?? ''} />
                 </div>
-                <div className="rounded-xl bg-bg p-3">
-                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                <div className="rounded-lg border border-slate-100 p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-400">
                     <Building2 className="h-3.5 w-3.5" /> Status
                   </p>
-                  <StatusBadge status={viewStaff.is_active ? 'active' : 'inactive'} />
+                  <ActiveStatus active={viewStaff.is_active} />
                 </div>
               </div>
             </div>
 
             {/* Security Card */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="rounded-xl border border-slate-200/80 bg-white p-4">
               <div className="mb-3 flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-danger/10 text-danger">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-[#1A2238]">
                   <ShieldAlert className="h-4 w-4" />
                 </div>
                 <h4 className="text-sm font-semibold text-foreground">Security</h4>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="rounded-xl bg-bg p-3">
-                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                <div className="rounded-lg border border-slate-100 p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-400">
                     <Clock className="h-3.5 w-3.5" /> Last Login
                   </p>
-                  <p className="text-sm font-semibold text-foreground">
-                    {viewStaff.last_login_at ? formatDateDisplay(viewStaff.last_login_at) : '—'}
+                  <p className="text-sm font-medium text-foreground">
+                    {viewStaff.last_login_at ? formatDateDisplay(viewStaff.last_login_at) : 'No active sessions'}
                   </p>
                   {viewStaff.last_login_ip && (
-                    <p className="text-xs text-muted mt-0.5">
+                    <p className="text-xs text-slate-400 mt-0.5">
                       IP: <span className="font-mono">{viewStaff.last_login_ip}</span>
                     </p>
                   )}
                 </div>
-                <div className="rounded-xl bg-bg p-3">
-                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted">
+                <div className="rounded-lg border border-slate-100 p-3">
+                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-400">
                     <Globe className="h-3.5 w-3.5" /> Device
                   </p>
-                  <p className="text-sm font-semibold text-foreground truncate" title={viewStaff.last_login_user_agent ?? ''}>
+                  <p className="text-sm font-medium text-foreground truncate" title={viewStaff.last_login_user_agent ?? ''}>
                     {viewStaff.last_login_user_agent
                       ? viewStaff.last_login_user_agent.includes('Chrome') ? 'Chrome'
                         : viewStaff.last_login_user_agent.includes('Firefox') ? 'Firefox'
                         : viewStaff.last_login_user_agent.includes('Safari') ? 'Safari'
                         : viewStaff.last_login_user_agent.includes('Edge') ? 'Edge'
                         : 'Other browser'
-                      : '—'}
+                      : 'No active sessions'}
                   </p>
                 </div>
               </div>
               <div className="mt-3 flex justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
+                <button
                   onClick={() => {
                     setRevokeSessionsUserId(viewStaff.id)
                     setShowRevokeSessionsConfirm(true)
                   }}
-                  className="text-danger hover:bg-danger/10 border-danger/30"
+                  className="h-9 px-4 rounded-lg border border-rose-200 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors inline-flex items-center gap-1.5"
                 >
-                  <LogOut className="mr-1.5 h-3.5 w-3.5" />
+                  <LogOut className="h-3.5 w-3.5" />
                   Revoke All Sessions
-                </Button>
+                </button>
               </div>
             </div>
           </div>
         ) : (
           <div className="flex flex-col items-center py-8 text-center">
-            <AlertCircle className="mb-2 h-8 w-8 text-muted" />
-            <p className="text-sm text-muted">Could not load staff details.</p>
+            <AlertCircle className="mb-2 h-8 w-8 text-slate-400" />
+            <p className="text-sm text-slate-500">Could not load staff details.</p>
           </div>
         )}
       </Modal>
 
+      {/* ── Add Staff Modal ── */}
       <Modal
         isOpen={showAddStaff}
         onClose={closeAddStaff}
@@ -913,97 +1020,139 @@ export default function StaffPage() {
         size="lg"
         footer={
           <div className="flex gap-3">
-            <Button variant="outline" onClick={closeAddStaff} disabled={createStaff.isPending}>Cancel</Button>
-            <Button variant="primary" onClick={handleAddStaff} disabled={createStaff.isPending}>
-              {createStaff.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <button
+              onClick={closeAddStaff}
+              disabled={createStaff.isPending}
+              className="h-10 px-5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddStaff}
+              disabled={createStaff.isPending}
+              className="h-10 px-5 rounded-lg bg-[#1A2238] text-white text-sm font-semibold inline-flex items-center gap-2 hover:bg-[#1A2238]/90 transition-colors disabled:opacity-50 shadow-sm"
+            >
+              {createStaff.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
               Create Account
-            </Button>
+            </button>
           </div>
         }
       >
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/15 text-gold-dark">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-[#1A2238]">
               <UserPlus className="h-5 w-5" />
             </div>
             <div>
               <h4 className="text-sm font-semibold text-foreground">Add Staff</h4>
-              <p className="text-xs text-muted">Create a new staff account and assign a role.</p>
+              <p className="text-xs text-slate-500">Create a new staff account and assign a role.</p>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-200/80 bg-white p-4">
             <div className="mb-3 flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-[#1A2238]">
                 <UserRound className="h-4 w-4" />
               </div>
               <h4 className="text-sm font-semibold text-foreground">Account Details</h4>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Input
-                label="Name"
-                placeholder="Full name"
-                value={addForm.name}
-                onChange={(e) => setAddForm((p) => ({ ...p, name: e.target.value }))}
-                error={addFormErrors.name}
-              />
-              <Input
-                label="Email"
-                type="email"
-                placeholder="name@hotel.com"
-                value={addForm.email}
-                onChange={(e) => setAddForm((p) => ({ ...p, email: e.target.value }))}
-                error={addFormErrors.email}
-              />
-              <Select
-                label="Role"
-                placeholder="Select role"
-                value={addForm.role_id}
-                onChange={(e) => setAddForm((p) => ({ ...p, role_id: e.target.value }))}
-                error={addFormErrors.role_id}
-              >
-                {roles.filter((r) => assignableRoleIds.includes(r.id)).map((r) => (
-                  <option key={r.id} value={r.id}>{r.name}</option>
-                ))}
-              </Select>
-              <Input
-                label="Phone"
-                placeholder="0917 123 4567 (optional)"
-                value={addForm.phone}
-                onChange={(e) => setAddForm((p) => ({ ...p, phone: stripPhoneInput(e.target.value) }))}
-                maxLength={15}
-              />
+              <div className="space-y-1.5">
+                <label htmlFor="add-name" className="text-sm font-medium text-foreground">Name</label>
+                <input
+                  id="add-name"
+                  type="text"
+                  placeholder="Full name"
+                  value={addForm.name}
+                  onChange={(e) => setAddForm((p) => ({ ...p, name: e.target.value }))}
+                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                />
+                {addFormErrors.name && <p className="text-xs text-rose-500">{addFormErrors.name}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="add-email" className="text-sm font-medium text-foreground">Email</label>
+                <input
+                  id="add-email"
+                  type="email"
+                  placeholder="name@hotel.com"
+                  value={addForm.email}
+                  onChange={(e) => setAddForm((p) => ({ ...p, email: e.target.value }))}
+                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                />
+                {addFormErrors.email && <p className="text-xs text-rose-500">{addFormErrors.email}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="add-role" className="text-sm font-medium text-foreground">Role</label>
+                <div className="relative">
+                  <select
+                    id="add-role"
+                    value={addForm.role_id}
+                    onChange={(e) => setAddForm((p) => ({ ...p, role_id: e.target.value }))}
+                    className="h-11 w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-10 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                  >
+                    <option value="">Select role</option>
+                    {roles.filter((r) => assignableRoleIds.includes(r.id)).map((r) => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                </div>
+                {addFormErrors.role_id && <p className="text-xs text-rose-500">{addFormErrors.role_id}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="add-phone" className="text-sm font-medium text-foreground">Phone</label>
+                <input
+                  id="add-phone"
+                  type="text"
+                  placeholder="0917 123 4567 (optional)"
+                  value={addForm.phone}
+                  onChange={(e) => setAddForm((p) => ({ ...p, phone: stripPhoneInput(e.target.value) }))}
+                  maxLength={15}
+                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                />
+              </div>
             </div>
-            <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm font-medium text-foreground">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-border text-primary focus:ring-primary/50"
-                checked={addForm.is_active}
-                onChange={(e) => setAddForm((p) => ({ ...p, is_active: e.target.checked }))}
-              />
-              Active
-            </label>
+            <div className="mt-4">
+              <label className="relative inline-flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  className="peer sr-only"
+                  checked={addForm.is_active}
+                  onChange={(e) => setAddForm((p) => ({ ...p, is_active: e.target.checked }))}
+                />
+                <div className="h-6 w-11 rounded-full bg-slate-200 transition-colors peer-checked:bg-emerald-500 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-all peer-checked:after:translate-x-full" />
+                <span className="text-sm font-medium text-foreground">Active</span>
+              </label>
+            </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-200/80 bg-white p-4">
             <div className="mb-3 flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warning/10 text-warning">
-                <ShieldCheck className="h-4 w-4" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-[#1A2238]">
+                <Lock className="h-4 w-4" />
               </div>
-              <h4 className="text-sm font-semibold text-foreground">Security</h4>
+              <div>
+                <h4 className="text-sm font-semibold text-foreground">Security</h4>
+                <p className="text-xs text-slate-500">Set the initial password for this account.</p>
+              </div>
             </div>
-            <Input
-              label="Password"
-              type="password"
-              placeholder="Minimum 8 characters"
-              value={addForm.password}
-              onChange={(e) => setAddForm((p) => ({ ...p, password: e.target.value }))}
-              error={addFormErrors.password}
-            />
+            <div className="space-y-1.5">
+              <label htmlFor="add-password" className="text-sm font-medium text-foreground">Password</label>
+              <input
+                id="add-password"
+                type="password"
+                placeholder="Minimum 8 characters"
+                value={addForm.password}
+                onChange={(e) => setAddForm((p) => ({ ...p, password: e.target.value }))}
+                className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+              />
+              {addFormErrors.password && <p className="text-xs text-rose-500">{addFormErrors.password}</p>}
+            </div>
           </div>
         </div>
       </Modal>
 
+      {/* ── Edit Staff Modal ── */}
       <Modal
         isOpen={editStaff !== null}
         onClose={closeEditModal}
@@ -1011,108 +1160,150 @@ export default function StaffPage() {
         size="lg"
         footer={
           <div className="flex gap-3">
-            <Button variant="outline" onClick={closeEditModal}>Cancel</Button>
-            <Button variant="primary" onClick={handleEditSubmit}>
-              <Save className="h-4 w-4" /> Save
-            </Button>
+            <button
+              onClick={closeEditModal}
+              className="h-10 px-5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleEditSubmit}
+              className="h-10 px-5 rounded-lg bg-[#1A2238] text-white text-sm font-semibold inline-flex items-center gap-2 hover:bg-[#1A2238]/90 transition-colors shadow-sm"
+            >
+              <Save className="h-4 w-4" />
+              Save Changes
+            </button>
           </div>
         }
       >
         <form onSubmit={handleEditSubmit} className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/15 text-gold-dark">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-[#1A2238]">
               <UserCog className="h-5 w-5" />
             </div>
             <div>
               <h4 className="text-sm font-semibold text-foreground">Edit Staff</h4>
-              <p className="text-xs text-muted">Update the staff account details.</p>
+              <p className="text-xs text-slate-500">Update the staff account details.</p>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-200/80 bg-white p-4">
             <div className="mb-3 flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-[#1A2238]">
                 <UserRound className="h-4 w-4" />
               </div>
               <h4 className="text-sm font-semibold text-foreground">Account Details</h4>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Input
-                label="Name"
-                value={editForm.name}
-                onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
-                error={editFormErrors.name}
-              />
-              <Input
-                label="Email"
-                type="email"
-                value={editForm.email}
-                onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
-                error={editFormErrors.email}
-              />
-              <Input
-                label="Phone"
-                placeholder="0917 123 4567 (optional)"
-                value={editForm.phone}
-                onChange={(e) => setEditForm((p) => ({ ...p, phone: stripPhoneInput(e.target.value) }))}
-                maxLength={15}
-              />
-              <Select
-                label="Role"
-                value={editForm.role_id}
-                onChange={(e) => setEditForm((p) => ({ ...p, role_id: e.target.value }))}
-              >
-                <option value="">Select role</option>
-                {roles.filter((r) => assignableRoleIds.includes(r.id)).map((r) => (
-                  <option key={r.id} value={r.id}>{r.name}</option>
-                ))}
-              </Select>
+              <div className="space-y-1.5">
+                <label htmlFor="edit-name" className="text-sm font-medium text-foreground">Name</label>
+                <input
+                  id="edit-name"
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                />
+                {editFormErrors.name && <p className="text-xs text-rose-500">{editFormErrors.name}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="edit-email" className="text-sm font-medium text-foreground">Email</label>
+                <input
+                  id="edit-email"
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm((p) => ({ ...p, email: e.target.value }))}
+                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                />
+                {editFormErrors.email && <p className="text-xs text-rose-500">{editFormErrors.email}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="edit-phone" className="text-sm font-medium text-foreground">Phone</label>
+                <input
+                  id="edit-phone"
+                  type="text"
+                  placeholder="0917 123 4567 (optional)"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm((p) => ({ ...p, phone: stripPhoneInput(e.target.value) }))}
+                  maxLength={15}
+                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="edit-role" className="text-sm font-medium text-foreground">Role</label>
+                <div className="relative">
+                  <select
+                    id="edit-role"
+                    value={editForm.role_id}
+                    onChange={(e) => setEditForm((p) => ({ ...p, role_id: e.target.value }))}
+                    className="h-11 w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-10 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                  >
+                    <option value="">Select role</option>
+                    {roles.filter((r) => assignableRoleIds.includes(r.id)).map((r) => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                </div>
+              </div>
             </div>
-            <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm font-medium text-foreground">
-              <input
-                type="checkbox"
-                className="h-4 w-4 rounded border-border text-primary focus:ring-primary/50"
-                checked={editForm.is_active}
-                onChange={(e) => setEditForm((p) => ({ ...p, is_active: e.target.checked }))}
-              />
-              Active
-            </label>
+            <div className="mt-4">
+              <label className="relative inline-flex cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  className="peer sr-only"
+                  checked={editForm.is_active}
+                  onChange={(e) => setEditForm((p) => ({ ...p, is_active: e.target.checked }))}
+                />
+                <div className="h-6 w-11 rounded-full bg-slate-200 transition-colors peer-checked:bg-emerald-500 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-all peer-checked:after:translate-x-full" />
+                <span className="text-sm font-medium text-foreground">Active</span>
+              </label>
+            </div>
           </div>
 
           {canResetStaffPassword && (
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="rounded-xl border border-slate-200/80 bg-white p-4">
               <div className="mb-3 flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-[#1A2238]">
                   <Lock className="h-4 w-4" />
                 </div>
                 <div>
                   <h4 className="text-sm font-semibold text-foreground">Reset Password</h4>
-                  <p className="text-xs text-muted">Leave blank to keep the current password.</p>
+                  <p className="text-xs text-slate-500">Leave blank to keep the current password.</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Input
-                  label="New Password"
-                  type="password"
-                  placeholder="Enter new password"
-                  value={editForm.password}
-                  onChange={(e) => setEditForm((p) => ({ ...p, password: e.target.value }))}
-                  error={editFormErrors.password}
-                />
-                <Input
-                  label="Confirm Password"
-                  type="password"
-                  placeholder="Confirm new password"
-                  value={editForm.password_confirmation}
-                  onChange={(e) => setEditForm((p) => ({ ...p, password_confirmation: e.target.value }))}
-                  error={editFormErrors.password_confirmation}
-                />
+                <div className="space-y-1.5">
+                  <label htmlFor="edit-new-password" className="text-sm font-medium text-foreground">New Password</label>
+                  <input
+                    id="edit-new-password"
+                    type="password"
+                    placeholder="Enter new password"
+                    value={editForm.password}
+                    onChange={(e) => setEditForm((p) => ({ ...p, password: e.target.value }))}
+                    className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                  />
+                  {editFormErrors.password && <p className="text-xs text-rose-500">{editFormErrors.password}</p>}
+                </div>
+                <div className="space-y-1.5">
+                  <label htmlFor="edit-confirm-password" className="text-sm font-medium text-foreground">Confirm Password</label>
+                  <input
+                    id="edit-confirm-password"
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={editForm.password_confirmation}
+                    onChange={(e) => setEditForm((p) => ({ ...p, password_confirmation: e.target.value }))}
+                    className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                  />
+                  {editFormErrors.password_confirmation && <p className="text-xs text-rose-500">{editFormErrors.password_confirmation}</p>}
+                </div>
               </div>
             </div>
           )}
         </form>
       </Modal>
 
+      {/* ── Schedule Modal ── */}
       <Modal
         isOpen={showScheduleModal}
         onClose={closeScheduleModal}
@@ -1120,46 +1311,62 @@ export default function StaffPage() {
         size="lg"
         footer={
           <div className="flex gap-3">
-            <Button variant="outline" onClick={closeScheduleModal}>Cancel</Button>
-            <Button variant="primary" onClick={handleScheduleSubmit}>
-              <Save className="h-4 w-4" /> Save
-            </Button>
+            <button
+              onClick={closeScheduleModal}
+              className="h-10 px-5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleScheduleSubmit}
+              className="h-10 px-5 rounded-lg bg-[#1A2238] text-white text-sm font-semibold inline-flex items-center gap-2 hover:bg-[#1A2238]/90 transition-colors shadow-sm"
+            >
+              <Save className="h-4 w-4" />
+              Save
+            </button>
           </div>
         }
       >
         <form onSubmit={handleScheduleSubmit} className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/15 text-gold-dark">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-[#1A2238]">
               <CalendarPlus className="h-5 w-5" />
             </div>
             <div>
               <h4 className="text-sm font-semibold text-foreground">
                 {editingSchedule ? 'Edit Schedule' : 'Add Schedule'}
               </h4>
-              <p className="text-xs text-muted">
+              <p className="text-xs text-slate-500">
                 {editingSchedule ? 'Update the shift details for this staff member.' : 'Assign a shift to a staff member.'}
               </p>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-200/80 bg-white p-4">
             <div className="mb-3 flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-[#1A2238]">
                 <Calendar className="h-4 w-4" />
               </div>
               <h4 className="text-sm font-semibold text-foreground">Shift Details</h4>
             </div>
-            <Select
-              label="Staff"
-              placeholder="Select staff"
-              value={scheduleForm.staff_id}
-              onChange={(e) => setScheduleForm((p) => ({ ...p, staff_id: e.target.value }))}
-              error={scheduleFormErrors.staff_id}
-            >
-              {staff.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </Select>
+            <div className="space-y-1.5">
+              <label htmlFor="schedule-staff" className="text-sm font-medium text-foreground">Staff</label>
+              <div className="relative">
+                <select
+                  id="schedule-staff"
+                  value={scheduleForm.staff_id}
+                  onChange={(e) => setScheduleForm((p) => ({ ...p, staff_id: e.target.value }))}
+                  className="h-11 w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-10 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                >
+                  <option value="">Select staff</option>
+                  {staff.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              </div>
+              {scheduleFormErrors.staff_id && <p className="text-xs text-rose-500">{scheduleFormErrors.staff_id}</p>}
+            </div>
             <div className="mt-4">
               <DatePicker
                 label="Date"
@@ -1169,25 +1376,34 @@ export default function StaffPage() {
               />
             </div>
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Input
-                label="Start Time"
-                type="time"
-                value={scheduleForm.start_time}
-                onChange={(e) => setScheduleForm((p) => ({ ...p, start_time: e.target.value }))}
-                error={scheduleFormErrors.start_time}
-              />
-              <Input
-                label="End Time"
-                type="time"
-                value={scheduleForm.end_time}
-                onChange={(e) => setScheduleForm((p) => ({ ...p, end_time: e.target.value }))}
-                error={scheduleFormErrors.end_time}
-              />
+              <div className="space-y-1.5">
+                <label htmlFor="schedule-start-time" className="text-sm font-medium text-foreground">Start Time</label>
+                <input
+                  id="schedule-start-time"
+                  type="time"
+                  value={scheduleForm.start_time}
+                  onChange={(e) => setScheduleForm((p) => ({ ...p, start_time: e.target.value }))}
+                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                />
+                {scheduleFormErrors.start_time && <p className="text-xs text-rose-500">{scheduleFormErrors.start_time}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="schedule-end-time" className="text-sm font-medium text-foreground">End Time</label>
+                <input
+                  id="schedule-end-time"
+                  type="time"
+                  value={scheduleForm.end_time}
+                  onChange={(e) => setScheduleForm((p) => ({ ...p, end_time: e.target.value }))}
+                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                />
+                {scheduleFormErrors.end_time && <p className="text-xs text-rose-500">{scheduleFormErrors.end_time}</p>}
+              </div>
             </div>
-            <div className="mt-4 space-y-1">
-              <label className="text-sm font-medium text-foreground">Notes</label>
+            <div className="mt-4 space-y-1.5">
+              <label htmlFor="schedule-notes" className="text-sm font-medium text-foreground">Notes</label>
               <textarea
-                className="flex min-h-[80px] w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary"
+                id="schedule-notes"
+                className="flex min-h-[80px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors resize-none"
                 placeholder="Notes..."
                 value={scheduleForm.notes}
                 onChange={(e) => setScheduleForm((p) => ({ ...p, notes: e.target.value }))}
@@ -1197,6 +1413,7 @@ export default function StaffPage() {
         </form>
       </Modal>
 
+      {/* ── Request Leave Modal ── */}
       <Modal
         isOpen={showAddLeave}
         onClose={closeLeaveModal}
@@ -1204,54 +1421,77 @@ export default function StaffPage() {
         size="lg"
         footer={
           <div className="flex gap-3">
-            <Button variant="outline" onClick={closeLeaveModal}>Cancel</Button>
-            <Button variant="primary" onClick={handleAddLeave}>
-              <Save className="h-4 w-4" /> Save
-            </Button>
+            <button
+              onClick={closeLeaveModal}
+              className="h-10 px-5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddLeave}
+              className="h-10 px-5 rounded-lg bg-[#1A2238] text-white text-sm font-semibold inline-flex items-center gap-2 hover:bg-[#1A2238]/90 transition-colors shadow-sm"
+            >
+              <Save className="h-4 w-4" />
+              Save
+            </button>
           </div>
         }
       >
         <form onSubmit={handleAddLeave} className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/15 text-gold-dark">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-[#1A2238]">
               <CalendarOff className="h-5 w-5" />
             </div>
             <div>
               <h4 className="text-sm font-semibold text-foreground">Request Leave</h4>
-              <p className="text-xs text-muted">Submit a leave request for a staff member.</p>
+              <p className="text-xs text-slate-500">Submit a leave request for a staff member.</p>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="rounded-xl border border-slate-200/80 bg-white p-4">
             <div className="mb-3 flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warning/10 text-warning">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-[#1A2238]">
                 <Calendar className="h-4 w-4" />
               </div>
               <h4 className="text-sm font-semibold text-foreground">Leave Details</h4>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Select
-                label="Staff"
-                placeholder="Select staff"
-                value={leaveForm.user_id}
-                onChange={(e) => setLeaveForm((p) => ({ ...p, user_id: e.target.value }))}
-                error={leaveFormErrors.user_id}
-              >
-                {staff.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </Select>
-              <Select
-                label="Leave Type"
-                value={leaveForm.type}
-                onChange={(e) => setLeaveForm((p) => ({ ...p, type: e.target.value }))}
-                error={leaveFormErrors.type}
-              >
-                <option value="annual">Annual</option>
-                <option value="sick">Sick</option>
-                <option value="personal">Personal</option>
-                <option value="other">Other</option>
-              </Select>
+              <div className="space-y-1.5">
+                <label htmlFor="leave-staff" className="text-sm font-medium text-foreground">Staff</label>
+                <div className="relative">
+                  <select
+                    id="leave-staff"
+                    value={leaveForm.user_id}
+                    onChange={(e) => setLeaveForm((p) => ({ ...p, user_id: e.target.value }))}
+                    className="h-11 w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-10 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                  >
+                    <option value="">Select staff</option>
+                    {staff.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                </div>
+                {leaveFormErrors.user_id && <p className="text-xs text-rose-500">{leaveFormErrors.user_id}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="leave-type" className="text-sm font-medium text-foreground">Leave Type</label>
+                <div className="relative">
+                  <select
+                    id="leave-type"
+                    value={leaveForm.type}
+                    onChange={(e) => setLeaveForm((p) => ({ ...p, type: e.target.value }))}
+                    className="h-11 w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 pr-10 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
+                  >
+                    <option value="annual">Annual</option>
+                    <option value="sick">Sick</option>
+                    <option value="personal">Personal</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                </div>
+                {leaveFormErrors.type && <p className="text-xs text-rose-500">{leaveFormErrors.type}</p>}
+              </div>
               <DatePicker
                 label="Start Date"
                 value={leaveForm.start_date}
@@ -1265,10 +1505,11 @@ export default function StaffPage() {
                 error={leaveFormErrors.end_date}
               />
             </div>
-            <div className="mt-4 space-y-1">
-              <label className="text-sm font-medium text-foreground">Reason</label>
+            <div className="mt-4 space-y-1.5">
+              <label htmlFor="leave-reason" className="text-sm font-medium text-foreground">Reason</label>
               <textarea
-                className="flex min-h-[80px] w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary"
+                id="leave-reason"
+                className="flex min-h-[80px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors resize-none"
                 placeholder="Reason..."
                 value={leaveForm.reason}
                 onChange={(e) => setLeaveForm((p) => ({ ...p, reason: e.target.value }))}
@@ -1311,4 +1552,3 @@ export default function StaffPage() {
     </div>
   )
 }
-

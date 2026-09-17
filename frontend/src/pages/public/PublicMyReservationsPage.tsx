@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   usePublicMe, usePublicReservations, usePublicCancelReservation, usePublicRequestRefund,
   usePublicInitiateOnlinePayment, usePublicSettings, usePaymentSettings, usePortalCurrency,
@@ -8,6 +8,7 @@ import { usePublicAuthStore } from '@/stores/publicAuthStore'
 import { formatCurrencyWith, formatDateDisplay, formatCheckoutTime, toLocalDateStr } from '@/lib/format'
 import { Modal } from '@/components/ui/modal'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
+import { EmailVerificationModal } from '@/components/shared/EmailVerificationModal'
 import { useToast } from '@/components/ui/toast'
 import type { PublicReservation } from '@/types'
 import {
@@ -114,7 +115,6 @@ function initialsOf(first: string, last: string): string {
 
 export default function PublicMyReservationsPage() {
   const { token } = usePublicAuthStore()
-  const navigate = useNavigate()
   const { addToast } = useToast()
   const { data: user } = usePublicMe()
   const { data, isLoading } = usePublicReservations()
@@ -142,6 +142,7 @@ export default function PublicMyReservationsPage() {
   const [paymentModal, setPaymentModal] = useState<PublicReservation | null>(null)
   const [detailsModal, setDetailsModal] = useState<PublicReservation | null>(null)
   const [filter, setFilter] = useState<FilterKey>('all')
+  const [showVerifyModal, setShowVerifyModal] = useState(false)
   const [search, setSearch] = useState('')
   const today = toLocalDateStr(new Date())
 
@@ -269,6 +270,7 @@ export default function PublicMyReservationsPage() {
   const initials = initialsOf(user?.first_name ?? '', user?.last_name ?? '')
 
   return (
+    <>
     <div className="min-h-screen bg-dark">
       {/* Hero */}
       <section className="relative bg-dark overflow-hidden">
@@ -330,7 +332,7 @@ export default function PublicMyReservationsPage() {
               </div>
             </div>
             <button
-              onClick={() => navigate('/public/verify-email')}
+              onClick={() => setShowVerifyModal(true)}
               className="shrink-0 px-4 py-2 bg-amber-600 text-white text-xs font-semibold rounded-lg hover:bg-amber-700 transition-colors"
             >
               Verify Email
@@ -608,12 +610,14 @@ export default function PublicMyReservationsPage() {
         )}
       </Modal>
     </div>
+
+    <EmailVerificationModal
+      isOpen={showVerifyModal}
+      onClose={() => setShowVerifyModal(false)}
+    />
+    </>
   )
 }
-
-/* ------------------------------------------------------------------ */
-/*  Sub-components                                                     */
-/* ------------------------------------------------------------------ */
 
 function StatTile({
   icon: Icon, label, value, sublabel, accent,
@@ -1031,5 +1035,6 @@ function ReservationDetailsModal({
         </div>
       </div>
     </Modal>
+
   )
 }

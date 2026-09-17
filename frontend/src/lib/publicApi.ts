@@ -42,8 +42,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
       if (Array.isArray(first) && first.length > 0) message = first[0]
       else if (typeof first === 'string') message = first
     }
-    const err = new Error(message) as Error & { status?: number; retryAfter?: number }
+    const err = new Error(message) as Error & { status?: number; retryAfter?: number; requiresVerification?: boolean }
     err.status = response.status
+    if (body?.requires_verification) err.requiresVerification = true
     const retryAfter = response.headers.get('Retry-After')
     if (retryAfter) err.retryAfter = Number(retryAfter)
     throw err

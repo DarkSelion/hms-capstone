@@ -1,10 +1,11 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams, Navigate } from 'react-router-dom'
 import { usePublicAvailableRooms, usePublicCreateReservation, usePublicSettings, usePortalCurrency } from '@/hooks/usePublicApi'
 import { usePublicAuthStore } from '@/stores/publicAuthStore'
 import { useToast } from '@/components/ui/toast'
 import { formatCurrencyWith, formatCheckoutTime } from '@/lib/format'
 import { DatePicker } from '@/components/ui/date-picker'
+import { EmailVerificationModal } from '@/components/shared/EmailVerificationModal'
 import type { PublicRoom, PublicRoomType } from '@/types'
 import { Loader2, Check, BedDouble, ArrowLeft, Calendar, ChevronRight, MessageSquare, Users, Moon, LogIn, LogOut, ReceiptText, ShieldCheck, Lock } from 'lucide-react'
 
@@ -96,6 +97,7 @@ export default function PublicBookingPage() {
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null)
   const [specialRequests, setSpecialRequests] = useState('')
   const [cancellationTier, setCancellationTier] = useState<'flexible' | 'non_refundable'>('flexible')
+  const [showVerifyModal, setShowVerifyModal] = useState(false)
 
   const roomTypeParam = searchParams.get('room_type')
 
@@ -237,24 +239,44 @@ export default function PublicBookingPage() {
     return Math.round((subtotal + tax) * 100) / 100
   }, [selectedGroup, nights, taxRate])
 
+  const bookingPayload = useMemo(() => {
+    if (!selectedTypeId || !datesValid) return null
+    return {
+      room_type_id: selectedTypeId,
+      room_id: selectedRoomId ?? undefined,
+      check_in: checkIn,
+      check_out: checkOut,
+      adults: adultsSafe,
+      children: childrenSafe,
+      special_requests: specialRequests || undefined,
+    }
+  }, [selectedTypeId, selectedRoomId, checkIn, checkOut, adultsSafe, childrenSafe, specialRequests, datesValid])
+
   async function handleConfirm() {
-    if (!selectedTypeId || !datesValid) return
+    if (!bookingPayload) return
     try {
-      await createReservation.mutateAsync({
-        room_type_id: selectedTypeId,
-        room_id: selectedRoomId ?? undefined,
-        check_in: checkIn,
-        check_out: checkOut,
-        adults: adultsSafe,
-        children: childrenSafe,
-        special_requests: specialRequests || undefined,
-      })
+      await createReservation.mutateAsync(bookingPayload)
       navigate('/public/my-reservations')
-    } catch (e) {
+    } catch (e: any) {
+      if (e?.requiresVerification) {
+        setShowVerifyModal(true)
+        return
+      }
       const message = e instanceof Error ? e.message : 'Unable to confirm booking. Please try again.'
       addToast(message, 'error')
     }
   }
+
+  const handleVerifiedRetry = useCallback(async () => {
+    if (!bookingPayload) return
+    try {
+      await createReservation.mutateAsync(bookingPayload)
+      navigate('/public/my-reservations')
+    } catch (e: any) {
+      const message = e instanceof Error ? e.message : 'Unable to confirm booking. Please try again.'
+      addToast(message, 'error')
+    }
+  }, [bookingPayload, createReservation, navigate, addToast])
 
   const totalRooms = roomGroups.reduce((n, g) => n + g.count, 0)
   const heroImage = selectedGroup ? groupImage(selectedGroup) : getHeroImage(roomGroups[0]?.roomType.name ?? 'rooms')
@@ -1048,6 +1070,12 @@ export default function PublicBookingPage() {
             <div className="lg:hidden h-20" />
           </div>
         )}
+
+        <EmailVerificationModal
+          isOpen={showVerifyModal}
+          onClose={() => setShowVerifyModal(false)}
+          onVerified={handleVerifiedRetry}
+        />
       </div>
     </div>
   )
