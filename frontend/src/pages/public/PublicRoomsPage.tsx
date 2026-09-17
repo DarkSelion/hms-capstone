@@ -130,7 +130,7 @@ export default function PublicRoomsPage() {
       {/* ═══════════════════════════════════════════════════════════════
           HERO — Ken Burns + integrated search
           ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative h-[65vh] min-h-[500px] flex flex-col items-center justify-center overflow-hidden">
+      <section className="relative h-[60vh] min-h-[460px] flex flex-col items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
           <img
             src="https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1920&h=900&fit=crop"

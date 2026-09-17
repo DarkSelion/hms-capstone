@@ -81,7 +81,7 @@ export default function PublicGalleryPage() {
       {/* ═══════════════════════════════════════════════════════════════
           HERO — Ken Burns + immersive
           ═══════════════════════════════════════════════════════════════ */}
-      <section className="relative h-[55vh] min-h-[420px] flex flex-col items-center justify-center overflow-hidden">
+      <section className="relative h-[60vh] min-h-[460px] flex flex-col items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
           {PHOTOS.length > 0 && (
             <img

@@ -107,17 +107,32 @@ export default function PublicContactPage() {
   return (
     <div className="min-h-screen bg-dark">
       {/* Hero */}
-      <section className="relative py-20 bg-dark">
-        <div className="absolute inset-0 bg-gradient-to-b from-gold/5 to-transparent" />
-        <div className="relative max-w-7xl mx-auto px-4 text-center">
-          <p className="section-subtitle mb-4">{hotelName}</p>
-          <h1 className="font-serif text-4xl md:text-5xl text-white font-extralight mb-4">
+      <section className="relative h-[60vh] min-h-[460px] flex flex-col items-center justify-center overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1920&h=900&fit=crop"
+            alt=""
+            className="w-full h-full object-cover animate-ken-burns"
+            style={{ animationDuration: '14s' }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-dark/60 via-dark/40 to-dark/80" />
+          <div className="absolute inset-0 bg-gradient-to-r from-dark/30 via-transparent to-dark/30" />
+        </div>
+
+        <div className="relative z-10 text-center px-4">
+          <p className="section-subtitle mb-4 animate-reveal-up" style={{ animationDelay: '0.2s' }}>{hotelName}</p>
+          <h1 className="font-serif text-white text-4xl sm:text-5xl lg:text-6xl font-extralight mb-4 animate-reveal-up" style={{ animationDelay: '0.4s' }}>
             {heading}
           </h1>
-          <div className="gold-line mx-auto mb-6" />
-          <p className="text-white/40 text-sm max-w-lg mx-auto">
+          <div className="gold-line mx-auto my-6 animate-reveal-up" style={{ animationDelay: '0.6s' }} />
+          <p className="text-white/50 text-sm max-w-lg mx-auto animate-reveal-up" style={{ animationDelay: '0.7s' }}>
             {description}
           </p>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
+          <ChevronDown className="h-5 w-5 text-white/30" />
         </div>
       </section>
 
