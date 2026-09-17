@@ -4,8 +4,10 @@ import {
 } from '@/hooks/useApi'
 import { useCheckInOutModal } from '@/hooks/useCheckInOutModal'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
+import { getDateGroup, formatTodayLabel } from '@/lib/date-group'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable, type Column } from '@/components/shared/DataTable'
+import { TodayBadge } from '@/components/shared/TodayBadge'
 import { ReservationRowActions } from '@/components/shared/ReservationRowActions'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ReservationDetailModal } from '@/components/shared/ReservationDetailModal'
@@ -15,7 +17,7 @@ import { ExtendStayModal } from '@/components/shared/ExtendStayModal'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { CheckCircle2, DoorOpen } from 'lucide-react'
+import { CheckCircle2, DoorOpen, CalendarDays } from 'lucide-react'
 import type { Reservation } from '@/types'
 
 function nightsBetween(checkIn?: string, checkOut?: string): number {
@@ -154,7 +156,10 @@ export default function CheckOutPage() {
         const nights = nightsBetween(r.check_in, r.check_out)
         return (
           <div>
-            <span className="whitespace-nowrap font-medium text-foreground">{formatDateDisplay(r.check_out)}</span>
+            <div className="flex items-center gap-1.5 whitespace-nowrap">
+              <span className="font-medium text-foreground">{formatDateDisplay(r.check_out)}</span>
+              {getDateGroup(r.check_out) === 'today' && <TodayBadge variant="departure" />}
+            </div>
             <span className="block text-xs text-muted">
               arrived {formatDateDisplay(r.check_in)} · {nights} night{nights !== 1 ? 's' : ''}
             </span>
@@ -230,6 +235,28 @@ export default function CheckOutPage() {
             error={error ? 'Failed to load reservations' : null}
             sortBy={sortBy}
             onSort={handleSort}
+            groupByKey={(r) => getDateGroup(r.check_out)}
+            rowClassName={(r) => getDateGroup(r.check_out) === 'today' ? 'bg-amber-50/30' : ''}
+            renderGroupHeader={(key, rows) => {
+              if (key === 'today') {
+                return (
+                  <div className="flex items-center gap-2 bg-amber-50 border-y border-amber-200/60 -mx-4 px-4 py-2.5">
+                    <CalendarDays className="h-4 w-4 text-amber-600" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+                      Today — {formatTodayLabel()} ({rows.length} departure{rows.length !== 1 ? 's' : ''})
+                    </span>
+                  </div>
+                )
+              }
+              return (
+                <div className="flex items-center gap-2 -mx-4 px-4 py-2.5">
+                  <CalendarDays className="h-4 w-4 text-muted" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                    Upcoming Departures ({rows.length})
+                  </span>
+                </div>
+              )
+            }}
             emptyState={
               <div className="flex flex-col items-center justify-center py-12">
                 <DoorOpen className="mb-3 h-10 w-10 text-muted/50" />

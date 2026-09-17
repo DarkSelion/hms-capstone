@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { cn } from '../../lib/utils'
 import { TableContainer, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../ui/table'
 import { Input } from '../ui/input'
@@ -34,6 +34,9 @@ interface DataTableProps<T> {
   onRetry?: () => void
   keyExtractor: (row: T) => string | number
   emptyState?: React.ReactNode
+  groupByKey?: (row: T) => string
+  renderGroupHeader?: (groupKey: string, rows: T[], startIndex: number) => React.ReactNode
+  rowClassName?: (row: T) => string
 }
 
 export function DataTable<T>({
@@ -48,6 +51,9 @@ export function DataTable<T>({
   onRetry,
   keyExtractor,
   emptyState,
+  groupByKey,
+  renderGroupHeader,
+  rowClassName,
 }: DataTableProps<T>) {
   const [localSearch, setLocalSearch] = useState('')
 
@@ -159,6 +165,49 @@ export function DataTable<T>({
                   )}
                 </TableCell>
               </TableRow>
+            ) : groupByKey && renderGroupHeader ? (
+              (() => {
+                const groups: { key: string; rows: T[]; startIndex: number }[] = []
+                let currentGroupKey: string | null = null
+                let currentGroup: T[] = []
+                let startIndex = 0
+
+                data.forEach((row, i) => {
+                  const gk = groupByKey(row)
+                  if (gk !== currentGroupKey) {
+                    if (currentGroup.length > 0) {
+                      groups.push({ key: currentGroupKey!, rows: currentGroup, startIndex })
+                    }
+                    currentGroupKey = gk
+                    currentGroup = [row]
+                    startIndex = i
+                  } else {
+                    currentGroup.push(row)
+                  }
+                })
+                if (currentGroup.length > 0) {
+                  groups.push({ key: currentGroupKey!, rows: currentGroup, startIndex })
+                }
+
+                return groups.map((group) => (
+                  <Fragment key={group.key}>
+                    <TableRow className="pointer-events-none hover:bg-transparent">
+                      <TableCell colSpan={columns.length} className="border-y bg-slate-50 px-4 py-2.5">
+                        {renderGroupHeader(group.key, group.rows, group.startIndex)}
+                      </TableCell>
+                    </TableRow>
+                    {group.rows.map((row) => (
+                      <TableRow key={keyExtractor(row)} className={rowClassName?.(row)}>
+                        {columns.map((col) => (
+                          <TableCell key={col.key} className={col.className}>
+                            {col.render(row)}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </Fragment>
+                ))
+              })()
             ) : (
               data.map((row) => (
                 <TableRow key={keyExtractor(row)}>

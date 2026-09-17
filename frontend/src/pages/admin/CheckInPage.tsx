@@ -5,8 +5,10 @@ import {
 import { useCheckInOutModal } from '@/hooks/useCheckInOutModal'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { getDateGroup, formatTodayLabel } from '@/lib/date-group'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable, type Column } from '@/components/shared/DataTable'
+import { TodayBadge } from '@/components/shared/TodayBadge'
 import { ReservationRowActions } from '@/components/shared/ReservationRowActions'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { NoShowModal } from '@/components/shared/NoShowModal'
@@ -18,7 +20,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { AlertTriangle, Luggage } from 'lucide-react'
+import { AlertTriangle, Luggage, CalendarDays } from 'lucide-react'
 import type { Reservation } from '@/types'
 
 export default function CheckInPage() {
@@ -162,6 +164,7 @@ export default function CheckInPage() {
         <div>
           <div className="flex items-center gap-1.5 whitespace-nowrap">
             <span>{formatDateDisplay(r.check_in)}</span>
+            {getDateGroup(r.check_in) === 'today' && <TodayBadge variant="arrival" />}
             {r.is_overdue && (
               <Badge variant="warning">
                 <AlertTriangle className="h-3 w-3" />
@@ -245,6 +248,28 @@ export default function CheckInPage() {
             error={error ? 'Failed to load reservations' : null}
             sortBy={sortBy}
             onSort={handleSort}
+            groupByKey={(r) => getDateGroup(r.check_in)}
+            rowClassName={(r) => getDateGroup(r.check_in) === 'today' ? 'bg-amber-50/30' : ''}
+            renderGroupHeader={(key, rows) => {
+              if (key === 'today') {
+                return (
+                  <div className="flex items-center gap-2 bg-amber-50 border-y border-amber-200/60 -mx-4 px-4 py-2.5">
+                    <CalendarDays className="h-4 w-4 text-amber-600" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+                      Today — {formatTodayLabel()} ({rows.length} arrival{rows.length !== 1 ? 's' : ''})
+                    </span>
+                  </div>
+                )
+              }
+              return (
+                <div className="flex items-center gap-2 -mx-4 px-4 py-2.5">
+                  <CalendarDays className="h-4 w-4 text-muted" />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                    Upcoming Arrivals ({rows.length})
+                  </span>
+                </div>
+              )
+            }}
             emptyState={
               <div className="flex flex-col items-center justify-center py-12">
                 <Luggage className="mb-3 h-10 w-10 text-muted/50" />
