@@ -58,8 +58,11 @@ export default function PublicForgotPasswordPage() {
                 <p className="text-white/50 text-sm leading-relaxed mb-2">
                   If an account exists with <span className="text-white/70">{email}</span>, we&apos;ve sent a 6-digit reset code.
                 </p>
-                <p className="text-white/50 text-sm leading-relaxed mb-8">
+                <p className="text-white/50 text-sm leading-relaxed mb-2">
                   The code expires in <span className="text-gold">15 minutes</span>.
+                </p>
+                <p className="text-gold/70 text-xs leading-relaxed mb-8">
+                  Didn&apos;t receive it? Check your <span className="text-gold font-medium">spam or junk folder</span>.
                 </p>
                 <Link
                   to="/public/reset-password"

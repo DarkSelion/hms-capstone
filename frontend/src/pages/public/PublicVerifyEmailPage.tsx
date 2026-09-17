@@ -179,6 +179,7 @@ export default function PublicVerifyEmailPage() {
                       <span className="text-[11px] text-success/70 animate-fade-in">{code}</span>
                     )}
                   </div>
+                  <p className="text-gold/60 text-[11px] text-center mt-3">Check your spam/junk folder if you don&apos;t see the email.</p>
                 </div>
 
                 {/* Verify Button */}
