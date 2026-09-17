@@ -54,7 +54,7 @@ class ContactMessageController extends Controller
 
         $contactMessage->replies()->create([
             'user_id' => $request->user()->id,
-            'body' => $data['reply'],
+            'body' => strip_tags($data['reply']),
         ]);
 
         ActivityLog::create([

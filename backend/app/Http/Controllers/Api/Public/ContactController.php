@@ -25,10 +25,10 @@ class ContactController extends Controller
         }
 
         $message = ContactMessage::create([
-            'name' => $data['name'],
+            'name' => strip_tags($data['name']),
             'email' => $data['email'],
-            'subject' => $data['subject'],
-            'message' => $data['message'],
+            'subject' => strip_tags($data['subject']),
+            'message' => strip_tags($data['message']),
             'ip_address' => $request->ip(),
         ]);
 

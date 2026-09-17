@@ -47,8 +47,8 @@ class ReviewController extends Controller
             'reservation_id' => $reservation->id,
             'room_type_id' => $roomType->id,
             'rating' => $data['rating'],
-            'title' => $data['title'] ?? null,
-            'comment' => $data['comment'] ?? null,
+            'title' => isset($data['title']) ? strip_tags($data['title']) : null,
+            'comment' => isset($data['comment']) ? strip_tags($data['comment']) : null,
             'is_approved' => true,
         ]);
 
@@ -150,7 +150,7 @@ class ReviewController extends Controller
         ]);
 
         $review->update([
-            'admin_reply' => $data['reply'],
+            'admin_reply' => strip_tags($data['reply']),
             'admin_replied_at' => now(),
         ]);
 

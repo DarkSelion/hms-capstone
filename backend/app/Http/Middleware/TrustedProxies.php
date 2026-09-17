@@ -8,10 +8,10 @@ use Illuminate\Http\Request;
 class TrustedProxies extends Middleware
 {
     /**
-     * Trust all proxies (nginx runs on the same server).
-     * In production behind a known reverse proxy, you can restrict this.
+     * Trust only local nginx proxy (127.0.0.1).
+     * Prevents clients from spoofing IP via X-Forwarded-For.
      */
-    protected $proxies = '*';
+    protected $proxies = '127.0.0.1';
 
     /**
      * Forward proxy headers from nginx.
