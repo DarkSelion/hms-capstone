@@ -21,7 +21,7 @@
 │   - Room Management     │   - Caching              │ • PayMongo (Payments)            │
 │   - Reservation System  │                         │                                   │
 │   - Guest Management    │ • Usability             │ • PHP 8.4                         │
-│   - Housekeeping        │   - Responsive design   │ • Docker (Containerization)      │
+│   - Housekeeping        │   - Responsive design   │ • PHP 8.4                         │
 │   - Maintenance         │   - Dark navy theme     │ • Git (Version control)          │
 │   - Staff Management    │   - Accessibility       │                                   │
 │   - Expenses            │                         │                                   │
@@ -72,8 +72,8 @@
 │ • Admin Dashboard       │   passing               │ • API endpoint reference         │
 │   - /admin              │ • 60+ REST API          │ • Deployment guide               │
 │                         │   endpoints             │ • Operations manual              │
-│ • Online Payment        │ • 25 room types         │                                   │
-│   Gateway (PayMongo)    │   & images              │                                   │
+│ • Online Payment        │ • 5 room types          │                                   │
+│   Gateway (PayMongo)    │   & 25 rooms            │                                   │
 │                         │ • Activity logging      │                                   │
 │ • Email System          │   system                │                                   │
 │   (SMTP + OTP)          │                         │                                   │
@@ -118,5 +118,4 @@
 ```
 
 ### Capstone Student: John Carlo Palay
-### Institution: Pampanga Home Suites
 ### Date: September 2026
