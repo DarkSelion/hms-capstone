@@ -155,7 +155,12 @@ export default function PublicProfilePage() {
       return
     }
     try {
-      await updateProfile.mutateAsync(form)
+      const phone = form.phone
+        ? (form.phone.startsWith('+63') || form.phone.startsWith('0')
+            ? form.phone.replace(/\s/g, '')
+            : '+63' + form.phone.replace(/\s/g, ''))
+        : form.phone
+      await updateProfile.mutateAsync({ ...form, phone })
       setSavedSnapshot(form)
       setLastSavedAt(new Date())
       addToast('Profile updated successfully', 'success')
@@ -345,7 +350,6 @@ export default function PublicProfilePage() {
                     onChange={(v) => update('phone', v)}
                     icon={Phone}
                     maxLength={15}
-                    pattern="(\+63\s?|0)\d{8,13}"
                     format={stripPhoneInput}
                   />
                 </Card>

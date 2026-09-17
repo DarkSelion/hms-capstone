@@ -48,7 +48,10 @@ export default function PublicRegisterPage() {
       return
     }
     try {
-      await register.mutateAsync(form as any)
+      const phone = form.phone.startsWith('+63') || form.phone.startsWith('0')
+        ? form.phone.replace(/\s/g, '')
+        : '+63' + form.phone.replace(/\s/g, '')
+      await register.mutateAsync({ ...form, phone } as any)
       navigate('/public', { replace: true })
     } catch (err: any) {
       setError(err.message || 'Registration failed')
@@ -123,7 +126,6 @@ export default function PublicRegisterPage() {
                       className="input-public pl-[4.2rem]"
                       placeholder="917 123 4567"
                       maxLength={15}
-                      pattern="(\+63\s?|0)\d{8,13}"
                     />
                   </div>
                   <p className="text-[10px] text-white/20 mt-1.5">Format: 09XX XXX XXXX or +63 9XX XXX XXXX</p>

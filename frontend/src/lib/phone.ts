@@ -1,4 +1,4 @@
-const PH_PHONE_REGEX = /^(\+63\s?|0)\d{8,13}$/
+const PH_PHONE_REGEX = /^(\+63\s?|0)?\d{10,13}$/
 
 export function isValidPHPhone(value: string): boolean {
   const trimmed = value.trim()
