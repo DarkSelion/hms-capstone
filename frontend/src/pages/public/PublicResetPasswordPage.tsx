@@ -249,20 +249,18 @@ export default function PublicResetPasswordPage() {
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
                         </div>
-                        {password.length > 0 && (
-                          <div className="mt-2 space-y-1">
-                            {pwChecks.map((c) => (
-                              <div key={c.label} className="flex items-center gap-1.5">
-                                {c.met ? (
-                                  <CircleCheck className="h-3 w-3 text-success" />
-                                ) : (
-                                  <Circle className="h-3 w-3 text-white/20" />
-                                )}
-                                <span className={`text-[11px] ${c.met ? 'text-success' : 'text-white/30'}`}>{c.label}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        <div className="mt-2 space-y-1">
+                          {pwChecks.map((c) => (
+                            <div key={c.label} className="flex items-center gap-1.5">
+                              {c.met ? (
+                                <CircleCheck className="h-3 w-3 text-success" />
+                              ) : (
+                                <Circle className="h-3 w-3 text-white/20" />
+                              )}
+                              <span className={`text-[11px] ${c.met ? 'text-success' : 'text-white/30'}`}>{c.label}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                       <div>
                         <label htmlFor="rp_password_confirmation" className="text-[11px] uppercase tracking-[0.12em] text-white/30 block mb-1.5">Confirm Password</label>
@@ -301,6 +299,7 @@ export default function PublicResetPasswordPage() {
                   <Link to="/public/forgot-password" className="text-gold hover:underline">Request a new code</Link>
                   {' '}&middot;{' '}
                   <Link to="/public/login" className="hover:text-gold transition-colors">Back to login</Link>
+                  <p className="text-[11px] text-white/20 mt-2">Tip: You can also check your spam folder.</p>
                 </div>
 
                 <p className="text-center text-[11px] text-white/15 mt-8">
