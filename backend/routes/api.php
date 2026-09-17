@@ -33,6 +33,9 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:staff-login');
 Route::post('/login/verify-otp', [AuthController::class, 'verifyLoginOtp'])->middleware('throttle:staff-otp');
 
+// Named login route — prevents 500 when Sanctum's auth middleware rejects invalid tokens
+Route::get('/login', fn () => response()->json(['message' => 'Unauthenticated.'], 401))->name('login');
+
 // Payment gateway webhook (server-to-server, no Sanctum — verified via shared secret header)
 Route::post('/webhooks/payment', [PublicOnlinePaymentGatewayController::class, 'webhook']);
 
