@@ -33,15 +33,35 @@ const iconMap = {
   info: Info,
 }
 
-const colorMap = {
-  success: 'border-l-4 border-success bg-success/10 text-success',
-  error: 'border-l-4 border-danger bg-danger/10 text-danger',
-  warning: 'border-l-4 border-warning bg-warning/10 text-warning',
-  info: 'border-l-4 border-info bg-info/10 text-info',
+const iconColor = {
+  success: 'text-emerald-500',
+  error: 'text-red-500',
+  warning: 'text-amber-500',
+  info: 'text-blue-500',
+}
+
+const progressColor = {
+  success: 'bg-emerald-500',
+  error: 'bg-red-500',
+  warning: 'bg-amber-500',
+  info: 'bg-blue-500',
 }
 
 function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   const Icon = iconMap[toast.variant]
+  const [progress, setProgress] = useState(100)
+
+  useEffect(() => {
+    const start = Date.now()
+    const tick = () => {
+      const elapsed = Date.now() - start
+      const pct = Math.max(0, 100 - (elapsed / toast.duration) * 100)
+      setProgress(pct)
+      if (pct > 0) requestAnimationFrame(tick)
+    }
+    const raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [toast.duration])
 
   useEffect(() => {
     const timer = setTimeout(() => onClose(), toast.duration)
@@ -49,17 +69,20 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   }, [toast.duration, onClose])
 
   return (
-    <div
-      className={cn(
-        'flex items-start gap-3 rounded-lg p-4 shadow-lg animate-slide-in-right',
-        colorMap[toast.variant],
-      )}
-    >
-      <Icon className="h-5 w-5 flex-shrink-0 mt-0.5" />
-      <p className="flex-1 text-sm">{toast.message}</p>
-      <button onClick={onClose} className="flex-shrink-0 rounded p-0.5 hover:bg-black/5">
-        <X className="h-4 w-4" />
-      </button>
+    <div className="relative overflow-hidden rounded-2xl bg-white shadow-xl shadow-black/10 animate-slide-in-right border border-gray-100 w-full sm:w-[360px]">
+      <div className="flex items-start gap-3 p-4">
+        <Icon className={cn('h-5 w-5 shrink-0 mt-0.5', iconColor[toast.variant])} />
+        <p className="flex-1 text-sm text-gray-800 leading-relaxed">{toast.message}</p>
+        <button onClick={onClose} className="shrink-0 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="h-0.5 bg-gray-100">
+        <div
+          className={cn('h-full transition-none rounded-full', progressColor[toast.variant])}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
     </div>
   )
 }
@@ -79,13 +102,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ addToast }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2">
+      <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-sm:left-4 max-sm:right-4 max-sm:bottom-4">
         {toasts.map((toast) => (
-          <ToastItem
-            key={toast.id}
-            toast={toast}
-            onClose={() => removeToast(toast.id)}
-          />
+          <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
         ))}
       </div>
     </ToastContext.Provider>

@@ -49,8 +49,10 @@ class ReviewController extends Controller
             'rating' => $data['rating'],
             'title' => $data['title'] ?? null,
             'comment' => $data['comment'] ?? null,
-            'is_approved' => false,
+            'is_approved' => true,
         ]);
+
+        $review->approve();
 
         ActivityLog::create([
             'user_id' => null,
@@ -62,7 +64,7 @@ class ReviewController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Review submitted! It will appear after admin approval.',
+            'message' => 'Your review has been published!',
             'review' => $review,
         ], 201);
     }

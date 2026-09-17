@@ -37,7 +37,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer, c
     }
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = 'unset'
+      document.body.style.overflow = ''
     }
   }, [isOpen, handleKeyDown])
 

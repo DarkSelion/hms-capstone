@@ -109,8 +109,24 @@ export default function PublicRegisterPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="reg_phone" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Phone</label>
-                  <input id="reg_phone" type="tel" value={form.phone} onChange={(e) => update('phone', stripPhoneInput(e.target.value))} required className="input-public" placeholder="09171234567" maxLength={15} pattern="(\+63\s?|0)\d{8,13}" />
+                  <label htmlFor="reg_phone" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Phone Number</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-white/40 text-sm border-r border-white/10 pr-2.5">
+                      <span className="text-xs">🇵🇭</span> +63
+                    </span>
+                    <input
+                      id="reg_phone"
+                      type="tel"
+                      value={form.phone}
+                      onChange={(e) => update('phone', stripPhoneInput(e.target.value))}
+                      required
+                      className="input-public pl-[4.2rem]"
+                      placeholder="917 123 4567"
+                      maxLength={15}
+                      pattern="(\+63\s?|0)\d{8,13}"
+                    />
+                  </div>
+                  <p className="text-[10px] text-white/20 mt-1.5">Format: 09XX XXX XXXX or +63 9XX XXX XXXX</p>
                 </div>
                 <div>
                   <label htmlFor="reg_gender" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Gender <span className="text-white/15">(optional)</span></label>

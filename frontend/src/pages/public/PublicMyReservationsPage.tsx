@@ -340,7 +340,7 @@ export default function PublicMyReservationsPage() {
       )}
 
       {/* Body */}
-      <section className="bg-cream py-10 sm:py-12 px-4">
+      <section className="bg-dark py-10 sm:py-12 px-4">
         <div className="max-w-5xl mx-auto space-y-6">
           {isLoading ? (
             <div className="flex justify-center py-20">
@@ -371,7 +371,7 @@ export default function PublicMyReservationsPage() {
                         className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider transition-all ${
                           isActive
                             ? 'bg-gold text-dark shadow-md shadow-gold/20'
-                            : 'bg-white border border-gray-200 text-dark/50 hover:border-gold/40 hover:text-dark'
+                            : 'bg-white/[0.06] border border-white/[0.08] text-white/50 hover:border-gold/30 hover:text-white/70'
                         }`}
                       >
                         <Icon className="h-3.5 w-3.5" />
@@ -383,13 +383,13 @@ export default function PublicMyReservationsPage() {
                 </div>
                 {reservations.length > 2 && (
                   <div className="relative w-full sm:w-72">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-dark/30 pointer-events-none" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 pointer-events-none" />
                     <input
                       type="text"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder="Search by booking #, room…"
-                      className="input-light pl-10 py-2.5"
+                      className="w-full bg-white/[0.06] border border-white/[0.08] text-white placeholder:text-white/30 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:border-gold/50 focus:outline-none"
                     />
                   </div>
                 )}
@@ -625,15 +625,15 @@ function StatTile({
   accent?: boolean
 }) {
   return (
-    <div className={`bg-white border ${accent ? 'border-gold/30' : 'border-white/90'} rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow`}>
+    <div className={`bg-white/[0.06] border ${accent ? 'border-gold/30' : 'border-white/[0.08]'} rounded-2xl p-4 sm:p-5 hover:border-white/[0.15] transition-all`}>
       <div className="flex items-center justify-between mb-3">
-        <div className={`h-9 w-9 rounded-full ${accent ? 'bg-gold/15 text-gold-dark' : 'bg-gold/10 text-gold'} flex items-center justify-center`}>
+        <div className={`h-9 w-9 rounded-full ${accent ? 'bg-gold/15 text-gold' : 'bg-gold/10 text-gold/80'} flex items-center justify-center`}>
           <Icon className="h-4 w-4" />
         </div>
-        <p className="text-[10px] uppercase tracking-[0.15em] text-dark/55 font-semibold">{label}</p>
+        <p className="text-[10px] uppercase tracking-[0.15em] text-white/35 font-semibold">{label}</p>
       </div>
-      <p className="font-sans text-dark text-2xl sm:text-3xl font-semibold leading-none tabular-nums">{value}</p>
-      <p className="text-xs text-dark/50 mt-1">{sublabel}</p>
+      <p className="font-sans text-white text-2xl sm:text-3xl font-semibold leading-none tabular-nums">{value}</p>
+      <p className="text-xs text-white/40 mt-1">{sublabel}</p>
     </div>
   )
 }
@@ -678,10 +678,10 @@ function ReservationCard({
 
   return (
     <div
-      className={`group bg-white border ${muted ? 'border-gray-100' : 'border-white/90'} rounded-2xl overflow-hidden shadow-sm hover:shadow-xl ${muted ? 'hover:border-gray-200' : 'hover:border-gold/30'} transition-all duration-300 ${muted ? 'opacity-75' : ''}`}
+      className={`group bg-white/[0.06] border ${muted ? 'border-white/[0.04]' : 'border-white/[0.08]'} rounded-2xl overflow-hidden hover:shadow-xl ${muted ? 'hover:border-white/[0.08]' : 'hover:border-gold/30'} transition-all duration-300 ${muted ? 'opacity-60' : ''}`}
     >
       {/* Gold accent bar */}
-      <div className={`h-0.5 w-full bg-gradient-to-r ${muted ? 'from-gray-200 via-gray-100 to-transparent' : 'from-gold/60 via-gold/20 to-transparent'}`} />
+      <div className={`h-0.5 w-full bg-gradient-to-r ${muted ? 'from-white/10 via-white/5 to-transparent' : 'from-gold/60 via-gold/20 to-transparent'}`} />
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_140px]">
         {/* Main content */}
@@ -689,8 +689,8 @@ function ReservationCard({
           {/* Header row: ref + status */}
           <div className="flex items-start justify-between gap-3 mb-4">
             <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-dark/30 mb-0.5">Reference</p>
-              <p className="text-sm font-mono tracking-wider text-dark truncate">{r.reservation_number}</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 mb-0.5">Reference</p>
+              <p className="text-sm font-mono tracking-wider text-white truncate">{r.reservation_number}</p>
             </div>
             <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold uppercase tracking-wider shrink-0 ${sStyle.bg} ${sStyle.text}`}>
               <StatusIcon className="h-3.5 w-3.5" />
@@ -700,8 +700,8 @@ function ReservationCard({
 
           {/* Room + meta */}
           <div className="mb-4">
-            <h3 className="font-serif text-lg sm:text-xl text-dark font-medium">{r.room?.room_type?.name}</h3>
-            <p className="text-sm text-dark/50 mt-0.5 flex items-center gap-1">
+            <h3 className="font-serif text-lg sm:text-xl text-white font-medium">{r.room?.room_type?.name}</h3>
+            <p className="text-sm text-white/50 mt-0.5 flex items-center gap-1">
               <MapPin className="h-3 w-3 text-gold/60" />
               Room {r.room?.room_number}{r.room?.floor ? ` · Floor ${r.room.floor}` : ''}
             </p>
@@ -715,9 +715,9 @@ function ReservationCard({
           </div>
 
           {/* Check-out time + reminder */}
-          <div className="flex items-start gap-2.5 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 mb-3">
-            <Clock className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-800 leading-relaxed">
+          <div className="flex items-start gap-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2.5 mb-3">
+            <Clock className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-300 leading-relaxed">
               <span className="font-semibold">Check-out by {checkoutTimeLabel}.</span>{' '}
               {lateCheckoutFee !== null
                 ? <>Late check-out fee: <span className="font-semibold">{fmt(lateCheckoutFee)}</span>.</>
@@ -725,8 +725,8 @@ function ReservationCard({
             </p>
           </div>
           {r.room?.room_type?.bed_type && (
-            <div className="flex flex-wrap items-center gap-2 text-xs text-dark/40">
-              <span className="flex items-center gap-1.5 bg-dark/5 px-2.5 py-1 rounded-full">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-white/40">
+              <span className="flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-full">
                 <BedDouble className="h-3 w-3 text-gold/60" />
                 {r.room.room_type.bed_type}
               </span>
@@ -735,9 +735,9 @@ function ReservationCard({
 
           {/* Upcoming reminder */}
           {isUpcoming && checkInDays > 0 && checkInDays <= 7 && (
-            <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2">
-              <Sparkles className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-              <p className="text-xs text-emerald-700">
+            <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2">
+              <Sparkles className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+              <p className="text-xs text-emerald-300">
                 <span className="font-semibold">Check-in in {checkInDays} day{checkInDays !== 1 ? 's' : ''}.</span>{' '}
                 We can&apos;t wait to host you.
               </p>
@@ -746,7 +746,7 @@ function ReservationCard({
         </div>
 
         {/* Image column (desktop) */}
-        <div className="hidden md:block relative bg-dark/5 border-l border-gray-100">
+        <div className="hidden md:block relative bg-white/5 border-l border-white/[0.06]">
           <img
             src={getRoomImageUrl(r)}
             alt={r.room?.room_type?.name}
@@ -754,7 +754,7 @@ function ReservationCard({
           />
           {muted && (
             <div className="absolute top-3 left-3">
-              <span className="inline-flex items-center gap-1 bg-white/90 backdrop-blur text-dark/60 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full">
+              <span className="inline-flex items-center gap-1 bg-dark/70 backdrop-blur text-white/60 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full">
                 {r.status === 'cancelled' ? 'Cancelled' : r.status === 'no_show' ? 'No Show' : 'Past Stay'}
               </span>
             </div>
@@ -762,7 +762,7 @@ function ReservationCard({
         </div>
 
         {/* Image row (mobile) */}
-        <div className="md:hidden relative h-32 bg-dark/5">
+        <div className="md:hidden relative h-32 bg-white/5">
           <img
             src={getRoomImageUrl(r)}
             alt={r.room?.room_type?.name}
@@ -770,7 +770,7 @@ function ReservationCard({
           />
           {muted && (
             <div className="absolute top-3 left-3">
-              <span className="inline-flex items-center gap-1 bg-white/90 backdrop-blur text-dark/60 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full">
+              <span className="inline-flex items-center gap-1 bg-dark/70 backdrop-blur text-white/60 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full">
                 {r.status === 'cancelled' ? 'Cancelled' : r.status === 'no_show' ? 'No Show' : 'Past Stay'}
               </span>
             </div>
@@ -779,29 +779,29 @@ function ReservationCard({
       </div>
 
       {/* Footer: pricing + actions */}
-      <div className="px-5 sm:px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50/50">
+      <div className="px-5 sm:px-6 py-4 border-t border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/[0.03]">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <p className="text-[10px] uppercase tracking-wider text-dark/55 font-semibold">Total</p>
-            <p className="text-2xl font-semibold text-gold-dark leading-none">{fmt(toNum(r.total_amount))}</p>
+            <p className="text-[10px] uppercase tracking-wider text-white/40 font-semibold">Total</p>
+            <p className="text-2xl font-semibold text-gold leading-none">{fmt(toNum(r.total_amount))}</p>
             <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${pStyle.bg} ${pStyle.text} ${pStyle.border}`}>
               <PayIcon className="h-3 w-3" />
               {r.payment_status.replace('_', ' ')}
             </span>
           </div>
           {r.payment_status === 'partial' && (
-            <p className="mt-1 text-xs text-dark/40">
-              Paid {fmt(toNum(r.paid_amount))} · <span className="text-amber-700 font-medium">Balance {fmt(toNum(r.due_amount))}</span>
+            <p className="mt-1 text-xs text-white/40">
+              Paid {fmt(toNum(r.paid_amount))} · <span className="text-amber-400 font-medium">Balance {fmt(toNum(r.due_amount))}</span>
             </p>
           )}
           {r.payment_status === 'paid' && r.paid_amount > 0 && (
-            <p className="mt-1 text-xs text-emerald-700">Paid in full</p>
+            <p className="mt-1 text-xs text-emerald-400">Paid in full</p>
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={onView}
-            className="px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-dark/60 hover:text-dark border border-gray-200 rounded-lg hover:border-dark/30 transition-colors inline-flex items-center gap-1"
+            className="px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-white/60 hover:text-white border border-white/[0.08] rounded-lg hover:border-white/[0.2] transition-colors inline-flex items-center gap-1"
           >
             Details
             <ChevronRight className="h-3.5 w-3.5" />
@@ -818,20 +818,20 @@ function ReservationCard({
           {showRefundButton && (
             <button
               onClick={onRefund}
-              className="px-4 py-2 border border-amber-400/40 text-amber-700 rounded-lg text-xs font-semibold uppercase tracking-wider hover:bg-amber-50 hover:border-amber-400/60 transition-all inline-flex items-center gap-1.5"
+              className="px-4 py-2 border border-amber-400/30 text-amber-400 rounded-lg text-xs font-semibold uppercase tracking-wider hover:bg-amber-500/10 hover:border-amber-400/50 transition-all inline-flex items-center gap-1.5"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               Refund
             </button>
           )}
           {r.refund_requested_at && (
-            <span className="px-3 py-1.5 rounded-lg text-xs bg-amber-50 border border-amber-200 text-amber-700 inline-flex items-center gap-1.5">
+            <span className="px-3 py-1.5 rounded-lg text-xs bg-amber-500/10 border border-amber-500/20 text-amber-400 inline-flex items-center gap-1.5">
               <Clock className="h-3 w-3" />
               Refund Requested
             </span>
           )}
           {r.cancellation_tier === 'non_refundable' && isAlive && (
-            <span className="px-3 py-1.5 rounded-lg text-xs bg-sky-50 border border-sky-200 text-sky-700 inline-flex items-center gap-1.5">
+            <span className="px-3 py-1.5 rounded-lg text-xs bg-sky-500/10 border border-sky-500/20 text-sky-400 inline-flex items-center gap-1.5">
               <Lock className="h-3 w-3" />
               Non-Refundable
             </span>
@@ -855,7 +855,7 @@ function ReservationCard({
                 Pay {fmt(toNum(r.due_amount))}
               </button>
             ) : (
-              <span className="px-3 py-1.5 rounded-lg text-xs bg-amber-100 border border-amber-600/40 text-amber-800 inline-flex items-center gap-1.5">
+              <span className="px-3 py-1.5 rounded-lg text-xs bg-amber-500/10 border border-amber-400/30 text-amber-400 inline-flex items-center gap-1.5">
                 <AlertTriangle className="h-3 w-3" />
                 Online Payment Unavailable
               </span>
@@ -869,24 +869,24 @@ function ReservationCard({
 
 function MetaCell({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-dark/[0.03] border border-gray-100 px-2.5 py-2">
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-dark/55 font-semibold">
+    <div className="rounded-lg bg-white/[0.04] border border-white/[0.06] px-2.5 py-2">
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/45 font-semibold">
         <Icon className="h-3 w-3 text-gold/60" />
         {label}
       </div>
-      <p className="text-sm text-dark font-medium mt-0.5 truncate">{value}</p>
+      <p className="text-sm text-white font-medium mt-0.5 truncate">{value}</p>
     </div>
   )
 }
 
 function EmptyState() {
   return (
-    <div className="bg-white border border-white/90 rounded-2xl shadow-sm max-w-lg mx-auto p-12 sm:p-16 text-center">
+    <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl max-w-lg mx-auto p-12 sm:p-16 text-center">
       <div className="w-20 h-20 rounded-full bg-gradient-to-br from-gold/20 to-gold/5 flex items-center justify-center mx-auto mb-6">
         <CalendarX className="h-9 w-9 text-gold" />
       </div>
-      <h2 className="font-serif text-dark text-2xl font-normal mb-2">No bookings yet</h2>
-      <p className="text-dark/50 text-sm mb-8 max-w-sm mx-auto">
+      <h2 className="font-serif text-white text-2xl font-normal mb-2">No bookings yet</h2>
+      <p className="text-white/50 text-sm mb-8 max-w-sm mx-auto">
         Your reservations will appear here once you book a stay. Browse our cozy rooms and find your next escape.
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -911,12 +911,12 @@ function FilteredEmpty({ filter, onReset }: { filter: FilterKey; onReset: () => 
     cancelled: 'cancelled bookings',
   }
   return (
-    <div className="bg-white border border-white/90 rounded-2xl shadow-sm max-w-lg mx-auto p-10 text-center">
-      <div className="w-14 h-14 rounded-full bg-dark/5 flex items-center justify-center mx-auto mb-4">
+    <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl max-w-lg mx-auto p-10 text-center">
+      <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
         <Search className="h-6 w-6 text-gold" />
       </div>
-      <p className="text-dark text-lg mb-1 font-normal">No {labels[filter]} found</p>
-      <p className="text-dark/50 text-sm mb-5">Try a different filter or clear your search.</p>
+      <p className="text-white text-lg mb-1 font-normal">No {labels[filter]} found</p>
+      <p className="text-white/50 text-sm mb-5">Try a different filter or clear your search.</p>
       <button onClick={onReset} className="text-gold text-sm uppercase tracking-wider hover:underline font-semibold">
         View all bookings
       </button>

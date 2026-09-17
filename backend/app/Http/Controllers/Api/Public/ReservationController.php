@@ -9,7 +9,9 @@ use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use App\Mail\BookingConfirmationMail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class ReservationController extends Controller
@@ -164,6 +166,12 @@ class ReservationController extends Controller
             'model_id' => $reservation->id,
             'description' => "Guest " . \App\Helpers\DataMasker::maskName($guest->full_name) . " created reservation #{$reservation->reservation_number}",
         ]);
+
+        try {
+            Mail::to($guest->email)->send(new BookingConfirmationMail($reservation));
+        } catch (\Exception $e) {
+            // Don't fail the booking if email fails
+        }
 
         return response()->json(
             $reservation->load(['guest', 'room.roomType']),

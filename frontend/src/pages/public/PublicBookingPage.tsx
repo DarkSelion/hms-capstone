@@ -302,75 +302,80 @@ export default function PublicBookingPage() {
             STEP 1 — DATES
            ══════════════════════════════════════════════════════════════ */}
         {step === 1 && (
-          <div className="animate-fade-in">
-            {/* Hero */}
-            <section className="relative h-56 sm:h-72 rounded-2xl overflow-hidden mb-10">
-              <img src={HERO_IMAGES.rooms} alt="" className="absolute inset-0 w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/60 to-dark/30" />
-              <div className="relative z-10 h-full flex flex-col justify-end p-8">
-                <p className="text-gold/70 text-xs uppercase tracking-[0.2em] font-medium mb-2">Step 1 of 3</p>
-                <h1 className="font-serif text-white text-3xl sm:text-4xl font-light">Select Your Dates</h1>
-                <p className="text-white/40 text-sm mt-2 max-w-lg">Choose your stay dates and guest count to see available rooms.</p>
+          <div className="animate-fade-in max-w-2xl mx-auto">
+            {/* Header */}
+            <div className="text-center mb-10">
+              <div className="inline-flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-full px-4 py-1.5 mb-4">
+                <span className="text-[10px] uppercase tracking-[0.2em] text-gold font-semibold">Step 1 of 3</span>
               </div>
-            </section>
+              <h1 className="font-serif text-white text-3xl sm:text-4xl font-light mb-3">Select Your Dates</h1>
+              <p className="text-white/40 text-sm">Choose your stay dates and guest count to see available rooms.</p>
+            </div>
 
             {/* Form Card */}
-            <div className="max-w-2xl mx-auto">
-              <div className="bg-dark/50 border border-white/5 rounded-2xl p-6 sm:p-8">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div>
-                    <label htmlFor="booking_check_in" className="text-xs uppercase tracking-[0.15em] text-gold/50 block mb-2">Check In</label>
-                    <DatePicker value={checkIn} onChange={(v) => setCheckIn(v)} min={toLocalDateStr(new Date())} max={maxDate} />
-                  </div>
-                  <div>
-                    <label htmlFor="booking_check_out" className="text-xs uppercase tracking-[0.15em] text-gold/50 block mb-2">Check Out</label>
-                    <DatePicker value={checkOut} onChange={(v) => setCheckOut(v)} min={minCheckOut} max={maxDate} />
-                  </div>
-                  <div>
-                    <label htmlFor="booking_adults" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Adults</label>
-                    <select id="booking_adults" value={adultsSafe} onChange={(e) => setAdults(Number(e.target.value))} className="input-public">
-                      {Array.from({ length: maxAdults }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="booking_children" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Children</label>
-                    <select id="booking_children" value={childrenSafe} onChange={(e) => setChildrenCount(Number(e.target.value))} className="input-public">
-                      {Array.from({ length: maxChildren + 1 }, (_, i) => i).map(n => <option key={n} value={n}>{n}</option>)}
-                    </select>
-                  </div>
-                  {selectedGroup && (
-                    <p className="col-span-full text-xs text-white/30">
-                      {selectedGroup.roomType.name} fits up to {maxAdults} adult{maxAdults > 1 ? 's' : ''}{maxChildren > 0 ? ` + ${maxChildren} child${maxChildren !== 1 ? 'ren' : ''}` : ''}.
-                    </p>
-                  )}
+            <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl p-6 sm:p-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label htmlFor="booking_check_in" className="text-xs uppercase tracking-[0.15em] text-gold/50 block mb-2">Check In</label>
+                  <DatePicker value={checkIn} onChange={(v) => setCheckIn(v)} min={toLocalDateStr(new Date())} max={maxDate} />
                 </div>
-
-                {datesValid && (
-                  <div className="mt-6 bg-dark/40 border border-white/5 rounded-xl p-4 flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center shrink-0">
-                      <Calendar className="h-5 w-5 text-gold" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white/70 text-sm font-medium truncate">
-                        {formatDate(checkIn)} — {formatDate(checkOut)}
-                      </p>
-                      <p className="text-white/25 text-xs mt-0.5">{nights} night{nights > 1 ? 's' : ''} · {adultsSafe} adult{adultsSafe > 1 ? 's' : ''}{childrenSafe > 0 ? `, ${childrenSafe} child${childrenSafe > 1 ? 'ren' : ''}` : ''}</p>
-                    </div>
-                  </div>
-                )}
-
-                {dateError && (
-                  <p className="mt-4 text-sm text-red-400">{dateError}</p>
-                )}
-
-                <button
-                  onClick={() => setStep(2)}
-                  disabled={!datesValid}
-                  className="btn-gold w-full mt-6 flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  Search Available Rooms <ChevronRight className="h-4 w-4" />
-                </button>
+                <div>
+                  <label htmlFor="booking_check_out" className="text-xs uppercase tracking-[0.15em] text-gold/50 block mb-2">Check Out</label>
+                  <DatePicker value={checkOut} onChange={(v) => setCheckOut(v)} min={minCheckOut} max={maxDate} />
+                </div>
+                <div>
+                  <label htmlFor="booking_adults" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Adults</label>
+                  <select id="booking_adults" value={adultsSafe} onChange={(e) => setAdults(Number(e.target.value))} className="input-public">
+                    {Array.from({ length: maxAdults }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="booking_children" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Children</label>
+                  <select id="booking_children" value={childrenSafe} onChange={(e) => setChildrenCount(Number(e.target.value))} className="input-public">
+                    {Array.from({ length: maxChildren + 1 }, (_, i) => i).map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
               </div>
+
+              {datesValid && (
+                <div className="mt-5 bg-gold/5 border border-gold/15 rounded-xl p-4 flex items-center gap-4">
+                  <div className="w-11 h-11 rounded-xl bg-gold/10 flex items-center justify-center shrink-0">
+                    <Calendar className="h-5 w-5 text-gold" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white/80 text-sm font-medium truncate">
+                      {formatDate(checkIn)} — {formatDate(checkOut)}
+                    </p>
+                    <p className="text-white/30 text-xs mt-0.5">{nights} night{nights > 1 ? 's' : ''} · {adultsSafe} adult{adultsSafe > 1 ? 's' : ''}{childrenSafe > 0 ? `, ${childrenSafe} child${childrenSafe > 1 ? 'ren' : ''}` : ''}</p>
+                  </div>
+                  <span className="bg-gold/15 text-gold text-xs font-semibold px-2.5 py-1 rounded-full">{nights}N</span>
+                </div>
+              )}
+
+              {dateError && (
+                <p className="mt-4 text-sm text-red-400">{dateError}</p>
+              )}
+
+              <button
+                onClick={() => setStep(2)}
+                disabled={!datesValid}
+                className="btn-gold w-full mt-6 flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                Search Available Rooms <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Trust badges */}
+            <div className="flex items-center justify-center gap-6 mt-8">
+              {[
+                { icon: '🔒', label: 'Secure Booking' },
+                { icon: '✨', label: 'Best Price Guarantee' },
+                { icon: '🏊', label: 'Free Pool Access' },
+              ].map((b) => (
+                <div key={b.label} className="flex items-center gap-1.5 text-white/25 text-xs">
+                  <span className="text-sm">{b.icon}</span> {b.label}
+                </div>
+              ))}
             </div>
           </div>
         )}

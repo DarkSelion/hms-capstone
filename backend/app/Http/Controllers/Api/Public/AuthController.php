@@ -21,7 +21,7 @@ class AuthController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => ['required', 'email', 'unique:guests,email', 'regex:/^[a-zA-Z0-9._%+-]+@(gmail|yahoo|outlook|hotmail|icloud|aol|protonmail|zoho|mail|live|msn|ymail|rocketmail)\.(com|ph)$/'],
-            'phone' => 'required|string|max:20|regex:/^[+]?[0-9]{10,15}$/',
+            'phone' => 'required|string|max:20|regex:/^(\+63|0)\d{9,13}$/',
             'password' => 'required|string|min:8|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/|confirmed',
             'gender' => 'nullable|string|max:20',
         ]);
