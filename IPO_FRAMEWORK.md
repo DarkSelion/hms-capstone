@@ -8,27 +8,24 @@
 │   Functional           │   Non-Functional        │   Technology Stack               │
 │   Requirements         │   Requirements          │                                   │
 ├────────────────────────┼────────────────────────┼───────────────────────────────────┤
-│ • Guest Portal          │ • Security              │ • Laravel 11 (Backend)            │
-│   - Registration/Login  │   - Password complexity │ • React 18 + TypeScript (Frontend)│
+│ • Guest Portal          │ • Security              │ • Laravel 11 + PHP 8.4           │
+│   - Registration/Login  │   - Password complexity │ • React 18 + TypeScript          │
 │   - Room Browsing       │   - Rate limiting       │ • MySQL 8 (AWS RDS)              │
-│   - Booking Wizard      │   - RBAC roles          │ • Tailwind CSS                    │
-│   - Online Payment      │   - OTP verification    │ • Vite (Build tool)              │
-│   - My Reservations     │   - Sanctum tokens      │                                   │
-│   - Reviews             │                         │ • AWS EC2 (Hosting)               │
-│   - Contact Form        │ • Performance           │ • nginx (Web server)              │
-│                         │   - DB indexing          │ • Let's Encrypt (SSL)            │
-│ • Admin Dashboard       │   - Query optimization  │ • Gmail SMTP (Email)             │
-│   - Room Management     │   - Caching              │ • PayMongo (Payments)            │
+│   - Booking Wizard      │   - RBAC roles          │ • Tailwind CSS + Vite            │
+│   - Online Payment      │   - OTP verification    │ • AWS EC2 + nginx + SSL          │
+│   - My Reservations     │   - Sanctum tokens      │ • Gmail SMTP + PayMongo          │
+│   - Reviews             │                         │ • Git (Version control)          │
+│   - Contact Form        │ • Performance           │                                   │
+│                         │   - DB indexing          │                                   │
+│ • Admin Dashboard       │   - Query optimization  │                                   │
+│   - Room Management     │   - Caching              │                                   │
 │   - Reservation System  │                         │                                   │
-│   - Guest Management    │ • Usability             │ • PHP 8.4                         │
-│   - Housekeeping        │   - Responsive design   │ • PHP 8.4                         │
-│   - Maintenance         │   - Dark navy theme     │ • Git (Version control)          │
+│   - Guest Management    │ • Usability             │                                   │
+│   - Housekeeping        │   - Responsive design   │                                   │
+│   - Maintenance         │   - Dark navy theme     │                                   │
 │   - Staff Management    │   - Accessibility       │                                   │
-│   - Expenses            │                         │                                   │
-│   - Invoices/Payments   │                         │                                   │
-│   - Reports             │                         │                                   │
-│   - Settings            │                         │                                   │
-│   - Activity Logs       │                         │                                   │
+│   - Expenses/Reports    │                         │                                   │
+│   - Settings/Logs       │                         │                                   │
 └────────────────────────┴────────────────────────┴───────────────────────────────────┘
                                     │
                                     ▼
@@ -38,24 +35,22 @@
 │                                                                                     │
 │  ┌─────────────┐   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐            │
 │  │ 1. Systems  │──▶│ 2. Database │──▶│ 3. Backend  │──▶│ 4. Frontend │            │
-│  │   Analysis  │   │   Design    │   │   API Dev   │   │   UI Dev    │            │
-│  │ & Planning  │   │ & Schema    │   │ (Laravel)   │   │  (React)    │            │
+│  │  Analysis   │   │   Design    │   │   API Dev   │   │   UI Dev    │            │
 │  └─────────────┘   └─────────────┘   └─────────────┘   └─────────────┘            │
-│         │                                    │                 │                    │
-│         ▼                                    ▼                 ▼                    │
+│                          │                  │                 │                     │
+│                          ▼                  ▼                 ▼                     │
 │  ┌─────────────┐   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐            │
 │  │ 5. Security │──▶│ 6. Payment  │──▶│ 7. Email    │──▶│ 8. Testing  │            │
-│  │   Implemen- │   │   Gateway   │   │   System    │   │ & QA        │            │
-│  │   tation    │   │ Integration │   │   Setup     │   │ (464 + 259) │            │
-│  └─────────────┘   └─────────────┘   └─────────────┘   └─────────────┘            │
-│         │                                    │                 │                    │
-│         ▼                                    ▼                 ▼                    │
-│  ┌─────────────┐   ┌─────────────────────────────────────────────────┐            │
-│  │ 9. Deploy-  │──▶│ 10. Documentation & Validation                  │            │
-│  │    ment     │   │     - SYSTEM_DOCUMENTATION.md                   │            │
-│  │ (AWS EC2)   │   │     - API documentation                         │            │
-│  └─────────────┘   │     - Deployment blueprints                     │            │
-│                    └─────────────────────────────────────────────────┘            │
+│  │  Implemen-  │   │   Gateway   │   │   System    │   │ & QA        │            │
+│  │   tation    │   │ Integration │   │   Setup     │   │ (723 tests) │            │
+│  └─────────────┘   └─────────────┘   └─────────────┘   └──────┬──────┘            │
+│                                                               │                    │
+│                          ┌────────────────────────────────────┘                    │
+│                          ▼                                                         │
+│                 ┌─────────────────┐                                                │
+│                 │ 9. Deployment   │                                                │
+│                 │   (AWS EC2)     │                                                │
+│                 └─────────────────┘                                                │
 │                                                                                     │
 └─────────────────────────────────────────────────────────────────────────────────────┘
                                     │
@@ -65,19 +60,13 @@
 ├────────────────────────┬────────────────────────┬───────────────────────────────────┤
 │   Working System       │   Technical Assets      │   Documentation                  │
 ├────────────────────────┼────────────────────────┼───────────────────────────────────┤
-│ • Guest Portal          │ • 464 backend tests     │ • SYSTEM_DOCUMENTATION.md        │
-│   - pampangahomesuites  │   passing (1500+        │ • .docx export                   │
-│     .duckdns.org        │   assertions)           │ • Database schema                │
-│                         │ • 259 frontend tests    │   (29 migrations)                │
-│ • Admin Dashboard       │   passing               │ • API endpoint reference         │
-│   - /admin              │ • 60+ REST API          │ • Deployment guide               │
-│                         │   endpoints             │ • Operations manual              │
-│ • Online Payment        │ • 5 room types          │                                   │
-│   Gateway (PayMongo)    │   & 25 rooms            │                                   │
-│                         │ • Activity logging      │                                   │
-│ • Email System          │   system                │                                   │
-│   (SMTP + OTP)          │                         │                                   │
-│                         │                         │                                   │
+│ • Guest Portal          │ • 464 backend tests     │ • IPO Framework                  │
+│   pampangahomesuites    │ • 259 frontend tests    │ • Database schema (29 migrations)│
+│   .duckdns.org          │ • 60+ REST API          │ • API endpoint reference         │
+│ • Admin Dashboard       │   endpoints             │ • Deployment guide               │
+│   /admin                │ • 5 room types          │                                   │
+│ • PayMongo Gateway      │   & 25 rooms            │                                   │
+│ • SMTP + OTP Email      │ • Activity logging      │                                   │
 └────────────────────────┴────────────────────────┴───────────────────────────────────┘
 ```
 
