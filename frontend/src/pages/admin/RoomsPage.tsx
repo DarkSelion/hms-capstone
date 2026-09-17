@@ -28,12 +28,12 @@ const ROOM_STATUS_OPTIONS = [
 ]
 
 const STATUS_TABS = [
-  { value: '', label: 'All', color: 'text-dark/60', dot: 'bg-dark/30' },
+  { value: '', label: 'All Rooms', color: 'text-slate-600', dot: 'bg-slate-400' },
   { value: 'available', label: 'Available', color: 'text-emerald-600', dot: 'bg-emerald-500' },
   { value: 'occupied', label: 'Occupied', color: 'text-sky-600', dot: 'bg-sky-500' },
   { value: 'reserved', label: 'Reserved', color: 'text-amber-600', dot: 'bg-amber-500' },
   { value: 'dirty', label: 'Dirty', color: 'text-orange-600', dot: 'bg-orange-500' },
-  { value: 'maintenance', label: 'Maintenance', color: 'text-red-600', dot: 'bg-red-500' },
+  { value: 'maintenance', label: 'Maintenance', color: 'text-rose-600', dot: 'bg-rose-500' },
 ]
 
 const ROOM_STATUS_HELPERS: Record<string, string> = {
@@ -285,17 +285,17 @@ export default function RoomsPage() {
       <Card>
         <CardContent className="pt-6">
           {/* ── Row 1: Status Tabs ── */}
-          <div className="mb-5 flex flex-wrap items-center gap-2">
+          <div className="mb-5 inline-flex items-center gap-0.5 rounded-xl bg-slate-100 p-1">
             {STATUS_TABS.map((tab) => {
               const isActive = statusFilter === tab.value
               return (
                 <button
                   key={tab.value}
                   onClick={() => { setStatusFilter(tab.value); setCurrentPage(1) }}
-                  className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
                     isActive
-                      ? 'bg-gold text-dark shadow-md shadow-gold/20 ring-1 ring-gold/30'
-                      : 'bg-white border border-gray-200 text-dark/50 hover:border-gold/40 hover:text-dark hover:shadow-sm'
+                      ? 'bg-[#1A2238] text-white shadow-sm'
+                      : 'bg-transparent text-slate-600 hover:bg-white/80 hover:text-slate-900'
                   }`}
                 >
                   <span className={`h-2 w-2 rounded-full ${tab.dot}`} />
@@ -309,46 +309,46 @@ export default function RoomsPage() {
           <div className="mb-4 flex flex-wrap items-center gap-3">
             {/* Search */}
             <div className="relative flex-1 min-w-[200px] max-w-md">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-dark/30 pointer-events-none" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search room number..."
+                placeholder="Search room number or floor..."
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }}
-                className="w-full h-11 pl-10 pr-4 rounded-xl border border-gray-200 bg-white text-sm text-foreground placeholder:text-dark/30 focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold transition-colors"
+                className="w-full h-11 pl-10 pr-4 rounded-lg border border-slate-200 bg-white text-sm text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
               />
             </div>
 
             {/* Floor Dropdown */}
             <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-dark/30 pointer-events-none" />
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
               <select
                 value={floorFilter}
                 onChange={(e) => { setFloorFilter(e.target.value); setCurrentPage(1) }}
-                className="h-11 pl-9 pr-10 rounded-xl border border-gray-200 bg-white text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold transition-colors"
+                className="h-11 pl-9 pr-10 rounded-lg border border-slate-200 bg-white text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
               >
                 {FLOOR_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-dark/30 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
             </div>
 
             {/* Room Type Dropdown */}
             {isAdmin && (
               <div className="relative">
-                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-dark/30 pointer-events-none" />
+                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                 <select
                   value={roomTypeFilter}
                   onChange={(e) => { setRoomTypeFilter(e.target.value); setCurrentPage(1) }}
-                  className="h-11 pl-9 pr-10 rounded-xl border border-gray-200 bg-white text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold transition-colors"
+                  className="h-11 pl-9 pr-10 rounded-lg border border-slate-200 bg-white text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
                 >
                   <option value="">All Types</option>
                   {roomTypesList.map((rt) => (
                     <option key={rt.id} value={rt.id}>{rt.name}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-dark/30 pointer-events-none" />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
               </div>
             )}
 
