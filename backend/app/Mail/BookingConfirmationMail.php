@@ -49,6 +49,7 @@ class BookingConfirmationMail extends Mailable
         $total = number_format($r->total_amount, 2);
         $currency = '₱';
         $year = date('Y');
+        $nightsText = $nights . ($nights > 1 ? ' nights' : ' night');
         $checkOutTime = '12:00 PM';
         $policy = e($r->cancellation_tier === 'non_refundable'
             ? 'Non-refundable rate — no changes or refunds.'
@@ -90,7 +91,7 @@ class BookingConfirmationMail extends Mailable
             </td></tr>
             <tr><td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
               <span style="color:rgba(255,255,255,0.4);font-size:12px;">Duration</span><br>
-              <span style="color:#ffffff;font-size:14px;">{$nights} night{$nights > 1 ? 's' : ''}</span>
+              <span style="color:#ffffff;font-size:14px;">{$nightsText}</span>
             </td></tr>
             <tr><td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
               <span style="color:rgba(255,255,255,0.4);font-size:12px;">Guests</span><br>

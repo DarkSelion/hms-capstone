@@ -605,14 +605,6 @@ const [showFormModal, setShowFormModal] = useState(false)
         }}
       />
 
-      <PaymentModal
-        isOpen={showFormModal}
-        onClose={closeFormModal}
-        reservations={reservations}
-        showCheckInOption
-        showCheckOutOption
-      />
-
     </div>
   )
 }
