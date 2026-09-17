@@ -1168,7 +1168,7 @@ export function useSearch(query: string) {
 export function useReviews(params?: Record<string, string | number | undefined>) {
   return useQuery({
     queryKey: ['reviews', params],
-    queryFn: () => api.get('/reviews', { params }),
+    queryFn: () => api.get<{ data: import('@/types').Review[] }>(`/reviews?${buildQueryString(params)}`),
   })
 }
 

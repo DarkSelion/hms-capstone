@@ -6,7 +6,7 @@ import { buildHeroImages, buildGalleryPhotos, buildAmenities, stringSetting, rep
 import { toLocalDateStr, formatCurrencyWith } from '@/lib/format'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
 import { GuestsPicker } from '@/components/ui/guests-picker'
-import { ArrowRight, Users, Maximize, Search, Waves, UtensilsCrossed, Camera, Wifi, Car, Star, Building2, CheckCircle, AlertTriangle, Clock, X } from 'lucide-react'
+import { ArrowRight, Users, Maximize, Search, Waves, UtensilsCrossed, Camera, Wifi, Car, Star, Building2, CheckCircle, AlertTriangle, Clock, X, Sparkles } from 'lucide-react'
 
 const ROOM_IMAGES: Record<string, string[]> = {
   rooms: [
@@ -120,7 +120,6 @@ function WhyChooseSection({ title, amenities }: { title: string; amenities: Arra
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <div ref={imgRef} className="relative rounded-2xl overflow-hidden aspect-[4/5] lg:aspect-[3/4] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)]">
             {displayAmenities.map((feat, i) => {
-              const Icon = getAmenityIcon(feat.name)
               return (
                 <img
                   key={feat.name}

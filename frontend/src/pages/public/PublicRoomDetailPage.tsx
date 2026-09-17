@@ -238,7 +238,7 @@ export default function PublicRoomDetailPage() {
                 <h1 className="font-serif text-white text-3xl sm:text-4xl lg:text-5xl font-light leading-tight">
                   {roomType.name}
                 </h1>
-                {roomType.avg_rating > 0 && (
+                {roomType.avg_rating != null && roomType.avg_rating > 0 && (
                   <span className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-white/10 rounded-full px-3 py-1.5 text-sm shrink-0">
                     <Star className="h-3.5 w-3.5 text-gold fill-gold" />
                     <span className="text-white font-medium">{Number(roomType.avg_rating).toFixed(1)}</span>
@@ -363,13 +363,13 @@ export default function PublicRoomDetailPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-white/5 mt-8">
           <div className="flex items-center gap-4 mb-8">
             <h2 className="font-serif text-2xl text-white">Guest Reviews</h2>
-            {roomType.avg_rating > 0 && (
+            {roomType.avg_rating != null && roomType.avg_rating > 0 && (
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
                   {Array.from({ length: 5 }, (_, i) => (
                     <Star
                       key={i}
-                      className={`h-4 w-4 ${i < Math.round(roomType.avg_rating) ? 'text-gold fill-gold' : 'text-white/20'}`}
+                      className={`h-4 w-4 ${i < Math.round(roomType.avg_rating ?? 0) ? 'text-gold fill-gold' : 'text-white/20'}`}
                     />
                   ))}
                 </div>

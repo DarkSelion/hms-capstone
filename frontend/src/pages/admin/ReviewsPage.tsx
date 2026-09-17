@@ -103,7 +103,7 @@ export default function ReviewsPage() {
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3">
-                    <p className="text-sm font-semibold text-foreground">{review.guest?.full_name ?? '—'}</p>
+                    <p className="text-sm font-semibold text-foreground">{[review.guest?.first_name, review.guest?.last_name].filter(Boolean).join(' ') || '—'}</p>
                     <StarRating rating={review.rating} />
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${review.is_approved ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
                       {review.is_approved ? 'Approved' : 'Pending'}
@@ -145,7 +145,7 @@ export default function ReviewsPage() {
           <div className="space-y-4">
             <div className="rounded-xl bg-bg p-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">{selectedReview.guest?.full_name}</span>
+                <span className="text-sm font-medium text-foreground">{[selectedReview.guest?.first_name, selectedReview.guest?.last_name].filter(Boolean).join(' ')}</span>
                 <StarRating rating={selectedReview.rating} />
               </div>
               {selectedReview.comment && <p className="mt-1 text-xs text-muted">{selectedReview.comment}</p>}

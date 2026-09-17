@@ -8,6 +8,7 @@ import type {
   PublicRoom,
   PublicReservationsResponse,
   PublicReservation,
+  PublicReview,
 } from '@/types'
 
 // Auth
@@ -264,7 +265,7 @@ export function useSubmitReview() {
 export function usePublicRoomReviews(slug: string | undefined) {
   return useQuery({
     queryKey: ['public-room-reviews', slug],
-    queryFn: () => publicApi.get(`/public/rooms/${slug}/reviews`),
+    queryFn: () => publicApi.get<PublicReview[]>(`/public/rooms/${slug}/reviews`),
     enabled: !!slug,
   })
 }

@@ -248,7 +248,6 @@ export default function PublicBookingPage() {
         adults: adultsSafe,
         children: childrenSafe,
         special_requests: specialRequests || undefined,
-        cancellation_tier: cancellationTier,
       })
       navigate('/public/my-reservations')
     } catch (e) {

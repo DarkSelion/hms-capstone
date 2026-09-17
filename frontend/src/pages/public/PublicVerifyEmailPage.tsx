@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useVerifyEmail, useSendVerificationEmail, useHotelName, usePublicMe } from '@/hooks/usePublicApi'
+import { useVerifyEmail, useSendVerificationEmail, useHotelName } from '@/hooks/usePublicApi'
 import { usePublicAuthStore } from '@/stores/publicAuthStore'
 import { OTPInput } from '@/components/ui/otp-input'
 import { Loader2, CheckCircle, Mail, ArrowLeft } from 'lucide-react'
@@ -10,7 +10,6 @@ const OTP_LENGTH = 6
 
 export default function PublicVerifyEmailPage() {
   const hotelName = useHotelName()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const user = usePublicAuthStore((s) => s.user)
 
@@ -70,7 +69,7 @@ export default function PublicVerifyEmailPage() {
     verifyEmail.mutate(
       { email, code },
       {
-        onSuccess: (res) => {
+        onSuccess: () => {
           setSuccess(true)
           queryClient.invalidateQueries({ queryKey: ['public-me'] })
         },

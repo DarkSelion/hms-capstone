@@ -453,7 +453,8 @@ export interface PublicReview {
   rating: number
   title?: string
   comment?: string
-  guest?: { full_name: string }
+  guest?: { first_name: string; last_name: string; full_name: string }
+  admin_reply?: string
   created_at: string
 }
 
