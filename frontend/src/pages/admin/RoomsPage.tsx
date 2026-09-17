@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useRooms, useRoomTypes, useUpdateRoom } from '@/hooks/useApi'
 import type { Room, RoomImage } from '@/types'
 import { formatCurrency } from '@/lib/format'
@@ -96,21 +96,11 @@ export default function RoomsPage() {
   }
 
   const { data: roomsData, isLoading: roomsLoading, error: roomsError, refetch: refetchRooms } = useRooms(params)
-  const { data: allRoomsData } = useRooms({ all: 1 })
 
   const { data: roomTypesData } = useRoomTypes(undefined, { enabled: isAdmin })
   const updateRoom = useUpdateRoom()
 
   const rooms = roomsData?.data ?? []
-  const allRooms = allRoomsData?.data ?? []
-  const statusCounts = useMemo(() => ({
-    all: allRooms.length,
-    available: allRooms.filter(r => r.status === 'available').length,
-    occupied: allRooms.filter(r => r.status === 'occupied').length,
-    reserved: allRooms.filter(r => r.status === 'reserved').length,
-    dirty: allRooms.filter(r => r.status === 'dirty').length,
-    maintenance: allRooms.filter(r => r.status === 'maintenance').length,
-  }), [allRooms])
   const paginationInfo = roomsData
     ? { currentPage: roomsData.current_page, lastPage: roomsData.last_page, total: roomsData.total, per_page: roomsData.per_page }
     : null
@@ -298,7 +288,6 @@ export default function RoomsPage() {
           <div className="mb-5 flex flex-wrap items-center gap-2">
             {STATUS_TABS.map((tab) => {
               const isActive = statusFilter === tab.value
-              const count = statusCounts[tab.value as keyof typeof statusCounts] ?? 0
               return (
                 <button
                   key={tab.value}
@@ -311,11 +300,6 @@ export default function RoomsPage() {
                 >
                   <span className={`h-2 w-2 rounded-full ${tab.dot}`} />
                   {tab.label}
-                  <span className={`ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    isActive ? 'bg-dark/10 text-dark/70' : 'bg-dark/5 text-dark/40'
-                  }`}>
-                    {count}
-                  </span>
                 </button>
               )
             })}
