@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   useHousekeepingTasks, useCreateHousekeepingTask, useUpdateHousekeepingStatus,
   useAssignHousekeepingTask, useUpdateHousekeepingTask, useDeleteHousekeepingTask,
-  useStaffAssignable, useRooms,
+  useStaffAssignable, useRooms, useUpdateRoomStatus,
 } from '@/hooks/useApi'
 import type { HousekeepingTask } from '@/types'
 import { formatDateDisplay } from '@/lib/format'
@@ -103,6 +103,7 @@ export default function HousekeepingPage() {
   const assignTask = useAssignHousekeepingTask()
   const updateTask = useUpdateHousekeepingTask()
   const deleteTask = useDeleteHousekeepingTask()
+  const updateRoomStatus = useUpdateRoomStatus()
 
   const tasks = tasksData?.data ?? []
   const staff = staffData ?? []
@@ -329,6 +330,41 @@ export default function HousekeepingPage() {
           </Button>
         }
       />
+
+      {dirtyRooms.length > 0 && (
+        <Card className="mb-5">
+          <CardContent className="pt-5">
+            <div className="mb-3 flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600">
+                <SprayCan className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Rooms Needing Attention</h3>
+                <p className="text-xs text-muted">{dirtyRooms.length} room{dirtyRooms.length !== 1 ? 's' : ''} dirty or in progress</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {dirtyRooms.map(r => (
+                <div key={r.id} className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/50 px-3 py-2 text-sm">
+                  <span className="font-medium text-foreground">{r.room_number}</span>
+                  <span className="text-xs text-muted">{r.room_type?.name}</span>
+                  <StatusBadge status={r.cleaning_status === 'clean' ? r.status : r.cleaning_status} />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs text-success hover:bg-success/10"
+                    onClick={() => updateRoomStatus.mutate({ id: r.id, status: 'available' })}
+                    disabled={updateRoomStatus.isPending}
+                  >
+                    <Check className="h-3 w-3 mr-1" />
+                    Mark Ready
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent className="pt-6">

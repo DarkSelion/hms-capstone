@@ -186,9 +186,9 @@ export default function CheckInPage() {
             <span>{formatDateDisplay(r.check_in)}</span>
             {getDateGroup(r.check_in) === 'today' && <TodayBadge variant="arrival" />}
             {r.is_overdue && (
-              <Badge variant="warning">
+              <Badge variant={r.payment_status === 'paid' || r.payment_status === 'partial' ? 'info' : 'warning'}>
                 <AlertTriangle className="h-3 w-3" />
-                Overdue
+                {r.payment_status === 'paid' || r.payment_status === 'partial' ? 'Late Arrival' : 'Overdue'}
               </Badge>
             )}
           </div>

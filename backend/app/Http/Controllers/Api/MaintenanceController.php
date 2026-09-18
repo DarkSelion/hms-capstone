@@ -192,7 +192,13 @@ class MaintenanceController extends Controller
             ->exists();
 
         if (! $hasOpen) {
-            $room->reconcileStatus();
+            // After maintenance, room goes to dirty for housekeeping inspection
+            // (not directly to available — must be cleaned first)
+            if (in_array($room->status, ['maintenance'])) {
+                $room->update(['status' => 'dirty', 'cleaning_status' => 'dirty']);
+            } else {
+                $room->reconcileStatus();
+            }
         }
     }
 }

@@ -107,6 +107,13 @@ class ReservationController extends Controller
             // transaction commits (avoids the store() double-booking race).
             $room = Room::whereKey($data['room_id'])->lockForUpdate()->firstOrFail();
 
+            // Reject booking rooms in dirty/maintenance status
+            if (in_array($room->status, ['dirty', 'maintenance'])) {
+                throw ValidationException::withMessages([
+                    'room_id' => ["The selected room is currently {$room->status} and cannot be booked."],
+                ]);
+            }
+
             if ($room->capacity && (int) $data['adults'] > (int) $room->capacity) {
                 throw ValidationException::withMessages([
                     'adults' => ["The number of adults cannot exceed the room capacity of {$room->capacity}."],
@@ -589,7 +596,11 @@ class ReservationController extends Controller
             return response()->json(['message' => 'Reservation cannot be cancelled.'], 422);
         }
 
-        DB::transaction(function () use ($reservation, $request) {
+        $data = $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        DB::transaction(function () use ($reservation, $request, $data) {
             // Auto-refund fully paid reservations
             $totalPaid = (float) $reservation->payments()
                 ->where('status', 'completed')
@@ -618,7 +629,10 @@ class ReservationController extends Controller
                 ]);
             }
 
-            $reservation->update(['status' => 'cancelled']);
+            $reservation->update([
+                'status' => 'cancelled',
+                'cancellation_reason' => $data['reason'] ?? null,
+            ]);
             $reservation->reconcileBalances();
 
             $room = $reservation->room;

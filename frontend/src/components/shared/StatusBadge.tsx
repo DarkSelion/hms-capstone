@@ -6,6 +6,7 @@ const textColorMap: Record<string, string> = {
   danger: 'text-red-600',
   info: 'text-sky-600',
   gold: 'text-amber-700',
+  purple: 'text-purple-600',
   default: 'text-muted',
 }
 
@@ -15,7 +16,7 @@ const variantMap: Record<string, string> = {
   checked_in: 'success',
   checked_out: 'default',
   cancelled: 'danger',
-  no_show: 'danger',
+  no_show: 'purple',
   unpaid: 'warning',
   partial: 'gold',
   paid: 'success',

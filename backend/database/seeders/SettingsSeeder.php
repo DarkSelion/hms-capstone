@@ -23,6 +23,7 @@ class SettingsSeeder extends Seeder
             ['key' => 'max_advance_days', 'value' => '30', 'group' => 'booking'],
             ['key' => 'late_checkout_fee', 'value' => '0', 'group' => 'booking'],
             ['key' => 'check_out_time', 'value' => '11:00', 'group' => 'booking'],
+            ['key' => 'auto_cancel_grace_hours', 'value' => '24', 'group' => 'booking'],
             ['key' => 'contact_heading', 'value' => 'Get in Touch', 'group' => 'contact'],
             ['key' => 'contact_description', 'value' => 'Have a question or special request? We would love to hear from you.', 'group' => 'contact'],
             ['key' => 'contact_reception_hours', 'value' => '24 / 7 — Always Open', 'group' => 'contact'],

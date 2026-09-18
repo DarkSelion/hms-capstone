@@ -136,6 +136,12 @@ class HousekeepingController extends Controller
             }
         }
 
+        if ($data['status'] === 'inspected') {
+            if ($task->room && $task->room->status === 'dirty') {
+                $task->room->reconcileStatus();
+            }
+        }
+
         ActivityLog::create([
             'user_id' => $request->user()->id,
             'action' => 'status_changed',

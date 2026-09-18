@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('reservations:detect-overdue')->hourly();
+Schedule::command('app:cancel-overdue-reservations')->everyFifteenMinutes();
