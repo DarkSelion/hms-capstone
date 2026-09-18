@@ -133,10 +133,15 @@ export default function ReservationsPage() {
   const hasActiveFilters = Boolean(search || statusFilter || dateFrom || dateTo || refundRequestedOnly)
 
   const tableReservations = useMemo(() => {
+    let data = reservations
     if (!hasActiveFilters) {
-      return reservations.filter((r) => !todayArrivalIds.has(r.id))
+      data = reservations.filter((r) => !todayArrivalIds.has(r.id))
     }
-    return reservations
+    return [...data].sort((a, b) => {
+      const aDead = a.status === 'cancelled' || a.status === 'no_show' ? 1 : 0
+      const bDead = b.status === 'cancelled' || b.status === 'no_show' ? 1 : 0
+      return aDead - bDead
+    })
   }, [reservations, todayArrivalIds, hasActiveFilters])
 
   const clearAllFilters = useCallback(() => {
