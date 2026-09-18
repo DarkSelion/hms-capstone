@@ -141,13 +141,14 @@ export default function CheckInPage() {
       key: 'reservation_number',
       label: 'Reservation #',
       sortable: true,
+      className: 'w-[14%]',
       render: (r) => <span className="font-medium">{r.reservation_number}</span>,
     },
     {
       key: 'guest',
       label: 'Guest',
       sortable: false,
-      className: 'truncate max-w-[300px]',
+      className: 'w-[22%] truncate max-w-[300px]',
       render: (r) => {
         const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
         const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
@@ -168,6 +169,7 @@ export default function CheckInPage() {
       key: 'room',
       label: 'Room',
       sortable: false,
+      className: 'w-[12%]',
       render: (r) => (
         <div className="min-w-0">
           <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
@@ -179,7 +181,7 @@ export default function CheckInPage() {
       key: 'check_in',
       label: 'Arrival',
       sortable: true,
-      className: 'whitespace-nowrap',
+      className: 'w-[18%] whitespace-nowrap',
       render: (r) => (
         <div>
           <div className="flex items-center gap-1.5 whitespace-nowrap">
@@ -200,7 +202,7 @@ export default function CheckInPage() {
       key: 'adults',
       label: 'Guests',
       sortable: false,
-      className: 'whitespace-nowrap',
+      className: 'w-[10%] whitespace-nowrap',
       render: (r) => (
         <span>{r.adults} Adult{r.adults !== 1 ? 's' : ''}{r.children > 0 ? `, ${r.children} Child${r.children !== 1 ? 'ren' : ''}` : ''}</span>
       ),
@@ -209,7 +211,7 @@ export default function CheckInPage() {
       key: 'total_amount',
       label: 'Billing',
       sortable: true,
-      className: 'whitespace-nowrap',
+      className: 'w-[14%] whitespace-nowrap',
       render: (r) => {
         const due = Number(r.due_amount ?? 0)
         return (
@@ -228,7 +230,7 @@ export default function CheckInPage() {
     {
       key: 'actions',
       label: 'Actions',
-      className: 'whitespace-nowrap',
+      className: 'w-[10%] whitespace-nowrap text-right',
       render: (r) => (
         <ReservationRowActions
           reservation={r}
@@ -270,16 +272,16 @@ export default function CheckInPage() {
                 </span>
               </div>
               <div className="rounded-xl border border-amber-100 bg-amber-50/20 overflow-hidden">
-                <table className="w-full text-sm">
+                <table className="w-full table-fixed border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-amber-200/40 text-left text-xs font-medium uppercase tracking-wider text-amber-600/70">
-                      <th className="px-4 py-2.5">Reservation</th>
-                      <th className="px-4 py-2.5">Guest</th>
-                      <th className="px-4 py-2.5">Room</th>
-                      <th className="px-4 py-2.5">Arrival</th>
-                      <th className="px-4 py-2.5">Guests</th>
-                      <th className="px-4 py-2.5">Billing</th>
-                      <th className="px-4 py-2.5">Actions</th>
+                      <th className="w-[14%] px-4 py-2.5">Reservation</th>
+                      <th className="w-[22%] px-4 py-2.5">Guest</th>
+                      <th className="w-[12%] px-4 py-2.5">Room</th>
+                      <th className="w-[18%] px-4 py-2.5">Arrival</th>
+                      <th className="w-[10%] px-4 py-2.5">Guests</th>
+                      <th className="w-[14%] px-4 py-2.5">Billing</th>
+                      <th className="w-[10%] px-4 py-2.5 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-100/60">
@@ -357,6 +359,7 @@ export default function CheckInPage() {
             error={error ? 'Failed to load reservations' : null}
             sortBy={sortBy}
             onSort={handleSort}
+            tableClassName="table-fixed border-collapse"
             emptyState={
               <div className="flex flex-col items-center justify-center py-12">
                 <Luggage className="mb-3 h-10 w-10 text-muted/50" />
