@@ -85,7 +85,14 @@
           </div>
 
           {{-- CTA --}}
-          <a href="https://pampangahomesuites.duckdns.org/public/my-reservations" style="display:inline-block;width:100%;padding:12px 24px;text-align:center;font-weight:600;color:#0F172A;background-color:#FBBF24;border-radius:8px;text-decoration:none;font-size:14px;">View Booking &amp; Payment Options</a>
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;"><tr><td align="center">
+            <table cellpadding="0" cellspacing="0" role="presentation"><tr>
+              <td style="background-color:#f59e0b;border-radius:8px;box-shadow:0 4px 14px rgba(245,158,11,0.25);">
+                <a href="https://pampangahomesuites.duckdns.org/public/my-reservations"
+                   style="display:block;padding:14px 24px;font-weight:700;font-size:14px;color:#0f172a;text-decoration:none;letter-spacing:0.025em;">View Booking &amp; Payment Options &rarr;</a>
+              </td>
+            </tr></table>
+          </td></tr></table>
 
         </td></tr>
 
