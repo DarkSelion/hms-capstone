@@ -230,7 +230,7 @@ export default function CheckInPage() {
     {
       key: 'actions',
       label: 'Actions',
-      className: 'w-[10%] whitespace-nowrap text-right',
+      className: 'w-[10%] whitespace-nowrap text-right align-middle',
       render: (r) => (
         <ReservationRowActions
           reservation={r}
@@ -281,7 +281,7 @@ export default function CheckInPage() {
                       <th className="w-[18%] px-4 py-2.5">Arrival</th>
                       <th className="w-[10%] px-4 py-2.5">Guests</th>
                       <th className="w-[14%] px-4 py-2.5">Billing</th>
-                      <th className="w-[10%] px-4 py-2.5 text-right">Actions</th>
+                      <th className="w-[10%] px-4 py-2.5 text-right align-middle">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-100/60">
@@ -334,7 +334,7 @@ export default function CheckInPage() {
                             </span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-4 py-3 whitespace-nowrap text-right align-middle">
                           <ReservationRowActions
                             reservation={r}
                             onView={() => openDetailModal(r)}
