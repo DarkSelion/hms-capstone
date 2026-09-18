@@ -39,14 +39,12 @@ class CancelOverdueReservations extends Command
 
     private function cancelUnpaidOverdue(\Carbon\Carbon $now, int $graceHours): int
     {
+        // Cancel if check_in + grace period has passed (i.e. check_in is older than now - graceHours)
         $cutoff = $now->copy()->subHours($graceHours);
 
         $reservations = Reservation::where('status', 'confirmed')
             ->where('payment_status', 'unpaid')
-            ->where(function ($q) use ($cutoff) {
-                // check_in date + grace period has passed
-                $q->whereRaw("DATE_ADD(check_in, INTERVAL {$graceHours} HOUR) <= ?", [$cutoff]);
-            })
+            ->where('check_in', '<=', $cutoff->toDateString())
             ->with(['guest', 'room'])
             ->get();
 
