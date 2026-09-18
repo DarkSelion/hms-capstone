@@ -219,7 +219,7 @@ export default function ReservationsPage() {
       key: 'reservation_number',
       label: 'Reservation #',
       sortable: true,
-      className: 'w-[14%]',
+      className: 'w-[13%]',
       render: (r) => (
         <button
           onClick={() => openDetailModal(r)}
@@ -233,7 +233,7 @@ export default function ReservationsPage() {
       key: 'guest',
       label: 'Guest',
       sortable: true,
-      className: 'w-[18%] truncate max-w-[300px]',
+      className: 'w-[17%] truncate max-w-[300px]',
       render: (r) => {
         const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
         const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
@@ -254,7 +254,7 @@ export default function ReservationsPage() {
       key: 'room',
       label: 'Room',
       sortable: true,
-      className: 'w-[11%]',
+      className: 'w-[10%]',
       render: (r) => (
         <div className="min-w-0">
           <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
@@ -266,7 +266,7 @@ export default function ReservationsPage() {
       key: 'check_in',
       label: 'Stay',
       sortable: true,
-      className: 'w-[18%] whitespace-nowrap',
+      className: 'w-[16%] whitespace-nowrap',
       render: (r) => {
         const isTodayCheckIn = getDateGroup(r.check_in) === 'today'
         const isTodayCheckOut = getDateGroup(r.check_out) === 'today'
@@ -306,36 +306,49 @@ export default function ReservationsPage() {
       key: 'status',
       label: 'Status',
       sortable: true,
-      className: 'w-[14%] whitespace-nowrap',
-      render: (r) => (
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <StatusBadge status={r.status} pill />
-          {r.status === 'confirmed' && r.is_overdue && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200/60 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
-              <AlertTriangle className="h-3 w-3" />
-              Overdue
-            </span>
-          )}
-          {r.refund_requested_at && r.payment_status !== 'refunded' && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200/60 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
-              <RotateCcw className="h-3 w-3" />
-              Refund
-            </span>
-          )}
-        </div>
-      ),
+      className: 'w-[11%] whitespace-nowrap',
+      render: (r) => <StatusBadge status={r.status} pill />,
+    },
+    {
+      key: 'alerts',
+      label: 'Alerts',
+      sortable: false,
+      className: 'w-[11%] whitespace-nowrap',
+      render: (r) => {
+        const hasOverdue = r.status === 'confirmed' && r.is_overdue
+        const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
+        if (!hasOverdue && !hasRefund) {
+          return <span className="text-slate-300">—</span>
+        }
+        return (
+          <div className="flex items-center gap-1 flex-wrap">
+            {hasOverdue && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
+                <AlertTriangle className="h-3 w-3" />
+                Overdue
+              </span>
+            )}
+            {hasRefund && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
+                <RotateCcw className="h-3 w-3" />
+                Refund
+              </span>
+            )}
+          </div>
+        )
+      },
     },
     {
       key: 'payment_status',
       label: 'Payment',
       sortable: true,
-      className: 'w-[8%] whitespace-nowrap',
+      className: 'w-[7%] whitespace-nowrap',
       render: (r) => <StatusBadge status={r.payment_status} pill />,
     },
     {
       key: 'actions',
       label: 'Actions',
-      className: 'w-[16%] whitespace-nowrap text-right',
+      className: 'w-[14%] whitespace-nowrap text-right',
       render: (r) => (
         <ReservationRowActions
           reservation={r}
@@ -501,14 +514,15 @@ export default function ReservationsPage() {
                 <table className="w-full table-fixed border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-amber-200/40 text-left text-xs font-medium uppercase tracking-wider text-amber-600/70">
-                      <th className="w-[14%] px-4 h-10">Reservation</th>
-                      <th className="w-[18%] px-4 h-10">Guest</th>
-                      <th className="w-[11%] px-4 h-10">Room</th>
-                      <th className="w-[18%] px-4 h-10">Stay</th>
+                      <th className="w-[13%] px-4 h-10">Reservation</th>
+                      <th className="w-[17%] px-4 h-10">Guest</th>
+                      <th className="w-[10%] px-4 h-10">Room</th>
+                      <th className="w-[16%] px-4 h-10">Stay</th>
                       <th className="w-[11%] px-4 h-10">Total</th>
-                      <th className="w-[14%] px-4 h-10">Status</th>
-                      <th className="w-[8%] px-4 h-10">Payment</th>
-                      <th className="w-[16%] px-4 h-10 text-right">Actions</th>
+                      <th className="w-[11%] px-4 h-10">Status</th>
+                      <th className="w-[11%] px-4 h-10">Alerts</th>
+                      <th className="w-[7%] px-4 h-10">Payment</th>
+                      <th className="w-[14%] px-4 h-10 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-100/60">
@@ -562,21 +576,32 @@ export default function ReservationsPage() {
                             </div>
                           </td>
                           <td className="px-4 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <StatusBadge status={r.status} pill />
-                              {r.status === 'confirmed' && r.is_overdue && (
-                                <span className="inline-flex items-center gap-1 rounded-full border border-amber-200/60 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
-                                  <AlertTriangle className="h-3 w-3" />
-                                  Overdue
-                                </span>
-                              )}
-                              {r.refund_requested_at && r.payment_status !== 'refunded' && (
-                                <span className="inline-flex items-center gap-1 rounded-full border border-amber-200/60 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
-                                  <RotateCcw className="h-3 w-3" />
-                                  Refund
-                                </span>
-                              )}
-                            </div>
+                            <StatusBadge status={r.status} pill />
+                          </td>
+                          <td className="px-4 whitespace-nowrap">
+                            {(() => {
+                              const hasOverdue = r.status === 'confirmed' && r.is_overdue
+                              const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
+                              if (!hasOverdue && !hasRefund) {
+                                return <span className="text-slate-300">—</span>
+                              }
+                              return (
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  {hasOverdue && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
+                                      <AlertTriangle className="h-3 w-3" />
+                                      Overdue
+                                    </span>
+                                  )}
+                                  {hasRefund && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
+                                      <RotateCcw className="h-3 w-3" />
+                                      Refund
+                                    </span>
+                                  )}
+                                </div>
+                              )
+                            })()}
                           </td>
                           <td className="px-4 whitespace-nowrap">
                             <StatusBadge status={r.payment_status} pill />
