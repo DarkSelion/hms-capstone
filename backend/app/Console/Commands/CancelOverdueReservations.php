@@ -44,7 +44,7 @@ class CancelOverdueReservations extends Command
 
         $reservations = Reservation::where('status', 'confirmed')
             ->where('payment_status', 'unpaid')
-            ->where('check_in', '<=', $cutoff->toDateString())
+            ->where('check_in', '<=', $cutoff->toDateTimeString())
             ->with(['guest', 'room'])
             ->get();
 
