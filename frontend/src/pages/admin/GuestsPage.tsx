@@ -14,14 +14,13 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Modal } from '@/components/ui/modal'
 import { DatePicker } from '@/components/ui/date-picker'
-import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/stores/authStore'
 import { isAdminRole } from '@/lib/permissions'
 import {
-  Plus, Search, Eye, Edit, Trash2, Phone, Mail, Globe,
+  Plus, Search, Eye, Edit, Trash2, Phone, Mail,
   Calendar, Bed, Save,
-  AlertCircle, UserX, MapPin
+  AlertCircle, UserX, MapPin, X,
 } from 'lucide-react'
 
 const GENDERS = [
@@ -90,6 +89,32 @@ function getTotalSpent(reservations: Reservation[]): number {
   return reservations.reduce((sum, r) => sum + Number(r.total_amount || 0), 0)
 }
 
+const INPUT_CLASS = 'h-10 px-3 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 bg-white text-slate-800 transition-all'
+const SECTION_LABEL = 'text-[11px] font-semibold text-slate-400 tracking-wider uppercase'
+
+function StatusPill({ guest }: { guest: Guest }) {
+  if (guest.is_blacklisted) {
+    return (
+      <span className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-medium text-rose-700 border border-rose-200/60">
+        Blacklisted
+      </span>
+    )
+  }
+  const bookingCount = guest.reservations_count ?? 0
+  if (bookingCount >= 5) {
+    return (
+      <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 border border-amber-200/60">
+        VIP
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+      Regular
+    </span>
+  )
+}
+
 export default function GuestsPage() {
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -125,6 +150,10 @@ export default function GuestsPage() {
   const paginationInfo = guestsData
     ? { currentPage: guestsData.current_page, lastPage: guestsData.last_page, total: guestsData.total, per_page: guestsData.per_page }
     : null
+
+  const totalGuests = guestsData?.total ?? 0
+  const vipCount = guests.filter((g) => !g.is_blacklisted && (g.reservations_count ?? 0) >= 5).length
+  const blacklistedCount = guests.filter((g) => g.is_blacklisted).length
 
   function openAddModal() {
     setSelectedGuest(null)
@@ -228,87 +257,82 @@ export default function GuestsPage() {
 
   const columns: Column<Guest>[] = [
     {
-      key: 'name',
-      label: 'Name',
+      key: 'guest',
+      label: 'Guest',
+      className: 'w-[28%]',
       render: (g) => (
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-foreground">
-            {g.first_name} {g.last_name}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: 'email',
-      label: 'Email',
-      render: (g) => (
-        <div className="flex items-center gap-1.5 text-muted">
-          <Mail className="h-3.5 w-3.5" />
-          {g.email}
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-700">
+            {g.first_name[0]}{g.last_name[0]}
+          </div>
+          <div className="min-w-0">
+            <div className="font-medium text-slate-900 truncate">{g.first_name} {g.last_name}</div>
+            <div className="text-xs text-slate-500 truncate">{g.email}</div>
+          </div>
         </div>
       ),
     },
     {
       key: 'phone',
       label: 'Phone',
+      className: 'w-[18%]',
       render: (g) => (
-        <div className="flex items-center gap-1.5 text-muted">
-          <Phone className="h-3.5 w-3.5" />
-          {g.phone}
-        </div>
+        <span className="text-sm text-slate-600">{g.phone}</span>
       ),
     },
     {
       key: 'nationality',
       label: 'Nationality',
+      className: 'w-[14%]',
       render: (g) => (
-        <div className="flex items-center gap-1.5 text-muted">
-          <Globe className="h-3.5 w-3.5" />
-          {g.nationality || '-'}
-        </div>
+        <span className="text-sm text-slate-600">{g.nationality || '—'}</span>
       ),
     },
     {
       key: 'total_bookings',
       label: 'Bookings',
+      className: 'w-[12%] text-center',
       render: (g) => (
-        <span className="font-medium">{g.reservations_count ?? 0}</span>
+        <span className="inline-flex items-center justify-center h-6 min-w-[24px] rounded-full bg-slate-100 px-2 text-xs font-semibold text-slate-700">
+          {g.reservations_count ?? 0}
+        </span>
       ),
     },
     {
       key: 'status',
       label: 'Status',
-      render: (g) => {
-        if (g.is_blacklisted) return <StatusBadge status="cancelled" />
-        return <Badge variant="default">Regular</Badge>
-      },
+      className: 'w-[14%]',
+      render: (g) => <StatusPill guest={g} />,
     },
     {
       key: 'actions',
       label: 'Actions',
+      className: 'w-[14%] text-right',
       render: (g) => (
-        <RowActions>
-          <RowActionButton
-            tone="neutral"
-            title="View"
-            icon={<Eye className="h-4 w-4" />}
-            onClick={() => setDetailGuestId(g.id)}
-          />
-          <RowActionButton
-            tone="neutral"
-            title="Edit"
-            icon={<Edit className="h-4 w-4" />}
-            onClick={() => openEditModal(g)}
-          />
-          {isAdmin && (
+        <div className="flex justify-end">
+          <RowActions>
             <RowActionButton
-              tone="danger"
-              title="Delete"
-              icon={<Trash2 className="h-4 w-4" />}
-              onClick={() => setDeleteConfirmId(g.id)}
+              tone="neutral"
+              title="View"
+              icon={<Eye className="h-4 w-4" />}
+              onClick={() => setDetailGuestId(g.id)}
             />
-          )}
-        </RowActions>
+            <RowActionButton
+              tone="neutral"
+              title="Edit"
+              icon={<Edit className="h-4 w-4" />}
+              onClick={() => openEditModal(g)}
+            />
+            {isAdmin && (
+              <RowActionButton
+                tone="danger"
+                title="Delete"
+                icon={<Trash2 className="h-4 w-4" />}
+                onClick={() => setDeleteConfirmId(g.id)}
+              />
+            )}
+          </RowActions>
+        </div>
       ),
     },
   ]
@@ -334,23 +358,43 @@ export default function GuestsPage() {
 
       <Card>
         <CardContent className="pt-6">
-          <div className="mb-4 flex flex-wrap items-center gap-4">
-            <div className="relative max-w-xs flex-1">
-              <Input
+          {/* ── Row 1: Search + Summary Pills ── */}
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
                 placeholder="Search by name, email, phone..."
-                icon={<Search className="h-4 w-4" />}
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }}
+                className="w-full h-11 pl-10 pr-4 rounded-lg border border-slate-200 bg-white text-sm text-foreground placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
               />
             </div>
-            <Button
-              variant={blacklistedOnly ? 'danger' : 'outline'}
-              size="sm"
+
+            {/* Summary pills */}
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
+                Total: {totalGuests}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 border border-amber-200/60">
+                VIP: {vipCount}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 border border-rose-200/60">
+                Blacklisted: {blacklistedCount}
+              </span>
+            </div>
+
+            <button
               onClick={() => { setBlacklistedOnly(!blacklistedOnly); setCurrentPage(1) }}
+              className={`flex items-center gap-1.5 h-11 rounded-lg border px-3.5 text-xs font-medium transition-colors ${
+                blacklistedOnly
+                  ? 'border-rose-300 bg-rose-50 text-rose-700'
+                  : 'border-slate-200 bg-white text-slate-500 hover:border-rose-300 hover:text-rose-600'
+              }`}
             >
-              <UserX className="h-4 w-4" />
+              <UserX className="h-3.5 w-3.5" />
               Blacklisted
-            </Button>
+            </button>
           </div>
 
           <DataTable
@@ -361,6 +405,7 @@ export default function GuestsPage() {
             onSearch={undefined}
             onRetry={() => refetchGuests()}
             keyExtractor={(g) => g.id}
+            tableClassName="table-fixed border-collapse"
             pagination={paginationInfo ? {
               currentPage: paginationInfo.currentPage,
               lastPage: paginationInfo.lastPage,
@@ -373,161 +418,232 @@ export default function GuestsPage() {
         </CardContent>
       </Card>
 
+      {/* ── Add / Edit Modal ── */}
       <Modal
         isOpen={modalMode !== null}
         onClose={closeModal}
         title={modalMode === 'add' ? 'Add Guest' : 'Edit Guest'}
         size="xl"
         footer={
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={closeModal} disabled={isMutating}>
+          <div className="border-t border-slate-100 pt-4 mt-6 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={closeModal}
+              disabled={isMutating}
+              className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            >
               Cancel
-            </Button>
-            <Button variant="gold" onClick={handleSubmit} disabled={isMutating}>
+            </button>
+            <button
+              type="submit"
+              form="guest-form"
+              disabled={isMutating}
+              className="px-5 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
               {isMutating ? 'Saving...' : <><Save className="h-4 w-4" /> Save</>}
-            </Button>
+            </button>
           </div>
         }
       >
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="First Name"
-              placeholder="John"
-              value={formData.first_name}
-              onChange={(e) => updateField('first_name', e.target.value)}
-              error={formErrors.first_name}
-            />
-            <Input
-              label="Last Name"
-              placeholder="Doe"
-              value={formData.last_name}
-              onChange={(e) => updateField('last_name', e.target.value)}
-              error={formErrors.last_name}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Email"
-              type="email"
-              placeholder="john@example.com"
-              icon={<Mail className="h-4 w-4" />}
-              value={formData.email}
-              onChange={(e) => updateField('email', e.target.value)}
-              error={formErrors.email}
-            />
-            <Input
-              label="Phone"
-              placeholder="0917 123 4567"
-              icon={<Phone className="h-4 w-4" />}
-              value={formData.phone}
-              onChange={(e) => updateField('phone', stripPhoneInput(e.target.value))}
-              error={formErrors.phone}
-              maxLength={15}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Input
-                label="Nationality"
-                list="nationality-options"
-                placeholder="e.g. Filipino"
-                value={formData.nationality}
-                onChange={(e) => updateField('nationality', e.target.value)}
-              />
-              <datalist id="nationality-options">
-                {NATIONALITIES.map((n) => (
-                  <option key={n} value={n} />
-                ))}
-              </datalist>
+        <form id="guest-form" onSubmit={handleSubmit} className="space-y-6">
+          {/* ── Section 1: Personal Information ── */}
+          <div>
+            <p className={`${SECTION_LABEL} mb-3`}>Personal Information</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">First Name</label>
+                <input
+                  type="text"
+                  placeholder="John"
+                  value={formData.first_name}
+                  onChange={(e) => updateField('first_name', e.target.value)}
+                  className={`${INPUT_CLASS} ${formErrors.first_name ? 'border-rose-300 focus:ring-rose-500/20 focus:border-rose-500' : ''}`}
+                />
+                {formErrors.first_name && <p className="mt-1 text-xs text-rose-600">{formErrors.first_name}</p>}
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Last Name</label>
+                <input
+                  type="text"
+                  placeholder="Doe"
+                  value={formData.last_name}
+                  onChange={(e) => updateField('last_name', e.target.value)}
+                  className={`${INPUT_CLASS} ${formErrors.last_name ? 'border-rose-300 focus:ring-rose-500/20 focus:border-rose-500' : ''}`}
+                />
+                {formErrors.last_name && <p className="mt-1 text-xs text-rose-600">{formErrors.last_name}</p>}
+              </div>
             </div>
-            <DatePicker
-              label="Date of Birth"
-              value={formData.date_of_birth}
-              onChange={(v) => updateField('date_of_birth', v)}
-            />
-            <Select
-              label="Gender"
-              placeholder="Select gender"
-              value={formData.gender}
-              onChange={(e) => updateField('gender', e.target.value)}
-            >
-              {GENDERS.map((g) => (
-                <option key={g.value} value={g.value}>{g.label}</option>
-              ))}
-            </Select>
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Nationality</label>
+                <input
+                  type="text"
+                  list="nationality-options"
+                  placeholder="e.g. Filipino"
+                  value={formData.nationality}
+                  onChange={(e) => updateField('nationality', e.target.value)}
+                  className={INPUT_CLASS}
+                />
+                <datalist id="nationality-options">
+                  {NATIONALITIES.map((n) => (
+                    <option key={n} value={n} />
+                  ))}
+                </datalist>
+              </div>
+              <DatePicker
+                label="Date of Birth"
+                value={formData.date_of_birth}
+                onChange={(v) => updateField('date_of_birth', v)}
+              />
+            </div>
+            <div className="mt-4 w-1/2">
+              <Select
+                label="Gender"
+                placeholder="Select gender"
+                value={formData.gender}
+                onChange={(e) => updateField('gender', e.target.value)}
+              >
+                {GENDERS.map((g) => (
+                  <option key={g.value} value={g.value}>{g.label}</option>
+                ))}
+              </Select>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Address"
-              placeholder="123 Main St"
-              icon={<MapPin className="h-4 w-4" />}
-              value={formData.address}
-              onChange={(e) => updateField('address', e.target.value)}
-            />
-            <Input
-              label="City"
-              placeholder="New York"
-              value={formData.city}
-              onChange={(e) => updateField('city', e.target.value)}
-            />
+          {/* ── Section 2: Contact & Address ── */}
+          <div>
+            <p className={`${SECTION_LABEL} mb-3`}>Contact & Address</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  <input
+                    type="email"
+                    placeholder="john@example.com"
+                    value={formData.email}
+                    onChange={(e) => updateField('email', e.target.value)}
+                    className={`${INPUT_CLASS} pl-10 ${formErrors.email ? 'border-rose-300 focus:ring-rose-500/20 focus:border-rose-500' : ''}`}
+                  />
+                </div>
+                {formErrors.email && <p className="mt-1 text-xs text-rose-600">{formErrors.email}</p>}
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Phone</label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="0917 123 4567"
+                    value={formData.phone}
+                    onChange={(e) => updateField('phone', stripPhoneInput(e.target.value))}
+                    maxLength={15}
+                    className={`${INPUT_CLASS} pl-10 ${formErrors.phone ? 'border-rose-300 focus:ring-rose-500/20 focus:border-rose-500' : ''}`}
+                  />
+                </div>
+                {formErrors.phone && <p className="mt-1 text-xs text-rose-600">{formErrors.phone}</p>}
+              </div>
+            </div>
+            <div className="mt-4">
+              <label className="mb-1 block text-sm font-medium text-slate-700">Address</label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="123 Main St"
+                  value={formData.address}
+                  onChange={(e) => updateField('address', e.target.value)}
+                  className={`${INPUT_CLASS} pl-10`}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4 mt-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">City</label>
+                <input
+                  type="text"
+                  placeholder="New York"
+                  value={formData.city}
+                  onChange={(e) => updateField('city', e.target.value)}
+                  className={INPUT_CLASS}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Country</label>
+                <input
+                  type="text"
+                  placeholder="United States"
+                  value={formData.country}
+                  onChange={(e) => updateField('country', e.target.value)}
+                  className={INPUT_CLASS}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Postal Code</label>
+                <input
+                  type="text"
+                  placeholder="10001"
+                  value={formData.postal_code}
+                  onChange={(e) => updateField('postal_code', e.target.value)}
+                  className={INPUT_CLASS}
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Country"
-              placeholder="United States"
-              value={formData.country}
-              onChange={(e) => updateField('country', e.target.value)}
-            />
-            <Input
-              label="Postal Code"
-              placeholder="10001"
-              value={formData.postal_code}
-              onChange={(e) => updateField('postal_code', e.target.value)}
-            />
-          </div>
-
-          <div className="flex items-center gap-6">
-            <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+          {/* ── Section 3: Status & Notes ── */}
+          <div>
+            <p className={`${SECTION_LABEL} mb-3`}>Status & Notes</p>
+            <label className="flex items-center gap-3 p-3 rounded-lg border border-rose-200/60 bg-rose-50/50 cursor-pointer transition-colors hover:bg-rose-50">
               <input
                 type="checkbox"
-                className="h-4 w-4 rounded border-border text-danger focus:ring-danger/50"
+                className="sr-only peer"
                 checked={formData.is_blacklisted}
                 onChange={(e) => updateField('is_blacklisted', e.target.checked)}
               />
-              <UserX className="h-4 w-4 text-danger" />
-              Blacklisted
+              <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors ${
+                formData.is_blacklisted
+                  ? 'border-rose-500 bg-rose-500'
+                  : 'border-slate-300 bg-white'
+              }`}>
+                {formData.is_blacklisted && (
+                  <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+              <div>
+                <span className="text-sm font-medium text-rose-800">Mark as Blacklisted Guest</span>
+                <p className="text-xs text-rose-600/70">Blacklisted guests cannot make new reservations</p>
+              </div>
             </label>
-          </div>
 
-          {formData.is_blacklisted && (
-            <div>
-              <label className="mb-1 block text-sm font-medium text-foreground">Blacklist Reason</label>
+            {formData.is_blacklisted && (
+              <div className="mt-3">
+                <label className="mb-1 block text-sm font-medium text-slate-700">Blacklist Reason</label>
+                <textarea
+                  className="flex min-h-[70px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
+                  placeholder="Why is this guest blacklisted?"
+                  value={formData.blacklist_reason}
+                  onChange={(e) => updateField('blacklist_reason', e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="mt-4">
+              <label className="mb-1 block text-sm font-medium text-slate-700">Notes</label>
               <textarea
-                className="flex min-h-[70px] w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger/50 focus-visible:border-danger"
-                placeholder="Why is this guest blacklisted?"
-                value={formData.blacklist_reason}
-                onChange={(e) => updateField('blacklist_reason', e.target.value)}
+                className="flex min-h-[80px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all resize-y"
+                placeholder="Add internal guest notes or preferences..."
+                value={formData.notes}
+                onChange={(e) => updateField('notes', e.target.value)}
               />
             </div>
-          )}
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-foreground">Notes</label>
-            <textarea
-              className="flex min-h-[80px] w-full rounded-lg border border-border bg-card px-3 py-2 text-sm ring-offset-card placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:border-primary"
-              placeholder="Any additional notes..."
-              value={formData.notes}
-              onChange={(e) => updateField('notes', e.target.value)}
-            />
           </div>
         </form>
       </Modal>
 
+      {/* ── Guest Detail Modal ── */}
       <Modal
         isOpen={detailGuestId !== null}
         onClose={() => setDetailGuestId(null)}
@@ -551,7 +667,11 @@ export default function GuestsPage() {
                   <h3 className="text-lg font-semibold text-foreground">
                     {detailGuest.first_name} {detailGuest.last_name}
                   </h3>
-                  {detailGuest.is_blacklisted && <Badge variant="danger">Blacklisted</Badge>}
+                  {detailGuest.is_blacklisted && (
+                    <span className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-medium text-rose-700 border border-rose-200/60">
+                      Blacklisted
+                    </span>
+                  )}
                 </div>
                 <div className="mt-1 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted">
                   <span className="flex items-center gap-1">
@@ -561,9 +681,7 @@ export default function GuestsPage() {
                     <Phone className="h-3.5 w-3.5" /> {detailGuest.phone}
                   </span>
                   {detailGuest.nationality && (
-                    <span className="flex items-center gap-1">
-                      <Globe className="h-3.5 w-3.5" /> {detailGuest.nationality}
-                    </span>
+                    <span className="text-slate-500">{detailGuest.nationality}</span>
                   )}
                 </div>
               </div>
@@ -573,21 +691,17 @@ export default function GuestsPage() {
               <div>
                 <span className="text-xs font-medium text-muted">Date of Birth</span>
                 <p className="text-sm text-foreground">
-                  {detailGuest.date_of_birth
-                    ? formatDateDisplay(detailGuest.date_of_birth)
-                    : '-'}
+                  {detailGuest.date_of_birth ? formatDateDisplay(detailGuest.date_of_birth) : '—'}
                 </p>
               </div>
               <div>
                 <span className="text-xs font-medium text-muted">Gender</span>
-                <p className="text-sm text-foreground capitalize">{detailGuest.gender || '-'}</p>
+                <p className="text-sm text-foreground capitalize">{detailGuest.gender || '—'}</p>
               </div>
               <div>
                 <span className="text-xs font-medium text-muted">Address</span>
                 <p className="text-sm text-foreground">
-                  {[detailGuest.address, detailGuest.city, detailGuest.country]
-                    .filter(Boolean)
-                    .join(', ') || '-'}
+                  {[detailGuest.address, detailGuest.city, detailGuest.country].filter(Boolean).join(', ') || '—'}
                 </p>
               </div>
               <div>
@@ -679,7 +793,7 @@ export default function GuestsPage() {
                             #{r.reservation_number}
                           </td>
                           <td className="px-4 py-2 text-muted">
-                            {r.room?.room_number ?? '-'}
+                            {r.room?.room_number ?? '—'}
                           </td>
                           <td className="px-4 py-2 text-muted">
                             {formatDateDisplay(r.check_in)} -{' '}
