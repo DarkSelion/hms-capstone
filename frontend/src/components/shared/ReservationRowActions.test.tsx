@@ -25,8 +25,7 @@ function reservation(overrides: Partial<Reservation> = {}): Reservation {
 }
 
 describe('ReservationRowActions', () => {
-  it('shows View + Check In as primary buttons, Edit/Cancel in dropdown for confirmed non-overdue', async () => {
-    const user = userEvent.setup()
+  it('shows View, Edit, Cancel, and Check In for a confirmed non-overdue reservation', () => {
     render(
       <ReservationRowActions
         reservation={reservation()}
@@ -38,17 +37,12 @@ describe('ReservationRowActions', () => {
     )
 
     expect(screen.getByTitle('View')).toBeInTheDocument()
+    expect(screen.getByTitle('Edit')).toBeInTheDocument()
+    expect(screen.getByTitle('Cancel')).toBeInTheDocument()
     expect(screen.getByTitle('Check In')).toBeInTheDocument()
-    expect(screen.queryByTitle('Edit')).not.toBeInTheDocument()
-    expect(screen.queryByTitle('Cancel')).not.toBeInTheDocument()
-
-    await user.click(screen.getByTitle('More actions'))
-    expect(screen.getByText('Edit')).toBeInTheDocument()
-    expect(screen.getByText('Cancel')).toBeInTheDocument()
   })
 
-  it('shows Mark No Show in dropdown for overdue confirmed, no Check In', async () => {
-    const user = userEvent.setup()
+  it('shows Mark No Show instead of Check In for overdue confirmed reservation', () => {
     render(
       <ReservationRowActions
         reservation={reservation({ is_overdue: true })}
@@ -60,13 +54,11 @@ describe('ReservationRowActions', () => {
       />,
     )
 
+    expect(screen.getByTitle('Mark No Show')).toBeInTheDocument()
     expect(screen.queryByTitle('Check In')).not.toBeInTheDocument()
-    await user.click(screen.getByTitle('More actions'))
-    expect(screen.getByText('Mark No Show')).toBeInTheDocument()
-    expect(screen.getByText('Cancel')).toBeInTheDocument()
   })
 
-  it('keeps Check In on overdue when alwaysAllowCheckIn is set', () => {
+  it('keeps Check In on overdue reservation when alwaysAllowCheckIn is set', () => {
     render(
       <ReservationRowActions
         reservation={reservation({ is_overdue: true })}
@@ -83,7 +75,7 @@ describe('ReservationRowActions', () => {
     expect(screen.queryByTitle('Mark No Show')).not.toBeInTheDocument()
   })
 
-  it('shows only View for cancelled reservations (no dropdown)', () => {
+  it('shows only View for cancelled reservations', () => {
     render(
       <ReservationRowActions
         reservation={reservation({ status: 'cancelled' })}
@@ -93,10 +85,10 @@ describe('ReservationRowActions', () => {
     )
 
     expect(screen.getByTitle('View')).toBeInTheDocument()
-    expect(screen.queryByTitle('More actions')).not.toBeInTheDocument()
+    expect(screen.queryByTitle('Edit')).not.toBeInTheDocument()
   })
 
-  it('shows only View for checked_out reservations (no dropdown)', () => {
+  it('shows only View for checked_out reservations', () => {
     render(
       <ReservationRowActions
         reservation={reservation({ status: 'checked_out' })}
@@ -106,11 +98,23 @@ describe('ReservationRowActions', () => {
     )
 
     expect(screen.getByTitle('View')).toBeInTheDocument()
-    expect(screen.queryByTitle('More actions')).not.toBeInTheDocument()
+    expect(screen.queryByTitle('Edit')).not.toBeInTheDocument()
   })
 
-  it('shows View + Check Out primary buttons, Edit/Extend Stay in dropdown for checked-in', async () => {
-    const user = userEvent.setup()
+  it('shows only View for no_show reservations', () => {
+    render(
+      <ReservationRowActions
+        reservation={reservation({ status: 'no_show' })}
+        onView={vi.fn()}
+        onEdit={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByTitle('View')).toBeInTheDocument()
+    expect(screen.queryByTitle('Edit')).not.toBeInTheDocument()
+  })
+
+  it('shows Check Out and Extend Stay for checked-in reservations', () => {
     render(
       <ReservationRowActions
         reservation={reservation({ status: 'checked_in' })}
@@ -122,14 +126,12 @@ describe('ReservationRowActions', () => {
     )
 
     expect(screen.getByTitle('View')).toBeInTheDocument()
+    expect(screen.getByTitle('Edit')).toBeInTheDocument()
     expect(screen.getByTitle('Check Out')).toBeInTheDocument()
-    await user.click(screen.getByTitle('More actions'))
-    expect(screen.getByText('Edit')).toBeInTheDocument()
-    expect(screen.getByText('Extend Stay')).toBeInTheDocument()
+    expect(screen.getByTitle('Extend Stay')).toBeInTheDocument()
   })
 
-  it('shows Process Refund in dropdown when refund pending', async () => {
-    const user = userEvent.setup()
+  it('shows Process Refund when refund is pending', () => {
     render(
       <ReservationRowActions
         reservation={reservation({ refund_requested_at: '2026-10-11T00:00:00.000000Z', payment_status: 'partial' })}
@@ -139,12 +141,10 @@ describe('ReservationRowActions', () => {
       />,
     )
 
-    await user.click(screen.getByTitle('More actions'))
-    expect(screen.getByText('Process Refund')).toBeInTheDocument()
+    expect(screen.getByTitle('Process Refund')).toBeInTheDocument()
   })
 
-  it('hides Process Refund when already refunded', async () => {
-    const user = userEvent.setup()
+  it('hides Process Refund when already refunded', () => {
     render(
       <ReservationRowActions
         reservation={reservation({ refund_requested_at: '2026-10-11T00:00:00.000000Z', payment_status: 'refunded' })}
@@ -154,21 +154,22 @@ describe('ReservationRowActions', () => {
       />,
     )
 
-    await user.click(screen.getByTitle('More actions'))
-    expect(screen.queryByText('Process Refund')).not.toBeInTheDocument()
+    expect(screen.queryByTitle('Process Refund')).not.toBeInTheDocument()
   })
 
-  it('fires handlers when primary buttons are clicked', async () => {
+  it('fires handlers when buttons are clicked', async () => {
     const user = userEvent.setup()
     const onView = vi.fn()
+    const onEdit = vi.fn()
+    const onCancel = vi.fn()
     const onCheckIn = vi.fn()
 
     render(
       <ReservationRowActions
         reservation={reservation()}
         onView={onView}
-        onEdit={vi.fn()}
-        onCancel={vi.fn()}
+        onEdit={onEdit}
+        onCancel={onCancel}
         onCheckIn={onCheckIn}
       />,
     )
@@ -176,26 +177,13 @@ describe('ReservationRowActions', () => {
     await user.click(screen.getByTitle('View'))
     expect(onView).toHaveBeenCalledTimes(1)
 
+    await user.click(screen.getByTitle('Edit'))
+    expect(onEdit).toHaveBeenCalledTimes(1)
+
+    await user.click(screen.getByTitle('Cancel'))
+    expect(onCancel).toHaveBeenCalledTimes(1)
+
     await user.click(screen.getByTitle('Check In'))
     expect(onCheckIn).toHaveBeenCalledTimes(1)
-  })
-
-  it('fires handler from dropdown when clicked', async () => {
-    const user = userEvent.setup()
-    const onEdit = vi.fn()
-
-    render(
-      <ReservationRowActions
-        reservation={reservation()}
-        onView={vi.fn()}
-        onEdit={onEdit}
-        onCancel={vi.fn()}
-        onCheckIn={vi.fn()}
-      />,
-    )
-
-    await user.click(screen.getByTitle('More actions'))
-    await user.click(screen.getByText('Edit'))
-    expect(onEdit).toHaveBeenCalledTimes(1)
   })
 })
