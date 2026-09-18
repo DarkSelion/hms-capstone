@@ -10,7 +10,6 @@ import { StatusBadge } from '@/components/shared/StatusBadge'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Modal } from '@/components/ui/modal'
 import { DatePicker } from '@/components/ui/date-picker'
@@ -20,7 +19,7 @@ import { isAdminRole } from '@/lib/permissions'
 import {
   Plus, Search, Eye, Edit, Trash2, Phone, Mail,
   Calendar, Bed, Save,
-  AlertCircle, UserX, MapPin, X,
+  AlertCircle, UserX, MapPin,
 } from 'lucide-react'
 
 const GENDERS = [
