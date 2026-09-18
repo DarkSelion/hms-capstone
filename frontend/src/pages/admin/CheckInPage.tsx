@@ -5,7 +5,7 @@ import {
 import { useCheckInOutModal } from '@/hooks/useCheckInOutModal'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { getDateGroup, formatTodayLabel } from '@/lib/date-group'
+import { getDateGroup, formatTodayLabel, toLocalDateStr } from '@/lib/date-group'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { TodayBadge } from '@/components/shared/TodayBadge'
@@ -56,9 +56,29 @@ export default function CheckInPage() {
   const cancelReservation = useCancelReservation()
   const markNoShow = useMarkNoShow()
 
+  const todayStr = toLocalDateStr(new Date())
+  const { data: todayData } = useReservations({
+    status: 'confirmed',
+    date_from: todayStr,
+    per_page: 100,
+    sort_field: 'check_in',
+    sort_dir: 'asc',
+  })
+
   const reservations = reservationsData?.data ?? []
   const totalPages = reservationsData?.last_page ?? 1
   const sortBy = sortDir === 'asc' ? sortField : `-${sortField}`
+
+  const todayArrivals = useMemo(() => {
+    const all = (todayData?.data ?? []) as Reservation[]
+    return all.filter((r) => r.check_in === todayStr)
+  }, [todayData, todayStr])
+
+  const todayArrivalIds = useMemo(() => new Set(todayArrivals.map((r) => r.id)), [todayArrivals])
+
+  const tableData = useMemo(() => {
+    return reservations.filter((r) => !todayArrivalIds.has(r.id))
+  }, [reservations, todayArrivalIds])
 
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value)
@@ -241,35 +261,102 @@ export default function CheckInPage() {
             </div>
           </div>
 
+          {todayArrivals.length > 0 && !search && (
+            <div className="mb-5">
+              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200/60 rounded-xl px-4 py-2.5 mb-3">
+                <CalendarDays className="h-4 w-4 text-amber-600" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+                  Today — {formatTodayLabel()} ({todayArrivals.length} arrival{todayArrivals.length !== 1 ? 's' : ''})
+                </span>
+              </div>
+              <div className="rounded-xl border border-amber-100 bg-amber-50/20 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-amber-200/40 text-left text-xs font-medium uppercase tracking-wider text-amber-600/70">
+                      <th className="px-4 py-2.5">Reservation</th>
+                      <th className="px-4 py-2.5">Guest</th>
+                      <th className="px-4 py-2.5">Room</th>
+                      <th className="px-4 py-2.5">Arrival</th>
+                      <th className="px-4 py-2.5">Guests</th>
+                      <th className="px-4 py-2.5">Billing</th>
+                      <th className="px-4 py-2.5">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-amber-100/60">
+                    {todayArrivals.map((r) => (
+                      <tr key={r.id} className="bg-amber-50/30 hover:bg-amber-50/60 transition-colors">
+                        <td className="px-4 py-3">
+                          <button onClick={() => openDetailModal(r)} className="font-medium text-primary hover:underline">
+                            {r.reservation_number}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3">
+                          {(() => {
+                            const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
+                            const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
+                            return (
+                              <div className="flex items-center gap-2.5">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{initials}</div>
+                                <div className="min-w-0">
+                                  <span className="block truncate text-sm font-medium text-foreground">{name}</span>
+                                  <span className="block truncate text-xs text-muted">{r.guest?.email}</span>
+                                </div>
+                              </div>
+                            )
+                          })()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="min-w-0">
+                            <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
+                            <span className="block truncate text-xs text-muted">{r.room?.room_type?.name ?? '\u00A0'}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <span>{formatDateDisplay(r.check_in)}</span>
+                            <TodayBadge variant="arrival" />
+                          </div>
+                          <span className="block text-xs text-muted">departs {formatDateDisplay(r.check_out)}</span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {r.adults} Adult{r.adults !== 1 ? 's' : ''}{r.children > 0 ? `, ${r.children} Child${r.children !== 1 ? 'ren' : ''}` : ''}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
+                              <StatusBadge status={r.payment_status} />
+                            </div>
+                            <span className={cn('block text-xs tabular-nums', Number(r.due_amount ?? 0) > 0 ? 'text-amber-600' : 'text-emerald-600')}>
+                              {Number(r.due_amount ?? 0) > 0 ? `Due ${formatCurrency(Number(r.due_amount ?? 0))}` : 'Fully paid'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <ReservationRowActions
+                            reservation={r}
+                            onView={() => openDetailModal(r)}
+                            onEdit={() => openEditForm(r)}
+                            onCancel={() => setCancelTarget(r)}
+                            onCheckIn={() => openCheckIn(r)}
+                            onMarkNoShow={() => handleMarkNoShow(r)}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           <DataTable
             columns={columns}
-            data={reservations}
+            data={tableData}
             loading={isLoading}
             error={error ? 'Failed to load reservations' : null}
             sortBy={sortBy}
             onSort={handleSort}
-            groupByKey={(r) => getDateGroup(r.check_in)}
-            rowClassName={(r) => getDateGroup(r.check_in) === 'today' ? 'bg-amber-50/30' : ''}
-            renderGroupHeader={(key, rows) => {
-              if (key === 'today') {
-                return (
-                  <div className="flex items-center gap-2 bg-amber-50 border-y border-amber-200/60 -mx-4 px-4 py-2.5">
-                    <CalendarDays className="h-4 w-4 text-amber-600" />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-amber-700">
-                      Today — {formatTodayLabel()} ({rows.length} arrival{rows.length !== 1 ? 's' : ''})
-                    </span>
-                  </div>
-                )
-              }
-              return (
-                <div className="flex items-center gap-2 -mx-4 px-4 py-2.5">
-                  <CalendarDays className="h-4 w-4 text-muted" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted">
-                    Upcoming Arrivals ({rows.length})
-                  </span>
-                </div>
-              )
-            }}
             emptyState={
               <div className="flex flex-col items-center justify-center py-12">
                 <Luggage className="mb-3 h-10 w-10 text-muted/50" />
