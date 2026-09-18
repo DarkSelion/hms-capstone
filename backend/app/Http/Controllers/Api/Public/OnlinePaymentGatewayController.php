@@ -71,7 +71,7 @@ class OnlinePaymentGatewayController extends Controller
             'reservation_id' => $reservation->id,
             'customer_name' => $reservation->guest->full_name,
             'customer_email' => $reservation->guest->email,
-            'amount' => (float) $reservation->due_amount,
+            'total_amount' => (float) $reservation->due_amount,
             'room_number' => $reservation->room?->room_number,
             'room_name' => $reservation->room?->roomType?->name,
             'is_refundable' => $reservation->cancellation_tier !== 'non_refundable',

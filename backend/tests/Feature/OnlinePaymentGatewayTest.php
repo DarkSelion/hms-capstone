@@ -149,7 +149,7 @@ class OnlinePaymentGatewayTest extends TestCase
                 && $request->hasHeader('X-API-KEY', '<GATEWAY_API_KEY>')
                 && in_array('application/json', $request->header('Content-Type'), true)
                 && $request['booking_ref'] === $reservation->reservation_number
-                && $request['amount'] === 2000.0
+                && $request['total_amount'] === 2000.0
                 && $request['customer_name'] === $reservation->guest->full_name
                 && $request['customer_email'] === $reservation->guest->email
                 && $request['reservation_id'] === $reservation->id
@@ -189,7 +189,7 @@ class OnlinePaymentGatewayTest extends TestCase
         $this->postJson('/api/public/payments/initiate-online', ['reservation_id' => $reservation->id])
             ->assertOk();
 
-        Http::assertSent(fn ($request) => $request['amount'] === 750.0);
+        Http::assertSent(fn ($request) => $request['total_amount'] === 750.0);
     }
 
     public function test_initiate_rejects_another_guests_reservation(): void
