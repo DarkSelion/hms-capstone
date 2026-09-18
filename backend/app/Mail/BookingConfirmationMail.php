@@ -15,6 +15,13 @@ class BookingConfirmationMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public Carbon $effectiveDeadline;
+    public string $checkOutTimeFormatted;
+    public string $checkInTimeFormatted;
+    public string $hotelAddress;
+    public string $hotelPhone;
+    public string $hotelEmail;
+
     public function __construct(
         public Reservation $reservation,
         public string $hotelName = 'Pampanga Home Suites',
