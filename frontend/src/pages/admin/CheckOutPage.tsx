@@ -218,7 +218,7 @@ export default function CheckOutPage() {
     {
       key: 'actions',
       label: 'Actions',
-      className: 'w-[16%] whitespace-nowrap text-right align-middle',
+      className: 'w-[16%] whitespace-nowrap',
       render: (r) => (
         <ReservationRowActions
           reservation={r}
@@ -267,7 +267,7 @@ export default function CheckOutPage() {
                       <th className="w-[12%] px-4 py-2.5">Room</th>
                       <th className="w-[20%] px-4 py-2.5">Departure</th>
                       <th className="w-[16%] px-4 py-2.5">Billing</th>
-                      <th className="w-[16%] px-4 py-2.5 text-right align-middle">Actions</th>
+                      <th className="w-[16%] px-4 py-2.5">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-100/60">
@@ -317,7 +317,7 @@ export default function CheckOutPage() {
                             </span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-right align-middle">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <ReservationRowActions
                             reservation={r}
                             onView={() => openDetailModal(r)}

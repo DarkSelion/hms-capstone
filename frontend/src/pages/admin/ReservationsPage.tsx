@@ -348,7 +348,7 @@ export default function ReservationsPage() {
     {
       key: 'actions',
       label: 'Actions',
-      className: 'w-[14%] whitespace-nowrap text-right align-middle',
+      className: 'w-[14%] whitespace-nowrap',
       render: (r) => (
         <ReservationRowActions
           reservation={r}
@@ -522,7 +522,7 @@ export default function ReservationsPage() {
                       <th className="w-[11%] px-4 h-10">Status</th>
                       <th className="w-[11%] px-4 h-10">Alerts</th>
                       <th className="w-[7%] px-4 h-10">Payment</th>
-                      <th className="w-[14%] px-4 h-10 text-right align-middle">Actions</th>
+                      <th className="w-[14%] px-4 h-10">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-100/60">
@@ -606,7 +606,7 @@ export default function ReservationsPage() {
                           <td className="px-4 whitespace-nowrap">
                             <StatusBadge status={r.payment_status} pill />
                           </td>
-                           <td className="px-4 whitespace-nowrap text-right align-middle">
+                           <td className="px-4 whitespace-nowrap">
                             <ReservationRowActions
                               reservation={r}
                               onView={() => openDetailModal(r)}
