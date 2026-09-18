@@ -31,11 +31,6 @@ function formatDate(dateStr: string) {
   return formatDateDisplay(dateStr)
 }
 
-function nightsBetween(checkIn?: string, checkOut?: string): number {
-  if (!checkIn || !checkOut) return 0
-  const diff = Math.floor((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000)
-  return Number.isNaN(diff) ? 0 : Math.max(diff, 0)
-}
 
 const STATUS_TABS = [
   { value: '', label: 'All', dot: 'bg-slate-400' },
@@ -271,7 +266,6 @@ export default function ReservationsPage() {
       sortable: true,
       className: 'whitespace-nowrap',
       render: (r) => {
-        const nights = nightsBetween(r.check_in, r.check_out)
         const isTodayCheckIn = getDateGroup(r.check_in) === 'today'
         const isTodayCheckOut = getDateGroup(r.check_out) === 'today'
         return (
@@ -519,7 +513,6 @@ export default function ReservationsPage() {
                     {todayArrivals.map((r) => {
                       const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
                       const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
-                      const nights = nightsBetween(r.check_in, r.check_out)
                       const due = Number(r.due_amount ?? 0)
                       return (
                         <tr key={r.id} className="h-16 bg-amber-50/30 hover:bg-amber-50/60 transition-colors align-middle">
