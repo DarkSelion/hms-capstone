@@ -92,7 +92,6 @@ export default function ReservationsPage() {
   const todayStr = toLocalDateStr(new Date())
   const { data: todayArrivalsData } = useReservations({
     date_from: todayStr,
-    date_to: todayStr,
     per_page: 100,
     sort_field: 'check_in',
     sort_dir: 'asc',
@@ -109,8 +108,8 @@ export default function ReservationsPage() {
 
   const todayArrivals = useMemo(() => {
     const all = (todayArrivalsData?.data ?? []) as Reservation[]
-    return all.filter((r) => r.status !== 'cancelled' && r.status !== 'no_show')
-  }, [todayArrivalsData])
+    return all.filter((r) => r.check_in === todayStr && r.status !== 'cancelled' && r.status !== 'no_show')
+  }, [todayArrivalsData, todayStr])
 
   const todayArrivalIds = useMemo(() => new Set(todayArrivals.map((r) => r.id)), [todayArrivals])
 
