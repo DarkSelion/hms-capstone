@@ -34,9 +34,11 @@ export function ReservationRowActions({
 
   if (isDead) {
     return (
-      <RowActions>
-        <RowActionButton tone="neutral" title="View" icon={<Eye className="h-4 w-4" />} onClick={onView} />
-      </RowActions>
+      <div className="flex justify-end items-center">
+        <RowActions>
+          <RowActionButton tone="neutral" title="View" icon={<Eye className="h-4 w-4" />} onClick={onView} />
+        </RowActions>
+      </div>
     )
   }
 
@@ -68,5 +70,9 @@ export function ReservationRowActions({
     buttons.push(<RowActionButton key="refund" tone="warning" title="Process Refund" icon={<RotateCcw className="h-4 w-4" />} onClick={onProcessRefund} />)
   }
 
-  return <RowActions>{buttons}</RowActions>
+  return (
+    <div className="flex justify-end items-center">
+      <RowActions>{buttons}</RowActions>
+    </div>
+  )
 }
