@@ -234,7 +234,6 @@ Route::prefix('public')->middleware('throttle:api')->group(function () {
         Route::post('/reservations/{reservation}/cancel', [PublicReservationController::class, 'cancel']);
         Route::post('/reservations/{reservation}/refund-request', [PublicReservationController::class, 'refundRequest']);
         Route::post('/payments/initiate-online', [PublicOnlinePaymentGatewayController::class, 'initiate']);
-        Route::post('/payments/confirm-online', [PublicOnlinePaymentGatewayController::class, 'confirmOnline']);
         Route::post('/reviews', [\App\Http\Controllers\Api\ReviewController::class, 'store']);
         Route::get('/reviews', [\App\Http\Controllers\Api\ReviewController::class, 'myReviews']);
     });

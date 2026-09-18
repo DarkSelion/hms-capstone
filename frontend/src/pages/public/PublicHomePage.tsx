@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { usePublicRoomTypes, useHotelName, usePublicSettings, useBrandingSettings, usePublicReservations, usePublicConfirmOnlinePayment, usePaymentSettings, usePortalCurrency } from '@/hooks/usePublicApi'
-import { usePublicAuthStore } from '@/stores/publicAuthStore'
+import { usePublicRoomTypes, useHotelName, usePublicSettings, useBrandingSettings, usePortalCurrency } from '@/hooks/usePublicApi'
 import { buildHeroImages, buildGalleryPhotos, buildAmenities, stringSetting, replaceHotelName } from '@/lib/branding'
 import { toLocalDateStr, formatCurrencyWith } from '@/lib/format'
 import { DateRangePicker } from '@/components/ui/date-range-picker'
@@ -210,18 +209,10 @@ export default function PublicHomePage() {
   const [heroSlide, setHeroSlide] = useState(0)
   const [searchParams, setSearchParams] = useSearchParams()
   const [paymentNoticeDismissed, setPaymentNoticeDismissed] = useState(false)
-  const [settleAttempted, setSettleAttempted] = useState(false)
-  const [settleState, setSettleState] = useState<'idle' | 'pending' | 'done' | 'error'>('idle')
   const currency = usePortalCurrency()
   const bookingRef = searchParams.get('booking_ref')
   const payStatus = searchParams.get('status')
   const showPaymentNotice = !!bookingRef && !!payStatus && !paymentNoticeDismissed
-  const { token } = usePublicAuthStore()
-  const { data: reservationData } = usePublicReservations()
-  const confirmOnline = usePublicConfirmOnlinePayment()
-  const paymentSettings = usePaymentSettings()
-  const selfSettleEnabled = paymentSettings['online_gateway_self_settle'] === '1' || paymentSettings['online_gateway_self_settle'] === true
-  const myReservations = useMemo(() => reservationData?.data ?? [], [reservationData])
   const { data: roomTypes } = usePublicRoomTypes()
   const { data: bookingSettings } = usePublicSettings('booking')
 
@@ -244,57 +235,26 @@ export default function PublicHomePage() {
     return () => clearInterval(timer)
   }, [heroImages.length])
 
-  useEffect(() => {
-    if (!showPaymentNotice || payStatus !== 'success' || !bookingRef || !token || settleAttempted) return
-    if (settleState === 'pending') return
-    if (!selfSettleEnabled) return
-
-    const reservation = myReservations.find((r) => r.reservation_number === bookingRef)
-    if (!reservation) return
-    if (reservation.payment_status === 'paid' || reservation.due_amount <= 0) {
-      setSettleAttempted(true)
-      setSettleState('done')
-      return
-    }
-
-    setSettleAttempted(true)
-    setSettleState('pending')
-    confirmOnline.mutate(reservation.id, {
-      onSuccess: () => {
-        setSettleState('done')
-      },
-      onError: () => {
-        setSettleState('error')
-      },
-    })
-  }, [showPaymentNotice, payStatus, bookingRef, token, settleAttempted, settleState, selfSettleEnabled, myReservations, confirmOnline])
-
   return (
     <div>
       {/* Payment redirect-back notice (from online payment partner) */}
       {showPaymentNotice && (
         <div className="fixed top-0 inset-x-0 z-[60] px-4 py-3 flex items-center gap-3 bg-black/95 border-b border-white/10">
-          {payStatus === 'success' && settleState === 'done' ? (
+          {payStatus === 'success' ? (
             <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
-          ) : payStatus === 'success' && settleState === 'pending' ? (
-            <Clock className="h-5 w-5 text-sky-400 shrink-0 animate-pulse" />
           ) : payStatus === 'failed' || payStatus === 'cancelled' ? (
             <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0" />
           ) : (
             <Clock className="h-5 w-5 text-sky-400 shrink-0" />
           )}
           <p className="text-sm text-white/80 flex-1">
-            {payStatus === 'success' && settleState === 'done'
-              ? `Payment confirmed for ${bookingRef}. Thank you!`
-              : payStatus === 'success' && settleState === 'pending'
-                ? `Payment received for ${bookingRef}. Confirming your booking...`
-                : payStatus === 'success' && settleState === 'error'
-                  ? `Payment received for ${bookingRef}. It will be confirmed shortly.`
-                  : payStatus === 'failed' || payStatus === 'cancelled'
-                    ? `Payment for ${bookingRef} was not completed.`
-                    : `Payment received for ${bookingRef}. Thank you!`}
+            {payStatus === 'success'
+              ? `Payment received for ${bookingRef}. It will be confirmed shortly.`
+              : payStatus === 'failed' || payStatus === 'cancelled'
+                ? `Payment for ${bookingRef} was not completed.`
+                : `Payment received for ${bookingRef}. Thank you!`}
           </p>
-          {(payStatus === 'success' && settleState !== 'pending') && (
+          {payStatus === 'success' && (
             <Link
               to="/public/my-reservations"
               className="shrink-0 text-xs font-semibold uppercase tracking-wider text-gold hover:text-gold/80 transition-colors"

@@ -235,7 +235,6 @@ export default function SettingsPage() {
     online_gateway_base_url: 'https://hardreset.onrender.com',
     online_gateway_api_key: '',
     online_gateway_webhook_secret: '',
-    online_gateway_self_settle: false,
   })
 
   const [websiteForm, setWebsiteForm] = useState({
@@ -295,7 +294,6 @@ export default function SettingsPage() {
         online_gateway_base_url: s.online_gateway_base_url ?? 'https://hardreset.onrender.com',
         online_gateway_api_key: s.online_gateway_api_key ?? '',
         online_gateway_webhook_secret: s.online_gateway_webhook_secret ?? '',
-        online_gateway_self_settle: s.online_gateway_self_settle === '1' || s.online_gateway_self_settle === true,
       })
       setWebsiteForm({
         hero_badge: stringSetting(s, 'hero_badge', DEFAULT_BRANDING_TEXT.hero_badge),
@@ -337,7 +335,6 @@ export default function SettingsPage() {
         online_gateway_base_url: paymentForm.online_gateway_base_url,
         online_gateway_api_key: paymentForm.online_gateway_api_key,
         online_gateway_webhook_secret: paymentForm.online_gateway_webhook_secret,
-        online_gateway_self_settle: paymentForm.online_gateway_self_settle ? '1' : '0',
       })
     } else if (activeTab === 'Website') {
       Object.assign(payload, websiteForm)
@@ -975,14 +972,6 @@ export default function SettingsPage() {
                         description="Let guests pay through the partner processor."
                         checked={paymentForm.online_gateway_enabled}
                         onChange={(v) => setPaymentForm((p) => ({ ...p, online_gateway_enabled: v }))}
-                      />
-                      <ToggleRow
-                        id="online_gateway_self_settle"
-                        tone="warning"
-                        title="Allow Guest Self-Settlement"
-                        description="Lets the owning guest mark their own booking as paid after the checkout redirect (demo/testing only). Recommended OFF in production — the webhook is the trusted settlement path."
-                        checked={paymentForm.online_gateway_self_settle}
-                        onChange={(v) => setPaymentForm((p) => ({ ...p, online_gateway_self_settle: v }))}
                       />
                     </div>
                     <div className="mt-5 space-y-4 border-t border-gray-100 pt-5">
