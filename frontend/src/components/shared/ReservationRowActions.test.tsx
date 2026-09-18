@@ -25,7 +25,8 @@ function reservation(overrides: Partial<Reservation> = {}): Reservation {
 }
 
 describe('ReservationRowActions', () => {
-  it('shows View, Edit, Cancel and Check In for a confirmed non-overdue reservation', () => {
+  it('shows View and Check In for a confirmed non-overdue reservation with Cancel in dropdown', async () => {
+    const user = userEvent.setup()
     render(
       <ReservationRowActions
         reservation={reservation()}
@@ -36,14 +37,16 @@ describe('ReservationRowActions', () => {
       />,
     )
 
-    expect(screen.getByTitle('View')).toBeInTheDocument()
-    expect(screen.getByTitle('Edit')).toBeInTheDocument()
-    expect(screen.getByTitle('Cancel')).toBeInTheDocument()
-    expect(screen.getByTitle('Check In')).toBeInTheDocument()
-    expect(screen.queryByTitle('Mark No Show')).not.toBeInTheDocument()
+    expect(screen.getByText('View')).toBeInTheDocument()
+    expect(screen.getByText('Check In')).toBeInTheDocument()
+    await user.click(screen.getByTitle('More actions'))
+    expect(screen.getByText('Edit')).toBeInTheDocument()
+    expect(screen.getByText('Cancel')).toBeInTheDocument()
+    expect(screen.queryByText('Mark No Show')).not.toBeInTheDocument()
   })
 
-  it('replaces Check In with Mark No Show on an overdue confirmed reservation', () => {
+  it('shows Mark No Show in dropdown instead of Check In for overdue confirmed reservation', async () => {
+    const user = userEvent.setup()
     render(
       <ReservationRowActions
         reservation={reservation({ is_overdue: true })}
@@ -55,8 +58,9 @@ describe('ReservationRowActions', () => {
       />,
     )
 
-    expect(screen.getByTitle('Mark No Show')).toBeInTheDocument()
-    expect(screen.queryByTitle('Check In')).not.toBeInTheDocument()
+    expect(screen.queryByText('Check In')).not.toBeInTheDocument()
+    await user.click(screen.getByTitle('More actions'))
+    expect(screen.getByText('Mark No Show')).toBeInTheDocument()
   })
 
   it('keeps Check In on an overdue reservation when alwaysAllowCheckIn is set', () => {
@@ -72,8 +76,7 @@ describe('ReservationRowActions', () => {
       />,
     )
 
-    expect(screen.getByTitle('Check In')).toBeInTheDocument()
-    expect(screen.queryByTitle('Mark No Show')).not.toBeInTheDocument()
+    expect(screen.getByText('Check In')).toBeInTheDocument()
   })
 
   it('shows only View for cancelled reservations', () => {
@@ -85,29 +88,30 @@ describe('ReservationRowActions', () => {
       />,
     )
 
-    expect(screen.getByTitle('View')).toBeInTheDocument()
-    expect(screen.queryByTitle('Edit')).not.toBeInTheDocument()
-    expect(screen.queryByTitle('Cancel')).not.toBeInTheDocument()
+    expect(screen.getByText('View')).toBeInTheDocument()
+    expect(screen.queryByTitle('More actions')).not.toBeInTheDocument()
   })
 
-  it('shows View, Edit and Check Out for checked-in reservations', () => {
+  it('shows View, Check Out, and More dropdown for checked-in reservations', async () => {
+    const user = userEvent.setup()
     render(
       <ReservationRowActions
         reservation={reservation({ status: 'checked_in' })}
         onView={vi.fn()}
         onEdit={vi.fn()}
         onCheckOut={vi.fn()}
+        onExtendStay={vi.fn()}
       />,
     )
 
-    expect(screen.getByTitle('View')).toBeInTheDocument()
-    expect(screen.getByTitle('Edit')).toBeInTheDocument()
-    expect(screen.getByTitle('Check Out')).toBeInTheDocument()
-    expect(screen.queryByTitle('Check In')).not.toBeInTheDocument()
-    expect(screen.queryByTitle('Cancel')).not.toBeInTheDocument()
+    expect(screen.getByText('View')).toBeInTheDocument()
+    expect(screen.getByText('Check Out')).toBeInTheDocument()
+    await user.click(screen.getByTitle('More actions'))
+    expect(screen.getByText('Edit')).toBeInTheDocument()
+    expect(screen.getByText('Extend Stay')).toBeInTheDocument()
   })
 
-  it('does not render Check In when no onCheckIn handler is provided', () => {
+  it('does not render More button when no extra actions are available', () => {
     render(
       <ReservationRowActions
         reservation={reservation()}
@@ -116,8 +120,8 @@ describe('ReservationRowActions', () => {
       />,
     )
 
-    expect(screen.queryByTitle('Check In')).not.toBeInTheDocument()
-    expect(screen.queryByTitle('Cancel')).not.toBeInTheDocument()
+    expect(screen.getByText('View')).toBeInTheDocument()
+    expect(screen.queryByTitle('More actions')).not.toBeInTheDocument()
   })
 
   it('fires the View handler when the View button is clicked', async () => {
@@ -132,7 +136,7 @@ describe('ReservationRowActions', () => {
       />,
     )
 
-    await user.click(screen.getByTitle('View'))
+    await user.click(screen.getByText('View'))
     expect(onView).toHaveBeenCalledTimes(1)
   })
 })

@@ -276,14 +276,10 @@ class PaymentController extends Controller
             return response()->json(['message' => 'The online payment gateway is not configured.'], 503);
         }
 
-        // Build refund payload per gateway spec (colab JSON format)
+        // Build refund payload per gateway spec
         $payload = [
             'booking_ref' => $payment->reservation->reservation_number,
-            'paymongo_payment_id' => $payment->reference_number,
-            'customer_name' => $payment->reservation->guest->full_name,
-            'customer_email' => $payment->reservation->guest->email,
-            'amount' => number_format($data['amount'], 2, '.', ''),
-            'refund_status' => 'initiated',
+            'amount' => (float) $data['amount'],
             'reason' => $data['reason'],
         ];
 
@@ -313,7 +309,6 @@ class PaymentController extends Controller
                     'status' => 'refunded',
                     'reference_number' => $gatewayResponse['refund_id'] ?? $payment->reference_number,
                     'notes' => 'Gateway refund: ' . ($data['reason'] ?? ''),
-                    'transaction_id' => $gatewayResponse['paymongo_refund_id'] ?? '',
                 ]);
 
                 // Reconcile reservation balances

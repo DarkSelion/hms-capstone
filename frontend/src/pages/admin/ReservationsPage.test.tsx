@@ -200,7 +200,7 @@ describe('ReservationsPage', () => {
     expect(screen.getByText('No reservations match your filters')).toBeInTheDocument()
   })
 
-  it('updates the status URL param when the status dropdown changes', () => {
+  it('updates the status URL param when a status tab is clicked', () => {
     const setParams = vi.fn()
     mockUseSearchParams.mockReturnValue([new URLSearchParams(''), setParams])
     mockUseReservations.mockReturnValue({
@@ -219,17 +219,17 @@ describe('ReservationsPage', () => {
 
     render(<ReservationsPage />)
 
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'confirmed' } })
+    const confirmedTab = screen.getAllByText('Confirmed')[0]
+    fireEvent.click(confirmedTab.closest('button')!)
 
     expect(setParams).toHaveBeenCalledWith(expect.any(Function))
   })
 
-  it('renders stay range with nights count', () => {
+  it('renders stay range with dates', () => {
     renderPage()
 
     expect(screen.getByText('1 Aug 2026')).toBeInTheDocument()
     expect(screen.getByText('3 Aug 2026')).toBeInTheDocument()
-    expect(screen.getByText('2 nights')).toBeInTheDocument()
   })
 
   it('shows due amount under total for unpaid reservations', () => {
@@ -251,8 +251,8 @@ describe('ReservationsPage', () => {
       target: { value: 'juan' },
     })
 
-    expect(screen.getByText('Active filters:')).toBeInTheDocument()
-    expect(screen.getByText(/Clear all/)).toBeInTheDocument()
+    expect(screen.getByText('Active:')).toBeInTheDocument()
+    expect(screen.getAllByText(/Clear all/).length).toBeGreaterThanOrEqual(1)
   })
 
   it('passes status filter from URL to the query', () => {

@@ -133,7 +133,7 @@ describe('CheckInPage', () => {
   })
 
   it('shows Overdue indicator for overdue reservations', () => {
-    setupMocks({ listData: [reservation({ is_overdue: true })] })
+    setupMocks({ listData: [reservation({ is_overdue: true, payment_status: 'unpaid' })] })
 
     render(<CheckInPage />)
 

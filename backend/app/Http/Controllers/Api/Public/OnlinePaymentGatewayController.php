@@ -66,18 +66,15 @@ class OnlinePaymentGatewayController extends Controller
             return response()->json(['message' => 'This reservation is already fully paid.'], 422);
         }
 
-        // NOTE: the partner's live server requires `booking_ref` (their DB has a
-        // NOT-NULL `booking_ref` column) plus the customer/room fields — their
-        // documented spec ({ booking_reference, total_amount }) returns 500.
-        // Verified live 2026-08-19; keep this exact shape.
         $payload = [
             'booking_ref' => $reservation->reservation_number,
+            'reservation_id' => $reservation->id,
             'customer_name' => $reservation->guest->full_name,
             'customer_email' => $reservation->guest->email,
-            'total_amount' => number_format((float) $reservation->due_amount, 2, '.', ''),
-            'reservation_id' => $reservation->id,
+            'amount' => (float) $reservation->due_amount,
             'room_number' => $reservation->room?->room_number,
             'room_name' => $reservation->room?->roomType?->name,
+            'is_refundable' => $reservation->cancellation_tier !== 'non_refundable',
         ];
 
         try {
@@ -97,10 +94,22 @@ class OnlinePaymentGatewayController extends Controller
         }
 
         if ($response->successful()) {
-            $paymentUrl = (string) ($response->json('payment_url')
-                ?? $response->json('checkout_url')
-                ?? $response->json('redirect_url')
+            $body = $response->json();
+            $status = strtoupper((string) ($body['status'] ?? ''));
+            $paymentUrl = (string) ($body['redirect_url']
+                ?? $body['payment_url']
+                ?? $body['checkout_url']
                 ?? '');
+
+            if ($status !== '' && $status !== 'SUCCESS') {
+                Log::warning('Online gateway returned non-SUCCESS', [
+                    'status' => $status,
+                    'booking_ref' => $reservation->reservation_number,
+                    'body' => mb_substr((string) $response->body(), 0, 500),
+                ]);
+
+                return response()->json(['message' => 'The payment gateway returned an error status: '.$status.'.'], 502);
+            }
 
             if ($paymentUrl === '') {
                 return response()->json(['message' => 'The payment gateway returned an invalid response.'], 502);

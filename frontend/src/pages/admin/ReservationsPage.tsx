@@ -11,7 +11,6 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { TodayBadge } from '@/components/shared/TodayBadge'
 import { StatusBadge } from '@/components/shared/StatusBadge'
-import { Badge } from '@/components/ui/badge'
 import { NoShowModal } from '@/components/shared/NoShowModal'
 import { CancelReservationModal } from '@/components/shared/CancelReservationModal'
 import { ReservationDetailModal } from '@/components/shared/ReservationDetailModal'
@@ -276,15 +275,16 @@ export default function ReservationsPage() {
         const isTodayCheckIn = getDateGroup(r.check_in) === 'today'
         const isTodayCheckOut = getDateGroup(r.check_out) === 'today'
         return (
-          <div>
-            <div className="flex items-center gap-1 whitespace-nowrap text-sm">
-              <span>{formatDate(r.check_in)}</span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 text-sm">
               {isTodayCheckIn && <TodayBadge variant="arrival" />}
-              <ArrowRight className="h-3 w-3 text-muted" />
+              <span>{formatDate(r.check_in)}</span>
+            </div>
+            <ArrowRight className="h-3 w-3 shrink-0 text-slate-300" />
+            <div className="flex items-center gap-1.5 text-sm">
               <span>{formatDate(r.check_out)}</span>
               {isTodayCheckOut && <TodayBadge variant="departure" />}
             </div>
-            <span className="text-xs text-muted">{nights} night{nights !== 1 ? 's' : ''}</span>
           </div>
         )
       },
@@ -313,18 +313,18 @@ export default function ReservationsPage() {
       className: 'whitespace-nowrap',
       render: (r) => (
         <div className="flex items-center gap-1.5 flex-wrap">
-          <StatusBadge status={r.status} />
+          <StatusBadge status={r.status} pill />
           {r.status === 'confirmed' && r.is_overdue && (
-            <Badge variant="warning">
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200/60 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
               <AlertTriangle className="h-3 w-3" />
               Overdue
-            </Badge>
+            </span>
           )}
           {r.refund_requested_at && r.payment_status !== 'refunded' && (
-            <Badge variant="info" className="gap-1">
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200/60 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
               <RotateCcw className="h-3 w-3" />
-              Refund Requested
-            </Badge>
+              Refund
+            </span>
           )}
         </div>
       ),
@@ -334,7 +334,7 @@ export default function ReservationsPage() {
       label: 'Payment',
       sortable: true,
       className: 'whitespace-nowrap',
-      render: (r) => <StatusBadge status={r.payment_status} />,
+      render: (r) => <StatusBadge status={r.payment_status} pill />,
     },
     {
       key: 'actions',
@@ -505,104 +505,103 @@ export default function ReservationsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-amber-200/40 text-left text-xs font-medium uppercase tracking-wider text-amber-600/70">
-                      <th className="px-4 py-2.5">Reservation</th>
-                      <th className="px-4 py-2.5">Guest</th>
-                      <th className="px-4 py-2.5">Room</th>
-                      <th className="px-4 py-2.5">Stay</th>
-                      <th className="px-4 py-2.5">Total</th>
-                      <th className="px-4 py-2.5">Status</th>
-                      <th className="px-4 py-2.5">Payment</th>
-                      <th className="px-4 py-2.5">Actions</th>
+                      <th className="px-4 h-10">Reservation</th>
+                      <th className="px-4 h-10">Guest</th>
+                      <th className="px-4 h-10">Room</th>
+                      <th className="px-4 h-10">Stay</th>
+                      <th className="px-4 h-10">Total</th>
+                      <th className="px-4 h-10">Status</th>
+                      <th className="px-4 h-10">Payment</th>
+                      <th className="px-4 h-10">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-100/60">
-                    {todayArrivals.map((r) => (
-                      <tr key={r.id} className="bg-amber-50/30 hover:bg-amber-50/60 transition-colors">
-                        <td className="px-4 py-3">
-                          <button
-                            onClick={() => openDetailModal(r)}
-                            className="block max-w-[160px] truncate text-primary hover:underline font-medium"
-                          >
-                            {r.reservation_number}
-                          </button>
-                        </td>
-                        <td className="px-4 py-3">
-                          {(() => {
-                            const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
-                            const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
-                            return (
-                              <div className="flex items-center gap-2.5">
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                                  {initials}
-                                </div>
-                                <div className="min-w-0">
-                                  <span className="block truncate text-sm font-medium text-foreground">{name}</span>
-                                  <span className="block truncate text-xs text-muted">{r.guest?.email}</span>
-                                </div>
+                    {todayArrivals.map((r) => {
+                      const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
+                      const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
+                      const nights = nightsBetween(r.check_in, r.check_out)
+                      const due = Number(r.due_amount ?? 0)
+                      return (
+                        <tr key={r.id} className="h-16 bg-amber-50/30 hover:bg-amber-50/60 transition-colors align-middle">
+                          <td className="px-4">
+                            <button
+                              onClick={() => openDetailModal(r)}
+                              className="block max-w-[160px] truncate text-primary hover:underline font-medium"
+                            >
+                              {r.reservation_number}
+                            </button>
+                          </td>
+                          <td className="px-4">
+                            <div className="flex items-center gap-2.5">
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                                {initials}
                               </div>
-                            )
-                          })()}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="min-w-0">
-                            <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
-                            <span className="block truncate text-xs text-muted">{r.room?.room_type?.name ?? '\u00A0'}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div>
-                            <div className="flex items-center gap-1 whitespace-nowrap text-sm">
-                              <span>{formatDate(r.check_in)}</span>
-                              <TodayBadge variant="arrival" />
-                              <ArrowRight className="h-3 w-3 text-muted" />
-                              <span>{formatDate(r.check_out)}</span>
+                              <div className="min-w-0">
+                                <span className="block truncate text-sm font-medium text-foreground">{name}</span>
+                                <span className="block truncate text-xs text-muted">{r.guest?.email}</span>
+                              </div>
                             </div>
-                            <span className="text-xs text-muted">{nightsBetween(r.check_in, r.check_out)} night{nightsBetween(r.check_in, r.check_out) !== 1 ? 's' : ''}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div>
-                            <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
-                            <span className={cn('block text-xs tabular-nums', Number(r.due_amount ?? 0) > 0 ? 'text-amber-600' : 'text-emerald-600')}>
-                              {Number(r.due_amount ?? 0) > 0 ? `Due ${formatCurrency(Number(r.due_amount ?? 0))}` : 'Fully paid'}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <StatusBadge status={r.status} />
-                            {r.status === 'confirmed' && r.is_overdue && (
-                              <Badge variant="warning">
-                                <AlertTriangle className="h-3 w-3" />
-                                Overdue
-                              </Badge>
-                            )}
-                            {r.refund_requested_at && r.payment_status !== 'refunded' && (
-                              <Badge variant="info" className="gap-1">
-                                <RotateCcw className="h-3 w-3" />
-                                Refund Requested
-                              </Badge>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <StatusBadge status={r.payment_status} />
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <ReservationRowActions
-                            reservation={r}
-                            onView={() => openDetailModal(r)}
-                            onEdit={() => openEditForm(r)}
-                            onCancel={() => openCancelDialog(r)}
-                            onCheckIn={() => openCheckIn(r)}
-                            onCheckOut={() => openCheckOut(r)}
-                            onMarkNoShow={() => setNoShowTarget(r)}
-                            onExtendStay={() => openExtendStay(r)}
-                            onProcessRefund={() => setRefundTarget(r)}
-                          />
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-4">
+                            <div className="min-w-0">
+                              <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
+                              <span className="block truncate text-xs text-muted">{r.room?.room_type?.name ?? '\u00A0'}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1.5 text-sm">
+                                <TodayBadge variant="arrival" />
+                                <span>{formatDate(r.check_in)}</span>
+                              </div>
+                              <ArrowRight className="h-3 w-3 shrink-0 text-slate-300" />
+                              <span className="text-sm">{formatDate(r.check_out)}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 whitespace-nowrap">
+                            <div>
+                              <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
+                              <span className={cn('block text-xs tabular-nums', due > 0 ? 'text-amber-600' : 'text-emerald-600')}>
+                                {due > 0 ? `Due ${formatCurrency(due)}` : 'Fully paid'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <StatusBadge status={r.status} pill />
+                              {r.status === 'confirmed' && r.is_overdue && (
+                                <span className="inline-flex items-center gap-1 rounded-full border border-amber-200/60 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  Overdue
+                                </span>
+                              )}
+                              {r.refund_requested_at && r.payment_status !== 'refunded' && (
+                                <span className="inline-flex items-center gap-1 rounded-full border border-amber-200/60 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                                  <RotateCcw className="h-3 w-3" />
+                                  Refund
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 whitespace-nowrap">
+                            <StatusBadge status={r.payment_status} pill />
+                          </td>
+                          <td className="px-4 whitespace-nowrap">
+                            <ReservationRowActions
+                              reservation={r}
+                              onView={() => openDetailModal(r)}
+                              onEdit={() => openEditForm(r)}
+                              onCancel={() => openCancelDialog(r)}
+                              onCheckIn={() => openCheckIn(r)}
+                              onCheckOut={() => openCheckOut(r)}
+                              onMarkNoShow={() => setNoShowTarget(r)}
+                              onExtendStay={() => openExtendStay(r)}
+                              onProcessRefund={() => setRefundTarget(r)}
+                            />
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>

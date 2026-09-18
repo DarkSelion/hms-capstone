@@ -5,22 +5,31 @@ interface TodayBadgeProps {
   className?: string
 }
 
-const variantStyles: Record<TodayBadgeProps['variant'], string> = {
-  arrival: 'bg-emerald-50 text-emerald-700 border border-emerald-200/60',
-  departure: 'bg-sky-50 text-sky-700 border border-sky-200/60',
+const dotColors: Record<TodayBadgeProps['variant'], string> = {
+  arrival: 'bg-emerald-500',
+  departure: 'bg-sky-500',
+}
+
+const labels: Record<TodayBadgeProps['variant'], string> = {
+  arrival: 'Arriving today',
+  departure: 'Departing today',
 }
 
 export function TodayBadge({ variant, className }: TodayBadgeProps) {
-  const label = variant === 'arrival' ? 'TODAY' : 'DEPARTING TODAY'
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
-        variantStyles[variant],
+        'relative inline-flex h-2 w-2 shrink-0 rounded-full',
+        dotColors[variant],
         className,
       )}
+      title={labels[variant]}
+      aria-label={labels[variant]}
     >
-      {label}
+      <span className={cn(
+        'absolute inline-flex h-full w-full animate-ping rounded-full opacity-75',
+        dotColors[variant],
+      )} />
     </span>
   )
 }

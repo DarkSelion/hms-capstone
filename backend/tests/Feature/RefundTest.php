@@ -220,14 +220,15 @@ class RefundTest extends TestCase
         Http::assertSent(function ($request) {
             return $request->url() === 'https://www.hardreset.club/api/refund'
                 && $request->hasHeader('X-API-KEY', '<GATEWAY_API_KEY>')
-                && $request['refund_status'] === 'initiated';
+                && $request['booking_ref'] !== ''
+                && $request['amount'] !== ''
+                && $request['reason'] !== '';
         });
 
         $payment->refresh();
         $this->assertSame('refund', $payment->payment_type);
         $this->assertSame('refunded', $payment->status);
         $this->assertSame('REF-12345', $payment->reference_number);
-        $this->assertSame('re_abc', $payment->transaction_id);
     }
 
     public function test_online_refund_returns_502_on_gateway_timeout(): void
