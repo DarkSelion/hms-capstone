@@ -6,7 +6,7 @@ import {
 import { useCheckInOutModal } from '@/hooks/useCheckInOutModal'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { getDateGroup, formatTodayLabel } from '@/lib/date-group'
+import { getDateGroup, formatTodayLabel, toLocalDateStr } from '@/lib/date-group'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { TodayBadge } from '@/components/shared/TodayBadge'
@@ -89,6 +89,15 @@ export default function ReservationsPage() {
 
   const { data: reservationsData, isLoading, error, refetch } = useReservations(queryParams)
 
+  const todayStr = toLocalDateStr(new Date())
+  const { data: todayArrivalsData } = useReservations({
+    date_from: todayStr,
+    date_to: todayStr,
+    per_page: 100,
+    sort_field: 'check_in',
+    sort_dir: 'asc',
+  })
+
   const cancelReservation = useCancelReservation()
   const markNoShow = useMarkNoShow()
   const extendStay = useExtendStay()
@@ -97,6 +106,13 @@ export default function ReservationsPage() {
 
   const reservations = reservationsData?.data ?? []
   const totalPages = reservationsData?.last_page ?? 1
+
+  const todayArrivals = useMemo(() => {
+    const all = (todayArrivalsData?.data ?? []) as Reservation[]
+    return all.filter((r) => r.status !== 'cancelled' && r.status !== 'no_show')
+  }, [todayArrivalsData])
+
+  const todayArrivalIds = useMemo(() => new Set(todayArrivals.map((r) => r.id)), [todayArrivals])
 
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value)
@@ -116,6 +132,13 @@ export default function ReservationsPage() {
   }, [setSearchParams])
 
   const hasActiveFilters = Boolean(search || statusFilter || dateFrom || dateTo || refundRequestedOnly)
+
+  const tableReservations = useMemo(() => {
+    if (!hasActiveFilters) {
+      return reservations.filter((r) => !todayArrivalIds.has(r.id))
+    }
+    return reservations
+  }, [reservations, todayArrivalIds, hasActiveFilters])
 
   const clearAllFilters = useCallback(() => {
     setSearch('')
@@ -466,35 +489,137 @@ export default function ReservationsPage() {
             </div>
           )}
 
+          {todayArrivals.length > 0 && !hasActiveFilters && (
+            <div className="mb-5">
+              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200/60 rounded-xl px-4 py-2.5 mb-3">
+                <CalendarDays className="h-4 w-4 text-amber-600" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+                  Arriving Today — {formatTodayLabel()} ({todayArrivals.length} reservation{todayArrivals.length !== 1 ? 's' : ''})
+                </span>
+              </div>
+              <div className="rounded-xl border border-amber-100 bg-amber-50/20 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-amber-200/40 text-left text-xs font-medium uppercase tracking-wider text-amber-600/70">
+                      <th className="px-4 py-2.5">Reservation</th>
+                      <th className="px-4 py-2.5">Guest</th>
+                      <th className="px-4 py-2.5">Room</th>
+                      <th className="px-4 py-2.5">Stay</th>
+                      <th className="px-4 py-2.5">Total</th>
+                      <th className="px-4 py-2.5">Status</th>
+                      <th className="px-4 py-2.5">Payment</th>
+                      <th className="px-4 py-2.5">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-amber-100/60">
+                    {todayArrivals.map((r) => (
+                      <tr key={r.id} className="bg-amber-50/30 hover:bg-amber-50/60 transition-colors">
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => openDetailModal(r)}
+                            className="block max-w-[160px] truncate text-primary hover:underline font-medium"
+                          >
+                            {r.reservation_number}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3">
+                          {(() => {
+                            const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
+                            const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
+                            return (
+                              <div className="flex items-center gap-2.5">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                                  {initials}
+                                </div>
+                                <div className="min-w-0">
+                                  <span className="block truncate text-sm font-medium text-foreground">{name}</span>
+                                  <span className="block truncate text-xs text-muted">{r.guest?.email}</span>
+                                </div>
+                              </div>
+                            )
+                          })()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="min-w-0">
+                            <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
+                            <span className="block truncate text-xs text-muted">{r.room?.room_type?.name ?? '\u00A0'}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div>
+                            <div className="flex items-center gap-1 whitespace-nowrap text-sm">
+                              <span>{formatDate(r.check_in)}</span>
+                              <TodayBadge variant="arrival" />
+                              <ArrowRight className="h-3 w-3 text-muted" />
+                              <span>{formatDate(r.check_out)}</span>
+                            </div>
+                            <span className="text-xs text-muted">{nightsBetween(r.check_in, r.check_out)} night{nightsBetween(r.check_in, r.check_out) !== 1 ? 's' : ''}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div>
+                            <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
+                            <span className={cn('block text-xs tabular-nums', Number(r.due_amount ?? 0) > 0 ? 'text-amber-600' : 'text-emerald-600')}>
+                              {Number(r.due_amount ?? 0) > 0 ? `Due ${formatCurrency(Number(r.due_amount ?? 0))}` : 'Fully paid'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <StatusBadge status={r.status} />
+                            {r.status === 'confirmed' && r.is_overdue && (
+                              <Badge variant="warning">
+                                <AlertTriangle className="h-3 w-3" />
+                                Overdue
+                              </Badge>
+                            )}
+                            {r.refund_requested_at && r.payment_status !== 'refunded' && (
+                              <Badge variant="info" className="gap-1">
+                                <RotateCcw className="h-3 w-3" />
+                                Refund Requested
+                              </Badge>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <StatusBadge status={r.payment_status} />
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <ReservationRowActions
+                            reservation={r}
+                            onView={() => openDetailModal(r)}
+                            onEdit={() => openEditForm(r)}
+                            onCancel={() => openCancelDialog(r)}
+                            onCheckIn={() => openCheckIn(r)}
+                            onCheckOut={() => openCheckOut(r)}
+                            onMarkNoShow={() => setNoShowTarget(r)}
+                            onExtendStay={() => openExtendStay(r)}
+                            onProcessRefund={() => setRefundTarget(r)}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           <DataTable
             columns={columns}
-            data={reservations}
+            data={tableReservations}
             loading={isLoading}
             error={error ? 'Failed to load reservations' : null}
             sortBy={sortBy}
             onSort={handleSort}
-            groupByKey={(r) => getDateGroup(r.check_in) === 'today' ? 'today' : 'other'}
-            rowClassName={(r) => getDateGroup(r.check_in) === 'today' ? 'bg-amber-50/30' : ''}
-            renderGroupHeader={(key, rows) => {
-              if (key === 'today') {
-                return (
-                  <div className="flex items-center gap-2 bg-amber-50 border-y border-amber-200/60 -mx-4 px-4 py-2.5">
-                    <CalendarDays className="h-4 w-4 text-amber-600" />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-amber-700">
-                      Arriving Today — {formatTodayLabel()} ({rows.length} reservation{rows.length !== 1 ? 's' : ''})
-                    </span>
-                  </div>
-                )
-              }
-              return (
-                <div className="flex items-center gap-2 -mx-4 px-4 py-2.5">
-                  <CalendarDays className="h-4 w-4 text-muted" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-muted">
-                    All Reservations ({rows.length})
-                  </span>
-                </div>
-              )
-            }}
+            renderGroupHeader={(_key, rows) => (
+              <div className="flex items-center gap-2 -mx-4 px-4 py-2.5">
+                <CalendarDays className="h-4 w-4 text-muted" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                  All Reservations ({rows.length})
+                </span>
+              </div>
+            )}
             emptyState={
               <div className="flex flex-col items-center justify-center py-12">
                 <CalendarX2 className="mb-3 h-10 w-10 text-muted/50" />

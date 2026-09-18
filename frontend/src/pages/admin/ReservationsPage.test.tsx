@@ -100,7 +100,9 @@ function paginated(reservations: Reservation[], total?: number) {
 
 function renderPage(data: ReturnType<typeof paginated> = paginated([reservation()])) {
   mockUseSearchParams.mockReturnValue([new URLSearchParams(''), vi.fn()])
-  mockUseReservations.mockReturnValue({ data, isLoading: false, error: null, refetch: vi.fn() })
+  mockUseReservations
+    .mockReturnValueOnce({ data, isLoading: false, error: null, refetch: vi.fn() })
+    .mockReturnValue({ data: paginated([]), isLoading: false, error: null, refetch: vi.fn() })
   mockUseCancelReservation.mockReturnValue({ mutateAsync: vi.fn() })
   mockUseMarkNoShow.mockReturnValue({ mutateAsync: vi.fn() })
   mockUseExtendStay.mockReturnValue({ mutateAsync: vi.fn() })
@@ -155,7 +157,7 @@ describe('ReservationsPage', () => {
       target: { value: 'juan' },
     })
 
-    expect(mockUseReservations).toHaveBeenLastCalledWith(
+    expect(mockUseReservations).toHaveBeenCalledWith(
       expect.objectContaining({ search: 'juan', page: 1 }),
     )
   })
@@ -255,12 +257,19 @@ describe('ReservationsPage', () => {
 
   it('passes status filter from URL to the query', () => {
     mockUseSearchParams.mockReturnValue([new URLSearchParams('status=checked_in'), vi.fn()])
-    mockUseReservations.mockReturnValue({
-      data: paginated([reservation({ status: 'checked_in' })]),
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    })
+    mockUseReservations
+      .mockReturnValueOnce({
+        data: paginated([reservation({ status: 'checked_in' })]),
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
+      .mockReturnValue({
+        data: paginated([]),
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      })
     mockUseCancelReservation.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseMarkNoShow.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseExtendStay.mockReturnValue({ mutateAsync: vi.fn() })
@@ -271,7 +280,7 @@ describe('ReservationsPage', () => {
 
     render(<ReservationsPage />)
 
-    expect(mockUseReservations).toHaveBeenLastCalledWith(
+    expect(mockUseReservations).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'checked_in' }),
     )
     expect(screen.getAllByText('Checked In').length).toBeGreaterThanOrEqual(1)
