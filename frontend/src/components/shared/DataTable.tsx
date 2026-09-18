@@ -37,6 +37,7 @@ interface DataTableProps<T> {
   groupByKey?: (row: T) => string
   renderGroupHeader?: (groupKey: string, rows: T[], startIndex: number) => React.ReactNode
   rowClassName?: (row: T) => string
+  tableClassName?: string
 }
 
 export function DataTable<T>({
@@ -54,6 +55,7 @@ export function DataTable<T>({
   groupByKey,
   renderGroupHeader,
   rowClassName,
+  tableClassName,
 }: DataTableProps<T>) {
   const [localSearch, setLocalSearch] = useState('')
 
@@ -120,7 +122,7 @@ export function DataTable<T>({
       )}
 
       <TableContainer>
-        <Table>
+        <Table className={tableClassName}>
           <TableHeader>
             <TableRow>
               {columns.map((col) => (

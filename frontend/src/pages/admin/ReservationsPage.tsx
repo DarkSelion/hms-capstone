@@ -219,6 +219,7 @@ export default function ReservationsPage() {
       key: 'reservation_number',
       label: 'Reservation #',
       sortable: true,
+      className: 'w-[14%]',
       render: (r) => (
         <button
           onClick={() => openDetailModal(r)}
@@ -232,7 +233,7 @@ export default function ReservationsPage() {
       key: 'guest',
       label: 'Guest',
       sortable: true,
-      className: 'truncate max-w-[300px]',
+      className: 'w-[18%] truncate max-w-[300px]',
       render: (r) => {
         const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
         const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
@@ -253,6 +254,7 @@ export default function ReservationsPage() {
       key: 'room',
       label: 'Room',
       sortable: true,
+      className: 'w-[11%]',
       render: (r) => (
         <div className="min-w-0">
           <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
@@ -264,7 +266,7 @@ export default function ReservationsPage() {
       key: 'check_in',
       label: 'Stay',
       sortable: true,
-      className: 'whitespace-nowrap',
+      className: 'w-[18%] whitespace-nowrap',
       render: (r) => {
         const isTodayCheckIn = getDateGroup(r.check_in) === 'today'
         const isTodayCheckOut = getDateGroup(r.check_out) === 'today'
@@ -287,7 +289,7 @@ export default function ReservationsPage() {
       key: 'total_amount',
       label: 'Total',
       sortable: true,
-      className: 'whitespace-nowrap',
+      className: 'w-[11%] whitespace-nowrap',
       render: (r) => {
         const due = Number(r.due_amount ?? 0)
         return (
@@ -304,7 +306,7 @@ export default function ReservationsPage() {
       key: 'status',
       label: 'Status',
       sortable: true,
-      className: 'whitespace-nowrap',
+      className: 'w-[14%] whitespace-nowrap',
       render: (r) => (
         <div className="flex items-center gap-1.5 flex-wrap">
           <StatusBadge status={r.status} pill />
@@ -327,13 +329,13 @@ export default function ReservationsPage() {
       key: 'payment_status',
       label: 'Payment',
       sortable: true,
-      className: 'whitespace-nowrap',
+      className: 'w-[8%] whitespace-nowrap',
       render: (r) => <StatusBadge status={r.payment_status} pill />,
     },
     {
       key: 'actions',
       label: 'Actions',
-      className: 'whitespace-nowrap',
+      className: 'w-[16%] whitespace-nowrap text-right',
       render: (r) => (
         <ReservationRowActions
           reservation={r}
@@ -496,17 +498,17 @@ export default function ReservationsPage() {
                 </span>
               </div>
               <div className="rounded-xl border border-amber-100 bg-amber-50/20 overflow-hidden">
-                <table className="w-full text-sm">
+                <table className="w-full table-fixed border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-amber-200/40 text-left text-xs font-medium uppercase tracking-wider text-amber-600/70">
-                      <th className="px-4 h-10">Reservation</th>
-                      <th className="px-4 h-10">Guest</th>
-                      <th className="px-4 h-10">Room</th>
-                      <th className="px-4 h-10">Stay</th>
-                      <th className="px-4 h-10">Total</th>
-                      <th className="px-4 h-10">Status</th>
-                      <th className="px-4 h-10">Payment</th>
-                      <th className="px-4 h-10">Actions</th>
+                      <th className="w-[14%] px-4 h-10">Reservation</th>
+                      <th className="w-[18%] px-4 h-10">Guest</th>
+                      <th className="w-[11%] px-4 h-10">Room</th>
+                      <th className="w-[18%] px-4 h-10">Stay</th>
+                      <th className="w-[11%] px-4 h-10">Total</th>
+                      <th className="w-[14%] px-4 h-10">Status</th>
+                      <th className="w-[8%] px-4 h-10">Payment</th>
+                      <th className="w-[16%] px-4 h-10 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-100/60">
@@ -608,6 +610,7 @@ export default function ReservationsPage() {
             error={error ? 'Failed to load reservations' : null}
             sortBy={sortBy}
             onSort={handleSort}
+            tableClassName="table-fixed border-collapse"
             renderGroupHeader={(_key, rows) => (
               <div className="flex items-center gap-2 -mx-4 px-4 py-2.5">
                 <CalendarDays className="h-4 w-4 text-muted" />
