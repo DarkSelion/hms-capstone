@@ -3,6 +3,8 @@
 namespace App\Mail;
 
 use App\Models\Reservation;
+use App\Models\Setting;
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -39,8 +41,6 @@ class BookingConfirmationMail extends Mailable
         $bookingRef = e($r->reservation_number);
         $roomName = e($r->room?->roomType?->name ?? 'Room');
         $roomNumber = e($r->room?->room_number ?? '—');
-        $checkIn = e($r->check_in->format('M d, Y'));
-        $checkOut = e($r->check_out->format('M d, Y'));
         $nights = $r->total_nights;
         $guests = $r->adults . ' adult' . ($r->adults > 1 ? 's' : '');
         if ($r->children > 0) {
@@ -50,19 +50,46 @@ class BookingConfirmationMail extends Mailable
         $currency = '₱';
         $year = date('Y');
         $nightsText = $nights . ($nights > 1 ? ' nights' : ' night');
-        $checkOutTime = '12:00 PM';
+
+        $checkOutTimeRaw = Setting::where('key', 'check_out_time')->value('value') ?: '11:00';
+        $checkOutTimeFormatted = Carbon::parse($checkOutTimeRaw)->format('g:i A');
+        $checkInTimeFormatted = '2:00 PM';
+
+        $checkIn = e($r->check_in->format('M d, Y')) . ' (from ' . e($checkInTimeFormatted) . ')';
+        $checkOut = e($r->check_out->format('M d, Y')) . ' (by ' . e($checkOutTimeFormatted) . ')';
+
         $policy = e($r->cancellation_tier === 'non_refundable'
             ? 'Non-refundable rate — no changes or refunds.'
             : 'Free cancellation up to 24 hours before check-in.');
+
+        $paymentStatus = $r->payment_status ?? 'unpaid';
+        if ($paymentStatus === 'unpaid') {
+            $paymentCallout = '<div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:10px;padding:14px 16px;margin:0 0 24px;">
+              <p style="color:#FBBF24;font-size:13px;font-weight:600;margin:0 0 4px;">⚠ Payment Status: Unpaid</p>
+              <p style="color:rgba(255,255,255,0.5);font-size:12px;margin:0;">Please settle payment within your grace period to avoid auto-cancellation.</p>
+            </div>';
+        } elseif ($paymentStatus === 'paid') {
+            $paymentCallout = '<div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:14px 16px;margin:0 0 24px;text-align:center;">
+              <span style="display:inline-block;background:rgba(34,197,94,0.15);color:#22C55E;font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;">✓ Payment Status: Fully Paid</span>
+            </div>';
+        } else {
+            $paymentCallout = '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px 16px;margin:0 0 24px;text-align:center;">
+              <span style="color:rgba(255,255,255,0.6);font-size:12px;font-weight:500;">Payment Status: ' . e(ucwords($paymentStatus)) . '</span>
+            </div>';
+        }
+
+        $hotelAddress = e(Setting::where('key', 'hotel_address')->value('value') ?: 'Pampanga, Philippines');
+        $hotelPhone = e(Setting::where('key', 'hotel_phone')->value('value') ?: '+63 912 345 6789');
+        $hotelEmail = e(Setting::where('key', 'hotel_email')->value('value') ?: 'info@pampangahomesuites.com');
 
         return <<<HTML
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background-color:#12233A;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#12233A;padding:40px 20px;">
+<body style="margin:0;padding:0;background-color:#0F172A;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0F172A;padding:40px 20px;">
     <tr><td align="center">
-      <table width="520" cellpadding="0" cellspacing="0" style="background-color:#1a2d47;border-radius:16px;overflow:hidden;border:1px solid rgba(192,160,98,0.15);">
+      <table width="560" cellpadding="0" cellspacing="0" style="background-color:#1a2d47;border-radius:16px;overflow:hidden;border:1px solid rgba(192,160,98,0.15);">
         <tr><td style="padding:40px 40px 20px;text-align:center;">
           <div style="font-size:24px;font-weight:300;letter-spacing:2px;color:#C0A062;font-family:Georgia,serif;">{$hotel}</div>
           <div style="width:40px;height:2px;background:#C0A062;margin:16px auto 0;border-radius:1px;"></div>
@@ -87,7 +114,7 @@ class BookingConfirmationMail extends Mailable
             </td></tr>
             <tr><td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
               <span style="color:rgba(255,255,255,0.4);font-size:12px;">Check-out</span><br>
-              <span style="color:#ffffff;font-size:14px;">{$checkOut} (by {$checkOutTime})</span>
+              <span style="color:#ffffff;font-size:14px;">{$checkOut}</span>
             </td></tr>
             <tr><td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
               <span style="color:rgba(255,255,255,0.4);font-size:12px;">Duration</span><br>
@@ -97,18 +124,20 @@ class BookingConfirmationMail extends Mailable
               <span style="color:rgba(255,255,255,0.4);font-size:12px;">Guests</span><br>
               <span style="color:#ffffff;font-size:14px;">{$guests}</span>
             </td></tr>
-            <tr><td style="padding:12px 0;">
+            <tr><td style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
               <span style="color:rgba(255,255,255,0.4);font-size:12px;">Total Amount</span><br>
               <span style="color:#C0A062;font-size:18px;font-weight:600;">{$currency}{$total}</span>
             </td></tr>
           </table>
+          {$paymentCallout}
           <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px 16px;margin:0 0 24px;">
             <p style="color:rgba(255,255,255,0.4);font-size:11px;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 6px;">Cancellation Policy</p>
             <p style="color:rgba(255,255,255,0.6);font-size:13px;margin:0;">{$policy}</p>
           </div>
+          <a href="https://pampangahomesuites.duckdns.org/public/my-reservations" style="display:inline-block;width:100%;padding:12px 24px;text-align:center;font-weight:600;color:#0F172A;background-color:#FBBF24;border-radius:8px;text-decoration:none;font-size:14px;">View Booking &amp; Payment Options</a>
         </td></tr>
         <tr><td style="padding:20px 40px 30px;border-top:1px solid rgba(255,255,255,0.05);text-align:center;">
-          <p style="color:rgba(255,255,255,0.25);font-size:11px;margin:0 0 8px;">Manage your booking at <a href="https://pampangahomesuites.duckdns.org/public/my-reservations" style="color:#C0A062;text-decoration:none;">My Reservations</a></p>
+          <p style="color:rgba(255,255,255,0.35);font-size:11px;margin:0 0 4px;">{$hotelAddress} | {$hotelPhone} | {$hotelEmail}</p>
           <p style="color:rgba(255,255,255,0.25);font-size:11px;margin:0;">&copy; {$year} {$hotel}. All rights reserved.</p>
         </td></tr>
       </table>
