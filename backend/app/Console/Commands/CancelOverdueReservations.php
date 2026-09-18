@@ -39,25 +39,38 @@ class CancelOverdueReservations extends Command
 
     private function cancelUnpaidOverdue(\Carbon\Carbon $now, int $graceHours): int
     {
-        // Cancel if check_in + grace period has passed (i.e. check_in is older than now - graceHours)
-        $cutoff = $now->copy()->subHours($graceHours);
-
+        // Fetch candidate reservations — check_in at or before today
         $reservations = Reservation::where('status', 'confirmed')
             ->where('payment_status', 'unpaid')
-            ->where('check_in', '<=', $cutoff->toDateTimeString())
+            ->where('check_in', '<=', $now->toDateString())
             ->with(['guest', 'room'])
             ->get();
 
         $count = 0;
 
         foreach ($reservations as $reservation) {
+            // Deadline 1: check-in date + grace hours (e.g. noon on arrival day)
+            $checkInDeadline = \Carbon\Carbon::parse($reservation->check_in)
+                ->startOfDay()
+                ->addHours($graceHours);
+
+            // Deadline 2: at least 2 hours after booking (protects same-day/late-night bookings)
+            $bookingBuffer = $reservation->created_at->copy()->addHours(2);
+
+            $effectiveDeadline = $checkInDeadline->greaterThan($bookingBuffer)
+                ? $checkInDeadline
+                : $bookingBuffer;
+
+            if ($now->lessThan($effectiveDeadline)) {
+                continue;
+            }
+
             DB::transaction(function () use ($reservation, &$count) {
                 $reservation->update([
                     'status' => 'cancelled',
                     'cancellation_reason' => 'Auto-cancelled: Unpaid no-show past grace period',
                 ]);
 
-                // Revert room status
                 if ($reservation->room) {
                     $reservation->room->reconcileStatus();
                 }
@@ -71,7 +84,6 @@ class CancelOverdueReservations extends Command
                     'description' => "Auto-cancelled unpaid reservation #{$reservation->reservation_number}: past grace period without payment",
                 ]);
 
-                // Send cancellation email
                 if ($reservation->guest?->email) {
                     try {
                         Mail::to($reservation->guest->email)->send(
