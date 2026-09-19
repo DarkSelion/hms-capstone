@@ -98,6 +98,7 @@ export default function PublicBookingPage() {
   const [specialRequests, setSpecialRequests] = useState('')
   const [cancellationTier, setCancellationTier] = useState<'flexible' | 'non_refundable'>('flexible')
   const [showVerifyModal, setShowVerifyModal] = useState(false)
+  const [autoOpenCheckout, setAutoOpenCheckout] = useState(false)
 
   const roomTypeParam = searchParams.get('room_type')
 
@@ -334,25 +335,33 @@ export default function PublicBookingPage() {
             </div>
 
             {/* Form Card */}
-            <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl p-6 sm:p-8">
+            <div className="bg-surface/90 border border-slate-700/60 rounded-2xl p-8 shadow-2xl backdrop-blur-sm">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label htmlFor="booking_check_in" className="text-xs uppercase tracking-[0.15em] text-gold/50 block mb-2">Check In</label>
-                  <DatePicker value={checkIn} onChange={(v) => setCheckIn(v)} min={toLocalDateStr(new Date())} max={maxDate} />
+                  <label htmlFor="booking_check_in" className="text-xs font-semibold tracking-widest text-gold uppercase mb-2 block">Check In</label>
+                  <DatePicker value={checkIn} onChange={(v) => {
+                    setCheckIn(v)
+                    if (!checkOut || v >= checkOut) {
+                      const [y, m, d] = v.split('-').map(Number)
+                      const next = new Date(y, m - 1, d + 1)
+                      setCheckOut(toLocalDateStr(next))
+                      setAutoOpenCheckout(true)
+                    }
+                  }} min={toLocalDateStr(new Date())} max={maxDate} />
                 </div>
                 <div>
-                  <label htmlFor="booking_check_out" className="text-xs uppercase tracking-[0.15em] text-gold/50 block mb-2">Check Out</label>
-                  <DatePicker value={checkOut} onChange={(v) => setCheckOut(v)} min={minCheckOut} max={maxDate} />
+                  <label htmlFor="booking_check_out" className="text-xs font-semibold tracking-widest text-gold uppercase mb-2 block">Check Out</label>
+                  <DatePicker value={checkOut} onChange={(v) => { setCheckOut(v); setAutoOpenCheckout(false) }} min={minCheckOut} max={maxDate} autoOpen={autoOpenCheckout} />
                 </div>
                 <div>
-                  <label htmlFor="booking_adults" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Adults</label>
-                  <select id="booking_adults" value={adultsSafe} onChange={(e) => setAdults(Number(e.target.value))} className="input-public">
+                  <label htmlFor="booking_adults" className="text-xs font-semibold tracking-widest text-white/40 uppercase mb-2 block">Adults</label>
+                  <select id="booking_adults" value={adultsSafe} onChange={(e) => setAdults(Number(e.target.value))} className="w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm color-scheme-dark">
                     {Array.from({ length: maxAdults }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="booking_children" className="text-xs uppercase tracking-[0.15em] text-white/40 block mb-2">Children</label>
-                  <select id="booking_children" value={childrenSafe} onChange={(e) => setChildrenCount(Number(e.target.value))} className="input-public">
+                  <label htmlFor="booking_children" className="text-xs font-semibold tracking-widest text-white/40 uppercase mb-2 block">Children</label>
+                  <select id="booking_children" value={childrenSafe} onChange={(e) => setChildrenCount(Number(e.target.value))} className="w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm color-scheme-dark">
                     {Array.from({ length: maxChildren + 1 }, (_, i) => i).map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
@@ -380,7 +389,10 @@ export default function PublicBookingPage() {
               <button
                 onClick={() => setStep(2)}
                 disabled={!datesValid}
-                className="btn-gold w-full mt-6 flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
+                className={datesValid
+                  ? "w-full mt-6 bg-gold hover:bg-gold-dark text-slate-950 font-bold py-4 rounded-xl uppercase tracking-wider text-sm shadow-lg shadow-gold/10 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
+                  : "w-full mt-6 bg-slate-800 text-slate-500 font-semibold py-4 rounded-xl uppercase tracking-wider text-sm cursor-not-allowed border border-slate-700/50 flex items-center justify-center gap-2"
+                }
               >
                 Search Available Rooms <ChevronRight className="h-4 w-4" />
               </button>
@@ -389,12 +401,12 @@ export default function PublicBookingPage() {
             {/* Trust badges */}
             <div className="flex items-center justify-center gap-6 mt-8">
               {[
-                { icon: '🔒', label: 'Secure Booking' },
-                { icon: '✨', label: 'Best Price Guarantee' },
-                { icon: '🏊', label: 'Free Pool Access' },
+                { icon: <ShieldCheck className="h-3.5 w-3.5 text-gold" />, label: 'Secure Booking' },
+                { icon: <Lock className="h-3.5 w-3.5 text-gold" />, label: 'Best Price Guarantee' },
+                { icon: <BedDouble className="h-3.5 w-3.5 text-gold" />, label: 'Free Pool Access' },
               ].map((b) => (
-                <div key={b.label} className="flex items-center gap-1.5 text-white/25 text-xs">
-                  <span className="text-sm">{b.icon}</span> {b.label}
+                <div key={b.label} className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
+                  {b.icon} {b.label}
                 </div>
               ))}
             </div>

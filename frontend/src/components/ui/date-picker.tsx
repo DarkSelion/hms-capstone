@@ -14,6 +14,7 @@ interface DatePickerProps {
   label?: string
   clearable?: boolean
   portal?: boolean
+  autoOpen?: boolean
 }
 
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
@@ -43,11 +44,11 @@ function isBefore(a: Date, b: Date): boolean {
   return a.getTime() < b.getTime()
 }
 
-export function DatePicker({ value, onChange, min, max, placeholder = 'Select date', error, className, label, clearable = false, portal = false }: DatePickerProps) {
+export function DatePicker({ value, onChange, min, max, placeholder = 'Select date', error, className, label, clearable = false, portal = false, autoOpen = false }: DatePickerProps) {
   const selected = parseDate(value)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(autoOpen)
   const [view, setView] = useState<'days' | 'months' | 'years'>('days')
   const [viewMonth, setViewMonth] = useState(selected ? new Date(selected.getFullYear(), selected.getMonth(), 1) : new Date(today.getFullYear(), today.getMonth(), 1))
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -69,6 +70,10 @@ export function DatePicker({ value, onChange, min, max, placeholder = 'Select da
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [open])
+
+  useEffect(() => {
+    if (autoOpen) setOpen(true)
+  }, [autoOpen])
 
   useEffect(() => {
     if (!open) return
