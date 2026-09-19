@@ -338,7 +338,14 @@ export default function PublicBookingPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
                   <label htmlFor="booking_check_in" className="text-xs uppercase tracking-[0.15em] text-gold/50 block mb-2">Check In</label>
-                  <DatePicker value={checkIn} onChange={(v) => setCheckIn(v)} min={toLocalDateStr(new Date())} max={maxDate} />
+                  <DatePicker value={checkIn} onChange={(v) => {
+                        setCheckIn(v)
+                        if (!checkOut || v >= checkOut) {
+                          const [y, m, d] = v.split('-').map(Number)
+                          const next = new Date(y, m - 1, d + 1)
+                          setCheckOut(toLocalDateStr(next))
+                        }
+                      }} min={toLocalDateStr(new Date())} max={maxDate} />
                 </div>
                 <div>
                   <label htmlFor="booking_check_out" className="text-xs uppercase tracking-[0.15em] text-gold/50 block mb-2">Check Out</label>
