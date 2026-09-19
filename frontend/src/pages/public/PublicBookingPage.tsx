@@ -341,12 +341,7 @@ export default function PublicBookingPage() {
                   <label htmlFor="booking_check_in" className="text-xs font-semibold tracking-widest text-gold uppercase mb-2 block">Check In</label>
                   <DatePicker value={checkIn} onChange={(v) => {
                     setCheckIn(v)
-                    if (!checkOut || v >= checkOut) {
-                      const [y, m, d] = v.split('-').map(Number)
-                      const next = new Date(y, m - 1, d + 1)
-                      setCheckOut(toLocalDateStr(next))
-                      setAutoOpenCheckout(true)
-                    }
+                    setAutoOpenCheckout(true)
                   }} min={toLocalDateStr(new Date())} max={maxDate} />
                 </div>
                 <div>
