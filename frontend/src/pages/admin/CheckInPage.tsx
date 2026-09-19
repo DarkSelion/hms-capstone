@@ -303,14 +303,20 @@ export default function CheckInPage() {
                       <th className="w-[14%] px-4 py-2.5">Reservation</th>
                       <th className="w-[22%] px-4 py-2.5">Guest</th>
                       <th className="w-[12%] px-4 py-2.5">Room</th>
-                      <th className="w-[18%] px-4 py-2.5">Arrival</th>
+                      <th className="w-[16%] px-4 py-2.5">Arrival</th>
                       <th className="w-[10%] px-4 py-2.5">Guests</th>
-                      <th className="w-[14%] px-4 py-2.5">Billing</th>
+                      <th className="w-[11%] px-4 py-2.5">Total</th>
+                      <th className="w-[11%] px-4 py-2.5">Alerts</th>
+                      <th className="w-[11%] px-4 py-2.5">Payment</th>
                       <th className="w-[10%] px-4 py-2.5">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-100/60">
-                    {todayArrivals.map((r) => (
+                    {todayArrivals.map((r) => {
+                      const due = Number(r.due_amount ?? 0)
+                      const hasOverdue = r.is_overdue
+                      const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
+                      return (
                       <tr key={r.id} className="bg-amber-50/30 hover:bg-amber-50/60 transition-colors">
                         <td className="px-4 py-3">
                           <button onClick={() => openDetailModal(r)} className="font-medium text-primary hover:underline">
@@ -350,14 +356,32 @@ export default function CheckInPage() {
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
-                              <StatusBadge status={r.payment_status} />
-                            </div>
-                            <span className={cn('block text-xs tabular-nums', Number(r.due_amount ?? 0) > 0 ? 'text-amber-600' : 'text-emerald-600')}>
-                              {Number(r.due_amount ?? 0) > 0 ? `Due ${formatCurrency(Number(r.due_amount ?? 0))}` : 'Fully paid'}
+                            <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
+                            <span className={cn('block text-xs tabular-nums', due > 0 ? 'text-amber-600' : 'text-emerald-600')}>
+                              {due > 0 ? `Due ${formatCurrency(due)}` : 'Fully paid'}
                             </span>
                           </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {!hasOverdue && !hasRefund ? (
+                            <span className="text-slate-300">—</span>
+                          ) : (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {hasOverdue && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
+                                  {r.payment_status === 'paid' || r.payment_status === 'partial' ? 'Late Arrival' : 'Overdue'}
+                                </span>
+                              )}
+                              {hasRefund && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
+                                  Refund
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <StatusBadge status={r.payment_status} pill />
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <ReservationRowActions
@@ -370,7 +394,7 @@ export default function CheckInPage() {
                           />
                         </td>
                       </tr>
-                    ))}
+                    )})}
                   </tbody>
                 </table>
               </div>

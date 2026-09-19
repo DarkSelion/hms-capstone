@@ -296,13 +296,19 @@ export default function CheckOutPage() {
                       <th className="w-[14%] px-4 py-2.5">Reservation</th>
                       <th className="w-[22%] px-4 py-2.5">Guest</th>
                       <th className="w-[12%] px-4 py-2.5">Room</th>
-                      <th className="w-[20%] px-4 py-2.5">Departure</th>
-                      <th className="w-[16%] px-4 py-2.5">Billing</th>
+                      <th className="w-[16%] px-4 py-2.5">Departure</th>
+                      <th className="w-[11%] px-4 py-2.5">Total</th>
+                      <th className="w-[11%] px-4 py-2.5">Alerts</th>
+                      <th className="w-[11%] px-4 py-2.5">Payment</th>
                       <th className="w-[16%] px-4 py-2.5">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-100/60">
-                    {todayDepartures.map((r) => (
+                    {todayDepartures.map((r) => {
+                      const due = Number(r.due_amount ?? 0)
+                      const hasOverdue = r.is_overdue
+                      const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
+                      return (
                       <tr key={r.id} className="bg-amber-50/30 hover:bg-amber-50/60 transition-colors">
                         <td className="px-4 py-3">
                           <button onClick={() => openDetailModal(r)} className="font-medium text-primary hover:underline">
@@ -339,14 +345,38 @@ export default function CheckOutPage() {
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
-                              <StatusBadge status={r.payment_status} />
-                            </div>
-                            <span className={cn('block text-xs tabular-nums', Number(r.due_amount ?? 0) > 0 ? 'text-amber-600' : 'text-emerald-600')}>
-                              {Number(r.due_amount ?? 0) > 0 ? `Due ${formatCurrency(Number(r.due_amount ?? 0))}` : 'Fully paid'}
-                            </span>
+                            <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
+                            {due > 0 ? (
+                              <span className="block text-xs font-semibold tabular-nums text-danger">
+                                Due {formatCurrency(due)}
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-xs font-medium text-success">
+                                <CheckCircle2 className="h-3 w-3" /> Settled
+                              </span>
+                            )}
                           </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {!hasOverdue && !hasRefund ? (
+                            <span className="text-slate-300">—</span>
+                          ) : (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {hasOverdue && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
+                                  Overdue
+                                </span>
+                              )}
+                              {hasRefund && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
+                                  Refund
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <StatusBadge status={r.payment_status} pill />
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <ReservationRowActions
@@ -358,7 +388,7 @@ export default function CheckOutPage() {
                           />
                         </td>
                       </tr>
-                    ))}
+                    )})}
                   </tbody>
                 </table>
               </div>
