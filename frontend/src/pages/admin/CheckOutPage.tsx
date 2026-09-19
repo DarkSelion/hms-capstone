@@ -173,7 +173,7 @@ export default function CheckOutPage() {
       key: 'check_out',
       label: 'Departure',
       sortable: true,
-      className: 'w-[20%] whitespace-nowrap',
+      className: 'w-[16%] whitespace-nowrap',
       render: (r) => {
         const nights = nightsBetween(r.check_in, r.check_out)
         return (
@@ -191,17 +191,14 @@ export default function CheckOutPage() {
     },
     {
       key: 'total_amount',
-      label: 'Billing',
+      label: 'Total',
       sortable: true,
-      className: 'w-[16%] whitespace-nowrap',
+      className: 'w-[11%] whitespace-nowrap',
       render: (r) => {
         const due = Number(r.due_amount ?? 0)
         return (
           <div className="whitespace-nowrap">
-            <div className="flex items-center gap-1.5">
-              <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
-              <StatusBadge status={r.payment_status} />
-            </div>
+            <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
             {due > 0 ? (
               <span className="block text-xs font-semibold tabular-nums text-danger">
                 Due {formatCurrency(due)}
@@ -214,6 +211,40 @@ export default function CheckOutPage() {
           </div>
         )
       },
+    },
+    {
+      key: 'alerts',
+      label: 'Alerts',
+      sortable: false,
+      className: 'w-[11%] whitespace-nowrap',
+      render: (r) => {
+        const hasOverdue = r.is_overdue
+        const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
+        if (!hasOverdue && !hasRefund) {
+          return <span className="text-slate-300">—</span>
+        }
+        return (
+          <div className="flex items-center gap-1 flex-wrap">
+            {hasOverdue && (
+              <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
+                Overdue
+              </span>
+            )}
+            {hasRefund && (
+              <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
+                Refund
+              </span>
+            )}
+          </div>
+        )
+      },
+    },
+    {
+      key: 'payment_status',
+      label: 'Payment',
+      sortable: true,
+      className: 'w-[11%] whitespace-nowrap',
+      render: (r) => <StatusBadge status={r.payment_status} pill />,
     },
     {
       key: 'actions',

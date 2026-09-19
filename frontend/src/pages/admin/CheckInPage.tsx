@@ -181,18 +181,12 @@ export default function CheckInPage() {
       key: 'check_in',
       label: 'Arrival',
       sortable: true,
-      className: 'w-[18%] whitespace-nowrap',
+      className: 'w-[16%] whitespace-nowrap',
       render: (r) => (
         <div>
           <div className="flex items-center gap-1.5 whitespace-nowrap">
             <span>{formatDateDisplay(r.check_in)}</span>
             {getDateGroup(r.check_in) === 'today' && <TodayBadge variant="arrival" />}
-            {r.is_overdue && (
-              <Badge variant={r.payment_status === 'paid' || r.payment_status === 'partial' ? 'info' : 'warning'}>
-                <AlertTriangle className="h-3 w-3" />
-                {r.payment_status === 'paid' || r.payment_status === 'partial' ? 'Late Arrival' : 'Overdue'}
-              </Badge>
-            )}
           </div>
           <span className="block text-xs text-muted">departs {formatDateDisplay(r.check_out)}</span>
         </div>
@@ -209,23 +203,54 @@ export default function CheckInPage() {
     },
     {
       key: 'total_amount',
-      label: 'Billing',
+      label: 'Total',
       sortable: true,
-      className: 'w-[14%] whitespace-nowrap',
+      className: 'w-[11%] whitespace-nowrap',
       render: (r) => {
         const due = Number(r.due_amount ?? 0)
         return (
           <div className="whitespace-nowrap">
-            <div className="flex items-center gap-1.5">
-              <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
-              <StatusBadge status={r.payment_status} />
-            </div>
+            <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
             <span className={cn('block text-xs tabular-nums', due > 0 ? 'text-amber-600' : 'text-emerald-600')}>
               {due > 0 ? `Due ${formatCurrency(due)}` : 'Fully paid'}
             </span>
           </div>
         )
       },
+    },
+    {
+      key: 'alerts',
+      label: 'Alerts',
+      sortable: false,
+      className: 'w-[11%] whitespace-nowrap',
+      render: (r) => {
+        const hasOverdue = r.is_overdue
+        const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
+        if (!hasOverdue && !hasRefund) {
+          return <span className="text-slate-300">—</span>
+        }
+        return (
+          <div className="flex items-center gap-1 flex-wrap">
+            {hasOverdue && (
+              <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
+                {r.payment_status === 'paid' || r.payment_status === 'partial' ? 'Late Arrival' : 'Overdue'}
+              </span>
+            )}
+            {hasRefund && (
+              <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
+                Refund
+              </span>
+            )}
+          </div>
+        )
+      },
+    },
+    {
+      key: 'payment_status',
+      label: 'Payment',
+      sortable: true,
+      className: 'w-[11%] whitespace-nowrap',
+      render: (r) => <StatusBadge status={r.payment_status} pill />,
     },
     {
       key: 'actions',
