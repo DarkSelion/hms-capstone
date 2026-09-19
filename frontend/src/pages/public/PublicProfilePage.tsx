@@ -137,6 +137,14 @@ export default function PublicProfilePage() {
     )
   }
 
+  if (isLoading || (token && !user)) {
+    return (
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gold"></div>
+      </div>
+    )
+  }
+
   function update(field: keyof FormState, value: string) {
     setErrorMessage(null)
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -231,7 +239,7 @@ export default function PublicProfilePage() {
       </section>
 
       {/* Body */}
-      <section className="bg-cream py-12 px-4">
+      <section className="bg-canvas py-12 px-4">
         <div className="max-w-5xl mx-auto space-y-6">
           {isLoading ? (
             <div className="flex justify-center py-20">
@@ -243,54 +251,54 @@ export default function PublicProfilePage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 <Link
                   to="/public/my-reservations"
-                  className="group bg-white border border-white/90 rounded-2xl p-5 shadow-sm hover:border-gold/30 hover:shadow-xl transition-all"
+                  className="group bg-surface border border-slate-700/60 rounded-2xl p-6 shadow-lg hover:border-gold/30 hover:shadow-xl transition-all"
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.15em] text-dark/55 font-semibold">My Bookings</p>
-                      <p className="font-serif text-dark text-3xl font-normal mt-1">{reservations.length}</p>
+                      <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">My Bookings</p>
+                      <p className="font-serif text-white text-3xl font-normal mt-1">{reservations.length}</p>
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-gold/10 flex items-center justify-center text-gold">
+                    <div className="h-10 w-10 rounded-full bg-canvas text-gold border border-slate-700/50 flex items-center justify-center">
                       <CalendarDays className="h-4.5 w-4.5" />
                     </div>
                   </div>
-                  <p className="text-xs text-dark/40 mt-3 flex items-center gap-1 group-hover:text-gold transition-colors">
+                  <p className="text-xs text-slate-500 mt-3 flex items-center gap-1 group-hover:text-gold transition-colors">
                     {upcomingCount} upcoming
                     <ChevronRight className="h-3 w-3" />
                   </p>
                 </Link>
                 <Link
                   to="/public/rooms"
-                  className="group bg-white border border-white/90 rounded-2xl p-5 shadow-sm hover:border-gold/30 hover:shadow-xl transition-all"
+                  className="group bg-surface border border-slate-700/60 rounded-2xl p-6 shadow-lg hover:border-gold/30 hover:shadow-xl transition-all"
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.15em] text-dark/55 font-semibold">Browse</p>
-                      <p className="font-serif text-dark text-base font-normal mt-1">Our Rooms</p>
+                      <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Browse</p>
+                      <p className="font-serif text-white text-base font-normal mt-1">Our Rooms</p>
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-gold/10 flex items-center justify-center text-gold">
+                    <div className="h-10 w-10 rounded-full bg-canvas text-gold border border-slate-700/50 flex items-center justify-center">
                       <Globe2 className="h-4.5 w-4.5" />
                     </div>
                   </div>
-                  <p className="text-xs text-dark/40 mt-3 flex items-center gap-1 group-hover:text-gold transition-colors">
+                  <p className="text-xs text-slate-500 mt-3 flex items-center gap-1 group-hover:text-gold transition-colors">
                     Plan your next stay
                     <ChevronRight className="h-3 w-3" />
                   </p>
                 </Link>
                 <a
                   href="mailto:info@pampangahomesuites.com"
-                  className="group bg-white border border-white/90 rounded-2xl p-5 shadow-sm hover:border-gold/30 hover:shadow-xl transition-all col-span-2 sm:col-span-1"
+                  className="group bg-surface border border-slate-700/60 rounded-2xl p-6 shadow-lg hover:border-gold/30 hover:shadow-xl transition-all col-span-2 sm:col-span-1"
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.15em] text-dark/55 font-semibold">Need Help?</p>
-                      <p className="font-serif text-dark text-base font-normal mt-1">Contact Us</p>
+                      <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">Need Help?</p>
+                      <p className="font-serif text-white text-base font-normal mt-1">Contact Us</p>
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-gold/10 flex items-center justify-center text-gold">
+                    <div className="h-10 w-10 rounded-full bg-canvas text-gold border border-slate-700/50 flex items-center justify-center">
                       <HelpCircle className="h-4.5 w-4.5" />
                     </div>
                   </div>
-                  <p className="text-xs text-dark/40 mt-3 flex items-center gap-1 group-hover:text-gold transition-colors">
+                  <p className="text-xs text-slate-500 mt-3 flex items-center gap-1 group-hover:text-gold transition-colors">
                     We typically respond in 24h
                     <ChevronRight className="h-3 w-3" />
                   </p>
@@ -349,7 +357,7 @@ export default function PublicProfilePage() {
                     value={form.phone}
                     onChange={(v) => update('phone', v)}
                     icon={Phone}
-                    maxLength={15}
+                    maxLength={11}
                     format={stripPhoneInput}
                   />
                 </Card>
@@ -397,7 +405,7 @@ export default function PublicProfilePage() {
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label htmlFor="profile_dob" className="text-xs text-dark/40 uppercase tracking-[0.15em] block mb-1.5 font-medium">Date of Birth</label>
+                      <label htmlFor="profile_dob" className="block text-xs font-semibold uppercase tracking-wider text-gold-light mb-2">Date of Birth</label>
                       <DatePicker
                         value={form.date_of_birth}
                         onChange={(v) => update('date_of_birth', v)}
@@ -427,7 +435,7 @@ export default function PublicProfilePage() {
                 </Card>
 
                 {/* Sticky action bar */}
-                <div className={`sticky bottom-4 z-10 bg-white border ${isDirty ? 'border-gold/30 shadow-xl shadow-gold/10' : 'border-white/90 shadow-sm'} rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-all`}>
+                <div className={`sticky bottom-4 z-10 bg-surface/95 backdrop-blur-md border ${isDirty ? 'border-gold/30 shadow-xl shadow-gold/10' : 'border-slate-700/60 shadow-sm'} rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-all`}>
                   <div className="flex items-center gap-2.5 min-h-[28px]">
                     {isDirty ? (
                       <>
@@ -435,15 +443,15 @@ export default function PublicProfilePage() {
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold opacity-75" />
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-gold" />
                         </span>
-                        <p className="text-sm text-dark">You have unsaved changes</p>
+                        <p className="text-sm text-slate-300">You have unsaved changes</p>
                       </>
                     ) : lastSavedAt ? (
                       <>
-                        <CheckCircle className="h-4 w-4 text-emerald-600" />
-                        <p className="text-sm text-dark/50">Saved · just now</p>
+                        <CheckCircle className="h-4 w-4 text-emerald-400" />
+                        <p className="text-sm text-slate-500">Saved · just now</p>
                       </>
                     ) : (
-                      <p className="text-sm text-dark/30">No changes yet</p>
+                      <p className="text-sm text-slate-600">No changes yet</p>
                     )}
                   </div>
                   <div className="flex items-center gap-2 self-end sm:self-auto">
@@ -451,7 +459,7 @@ export default function PublicProfilePage() {
                       type="button"
                       onClick={handleReset}
                       disabled={!isDirty || updateProfile.isPending}
-                      className="px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-dark/50 hover:text-dark border border-dark/10 rounded hover:border-dark/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="px-6 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-300 border border-slate-700 rounded-xl hover:text-white hover:bg-slate-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Reset
                     </button>
@@ -478,20 +486,20 @@ export default function PublicProfilePage() {
 
               {/* Danger zone */}
               <div className="mt-10">
-                <div className="bg-white border border-danger/20 rounded-2xl p-6 shadow-sm">
+                <div className="bg-red-950/20 border border-red-900/50 rounded-2xl p-6">
                   <div className="flex items-start gap-4">
-                    <div className="h-11 w-11 rounded-full bg-danger/10 text-danger flex items-center justify-center shrink-0">
+                    <div className="h-11 w-11 rounded-full bg-red-950/40 text-red-400 border border-red-900/40 flex items-center justify-center shrink-0">
                       <Lock className="h-5 w-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-serif text-lg text-dark font-normal">Delete Account</h3>
-                      <p className="text-sm text-dark/50 mt-1 leading-relaxed">
+                      <h3 className="font-serif text-lg text-white font-normal">Delete Account</h3>
+                      <p className="text-sm text-slate-400 mt-1 leading-relaxed">
                         Permanently delete your account and all associated data. Active reservations will block this action. This cannot be undone.
                       </p>
                       <button
                         type="button"
                         onClick={() => setShowDeleteModal(true)}
-                        className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-danger border border-danger/30 rounded hover:bg-danger hover:text-white transition-colors"
+                        className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-red-400 border border-red-500/50 rounded-xl hover:bg-red-500/10 transition-colors"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         Delete Account
@@ -533,14 +541,14 @@ function Card({
   children: React.ReactNode
 }) {
   return (
-    <div className="bg-white border border-white/90 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-surface border border-slate-700/60 rounded-2xl p-6 shadow-lg">
       <div className="flex items-start gap-4 mb-5">
-        <div className="h-10 w-10 rounded-full bg-gold/10 text-gold flex items-center justify-center shrink-0">
+        <div className="h-10 w-10 rounded-full bg-canvas text-gold border border-slate-700/50 flex items-center justify-center shrink-0">
           <Icon className="h-4.5 w-4.5" />
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="font-serif text-lg text-dark font-medium">{title}</h2>
-          <p className="text-xs text-dark/55 mt-0.5">{description}</p>
+          <h2 className="text-xl font-serif text-white font-semibold">{title}</h2>
+          <p className="text-slate-400 text-xs mt-0.5">{description}</p>
         </div>
       </div>
       <div className="space-y-4">{children}</div>
@@ -571,19 +579,19 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="text-xs text-dark/40 uppercase tracking-[0.15em] block mb-1.5 font-medium">
+      <label htmlFor={id} className="block text-xs font-semibold uppercase tracking-wider text-gold-light mb-2">
         {label}
       </label>
       <div className="relative">
         {Icon && (
-          <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-dark/30 pointer-events-none" />
+          <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
         )}
         <input
           id={id}
           type={type}
           value={value}
           onChange={(e) => onChange(format ? format(e.target.value) : e.target.value)}
-          className={`input-light ${Icon ? 'pl-10' : ''}`}
+          className={`w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm ${Icon ? 'pl-10' : ''}`}
           maxLength={maxLength}
           pattern={pattern}
         />
@@ -609,14 +617,14 @@ function SelectField({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="text-xs text-dark/40 uppercase tracking-[0.15em] block mb-1.5 font-medium">
+      <label htmlFor={id} className="block text-xs font-semibold uppercase tracking-wider text-gold-light mb-2">
         {label}
       </label>
       <select
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="select-light"
+        className="w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm"
       >
         <option value="">{placeholder}</option>
         {options.map((o) => (

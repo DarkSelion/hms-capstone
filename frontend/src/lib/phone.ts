@@ -10,4 +10,4 @@ export function stripPhoneInput(value: string): string {
   return value.replace(/[^0-9+\s]/g, '')
 }
 
-export const PH_PHONE_MAX_LENGTH = 15
+export const PH_PHONE_MAX_LENGTH = 11

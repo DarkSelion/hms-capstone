@@ -97,13 +97,13 @@ export default function PublicVerifyEmailPage() {
           alt={hotelName}
           className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-dark/90 via-dark/15 to-dark" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-canvas/60 to-canvas" />
         <div className="relative z-10 px-10 max-w-lg">
-          <Link to="/public" className="font-serif text-gold text-3xl font-light tracking-wider">{hotelName}</Link>
-          <h2 className="font-serif text-white text-4xl font-light mt-6 leading-tight">
+          <Link to="/public" className="text-xl font-bold text-gold tracking-wider">{hotelName}</Link>
+          <h2 className="text-3xl font-bold text-white mt-6 leading-tight">
             Email <span className="text-gold">Verification</span>
           </h2>
-          <p className="text-white/50 text-sm mt-4 leading-relaxed">
+          <p className="text-slate-400 text-sm mt-4 leading-relaxed">
             Enter the 6-digit code sent to your email to verify your account.
           </p>
           <div className="gold-line-left mt-6" />
@@ -111,46 +111,45 @@ export default function PublicVerifyEmailPage() {
       </div>
 
       {/* Right Panel — Form */}
-      <div className="flex-1 flex flex-col bg-dark min-h-screen">
-        <div className="flex-1 flex items-center justify-center px-12 py-12">
+      <div className="flex-1 flex flex-col bg-canvas h-screen">
+        <div className="flex-1 flex items-center justify-center px-12 py-12 overflow-y-auto">
           <div className="w-full max-w-md animate-fade-in px-8">
             {/* Mobile logo */}
             <div className="text-center mb-10 lg:hidden">
-              <Link to="/public" className="font-serif text-gold text-2xl font-light tracking-wider">{hotelName}</Link>
+              <Link to="/public" className="text-xl font-bold text-gold tracking-wider">{hotelName}</Link>
             </div>
 
             {success ? (
-              <div className="text-center">
+              <div className="bg-surface/80 backdrop-blur-md border border-slate-700/60 rounded-3xl p-8 shadow-2xl border-t-2 border-t-gold/50 text-center">
                 <div className="w-16 h-16 rounded-full bg-success/10 border border-success/20 flex items-center justify-center mx-auto mb-6">
                   <CheckCircle className="h-8 w-8 text-success" />
                 </div>
-                <h1 className="font-serif text-white text-3xl font-light mb-3">Email Verified!</h1>
-                <p className="text-white/50 text-sm leading-relaxed mb-8">
+                <h1 className="text-2xl font-bold text-white mb-3">Email Verified!</h1>
+                <p className="text-slate-400 text-sm leading-relaxed mb-8">
                   Your email has been verified. You can now make reservations.
                 </p>
                 <Link
                   to="/public/rooms"
-                  className="btn-gold inline-flex items-center justify-center gap-2 px-8"
+                  className="bg-gold hover:bg-gold-dark text-slate-950 font-bold py-3.5 rounded-xl uppercase tracking-wider text-xs shadow-lg shadow-gold/10 inline-flex items-center justify-center gap-2 px-8 transition-all"
                 >
                   Start Booking
                 </Link>
               </div>
             ) : (
-              <>
+              <div className="bg-surface/80 backdrop-blur-md border border-slate-700/60 rounded-3xl p-8 shadow-2xl border-t-2 border-t-gold/50">
                 {/* Header */}
-                <div className="mb-8">
-                  <div className="w-12 h-12 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mb-4">
+                <div className="mb-6">
+                  <div className="w-12 h-12 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mb-4 mx-auto">
                     <Mail className="h-6 w-6 text-gold" />
                   </div>
-                  <h1 className="font-serif text-white text-3xl font-light mb-2">Verify Your Email</h1>
-                  <p className="text-white/50 text-sm">
+                  <h1 className="text-2xl font-bold text-white text-center mb-2">Verify Your Email</h1>
+                  <p className="text-slate-400 text-sm text-center">
                     {email ? (
                       <>We sent a 6-digit code to <span className="text-white/70">{email}</span></>
                     ) : (
                       'Enter the code sent to your email address.'
                     )}
                   </p>
-                  <div className="gold-line-left mt-4" />
                 </div>
 
                 {error && (
@@ -160,10 +159,10 @@ export default function PublicVerifyEmailPage() {
                 )}
 
                 {/* OTP Section */}
-                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 mb-6">
+                <div className="rounded-2xl border border-slate-700/60 bg-canvas/60 p-5 mb-6">
                   <div className="flex items-center gap-2 mb-2">
                     <Mail className="h-4 w-4 text-gold/70" />
-                    <span className="text-xs uppercase tracking-[0.12em] text-white/50 font-medium">Verification Code</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-gold-highlight">Verification Code</span>
                   </div>
                   <p className="text-gold/70 text-xs mb-4">Check your <span className="font-medium">spam/junk folder</span> if you don&apos;t see the email.</p>
 
@@ -186,7 +185,7 @@ export default function PublicVerifyEmailPage() {
                 <button
                   onClick={handleVerify}
                   disabled={!codeComplete || verifyEmail.isPending}
-                  className="btn-gold w-full flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="bg-gold hover:bg-gold-dark text-slate-950 font-bold py-3.5 rounded-xl uppercase tracking-wider text-xs shadow-lg shadow-gold/10 w-full flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {verifyEmail.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                   Verify Email
@@ -195,7 +194,7 @@ export default function PublicVerifyEmailPage() {
                 {/* Resend */}
                 <div className="mt-6 text-center">
                   {cooldown > 0 ? (
-                    <p className="text-white/30 text-sm">
+                    <p className="text-slate-400 text-sm">
                       Resend code in <span className="text-white/50">{cooldown}s</span>
                     </p>
                   ) : (
@@ -210,24 +209,24 @@ export default function PublicVerifyEmailPage() {
                 </div>
 
                 {/* Footer links */}
-                <div className="mt-8 text-center text-sm text-white/30">
+                <div className="mt-8 text-center text-sm text-slate-400">
                   <Link to="/public/my-reservations" className="inline-flex items-center gap-1.5 hover:text-gold transition-colors">
                     <ArrowLeft className="h-3.5 w-3.5" />
                     Back to My Reservations
                   </Link>
                 </div>
 
-                <p className="text-center text-[11px] text-white/15 mt-8">
+                <p className="text-center text-xs text-slate-500/50 mt-6">
                   <Link to="/public" className="hover:text-gold transition-colors">&larr; Back to hotel website</Link>
                 </p>
-              </>
+              </div>
             )}
           </div>
         </div>
 
         {/* Compact footer */}
-        <div className="border-t border-white/5 py-6 px-6">
-          <p className="text-center text-[11px] text-white/20">
+        <div className="border-t border-slate-800 py-6 px-6">
+          <p className="text-center text-[11px] text-slate-500">
             &copy; {new Date().getFullYear()} {hotelName}. All rights reserved.
           </p>
         </div>

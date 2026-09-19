@@ -39,13 +39,20 @@ class RoomController extends Controller
 
         $roomTypes = $query->withCount(['rooms' => function ($q) {
             $q->where('status', 'available')->where('is_active', true);
-        }])->with(['rooms' => fn($q) => $q->where('is_active', true)->with('images')->limit(1)])
+        }])->with(['rooms' => fn($q) => $q->where('is_active', true)->with('images')->limit(1), 'typeImages'])
             ->orderBy('sort_order')->get();
 
         $roomTypes->each(function ($roomType) {
             $firstRoom = $roomType->rooms->first();
             $image = $firstRoom?->images->firstWhere('is_primary', true) ?? $firstRoom?->images->first();
-            $roomType->setAttribute('image_url', $this->resolveImageUrl($image));
+            $url = $this->resolveImageUrl($image);
+
+            if (!$url && $roomType->typeImages->count() > 0) {
+                $typeImage = $roomType->typeImages->firstWhere('is_primary', true) ?? $roomType->typeImages->first();
+                $url = $this->resolveImageUrl($typeImage);
+            }
+
+            $roomType->setAttribute('image_url', $url);
             unset($roomType->rooms);
         });
 

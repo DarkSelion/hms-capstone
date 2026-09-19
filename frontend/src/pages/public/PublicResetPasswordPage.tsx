@@ -104,13 +104,13 @@ export default function PublicResetPasswordPage() {
           alt={hotelName}
           className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-dark/90 via-dark/15 to-dark" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-canvas/60 to-canvas" />
         <div className="relative z-10 px-10 max-w-lg">
-          <Link to="/public" className="font-serif text-gold text-3xl font-light tracking-wider">{hotelName}</Link>
-          <h2 className="font-serif text-white text-4xl font-light mt-6 leading-tight">
+          <Link to="/public" className="text-xl font-bold text-gold tracking-wider">{hotelName}</Link>
+          <h2 className="text-3xl font-bold text-white mt-6 leading-tight">
             Secure Your <span className="text-gold">Account</span>
           </h2>
-          <p className="text-white/50 text-sm mt-4 leading-relaxed">
+          <p className="text-slate-400 text-sm mt-4 leading-relaxed">
             Enter the verification code sent to your email, then choose a new password.
           </p>
           <div className="gold-line-left mt-6" />
@@ -118,43 +118,42 @@ export default function PublicResetPasswordPage() {
       </div>
 
       {/* Right Panel — Form + Footer */}
-      <div className="flex-1 flex flex-col bg-dark min-h-screen">
-        <div className="flex-1 flex items-center justify-center px-12 py-12">
+      <div className="flex-1 flex flex-col bg-canvas h-screen">
+        <div className="flex-1 flex items-center justify-center px-12 py-12 overflow-y-auto">
           <div className="w-full max-w-md animate-fade-in px-8">
             {/* Mobile logo */}
             <div className="text-center mb-10 lg:hidden">
-              <Link to="/public" className="font-serif text-gold text-2xl font-light tracking-wider">{hotelName}</Link>
+              <Link to="/public" className="text-xl font-bold text-gold tracking-wider">{hotelName}</Link>
             </div>
 
             {success ? (
-              <div className="text-center">
+              <div className="bg-surface/80 backdrop-blur-md border border-slate-700/60 rounded-3xl p-8 shadow-2xl border-t-2 border-t-gold/50 text-center">
                 <div className="w-16 h-16 rounded-full bg-success/10 border border-success/20 flex items-center justify-center mx-auto mb-6">
                   <CheckCircle className="h-8 w-8 text-success" />
                 </div>
-                <h1 className="font-serif text-white text-3xl font-light mb-3">Password Reset!</h1>
-                <p className="text-white/50 text-sm leading-relaxed mb-8">
+                <h1 className="text-2xl font-bold text-white mb-3">Password Reset!</h1>
+                <p className="text-slate-400 text-sm leading-relaxed mb-8">
                   Your password has been updated. Redirecting to login…
                 </p>
                 <Link
                   to="/public/login"
-                  className="btn-gold inline-flex items-center justify-center gap-2 px-8"
+                  className="bg-gold hover:bg-gold-dark text-slate-950 font-bold py-3.5 rounded-xl uppercase tracking-wider text-xs shadow-lg shadow-gold/10 inline-flex items-center justify-center gap-2 px-8 transition-all"
                 >
                   Go to Login
                 </Link>
               </div>
             ) : (
-              <>
+              <div className="bg-surface/80 backdrop-blur-md border border-slate-700/60 rounded-3xl p-8 shadow-2xl border-t-2 border-t-gold/50">
                 {/* Header */}
-                <div className="mb-8">
-                  <div className="w-12 h-12 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mb-4">
+                <div className="mb-6">
+                  <div className="w-12 h-12 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mb-4 mx-auto">
                     <ShieldCheck className="h-6 w-6 text-gold" />
                   </div>
-                  <h1 className="font-serif text-white text-3xl font-light mb-2">Reset Password</h1>
-                  <p className="text-white/50 text-sm">Enter the code from your email and choose a new password</p>
-                  <div className="gold-line-left mt-4" />
+                  <h1 className="text-2xl font-bold text-white text-center mb-2">Reset Password</h1>
+                  <p className="text-slate-400 text-sm text-center">Enter the code from your email and choose a new password</p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-5">
                   {error && (
                     <div role="alert" className="bg-danger/10 border border-danger/20 text-danger text-sm px-4 py-3 rounded-lg">
                       {error}
@@ -162,30 +161,30 @@ export default function PublicResetPasswordPage() {
                   )}
 
                   {/* Section 1 — Verification Code */}
-                  <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
+                  <div className="rounded-2xl border border-slate-700/60 bg-canvas/60 p-5">
                     <div className="flex items-center gap-2 mb-2">
                       <Mail className="h-4 w-4 text-gold/70" />
-                      <span className="text-xs uppercase tracking-[0.12em] text-white/50 font-medium">Verification Code</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-gold-highlight">Verification Code</span>
                     </div>
                     <p className="text-gold/70 text-xs mb-4">Check your <span className="font-medium">spam/junk folder</span> if you don&apos;t see the email.</p>
 
                     {/* Email */}
                     <div className="mb-4">
-                      <label htmlFor="rp_email" className="text-[11px] uppercase tracking-[0.12em] text-white/30 block mb-1.5">Email</label>
+                      <label htmlFor="rp_email" className="text-xs font-semibold uppercase tracking-wider text-gold-highlight block mb-2">Email</label>
                       <input
                         id="rp_email"
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="input-public text-sm"
+                        className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full"
                         placeholder="you@email.com"
                       />
                     </div>
 
                     {/* 6-digit OTP boxes */}
                     <div>
-                      <label className="text-[11px] uppercase tracking-[0.12em] text-white/30 block mb-2">Reset Code</label>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-gold-highlight block mb-2">Reset Code</label>
                       <div className="flex justify-center gap-2.5">
                         {Array.from({ length: OTP_LENGTH }).map((_, i) => (
                           <input
@@ -199,10 +198,10 @@ export default function PublicResetPasswordPage() {
                             onKeyDown={(e) => handleDigitKeyDown(i, e)}
                             onPaste={handleDigitPaste}
                             onFocus={(e) => e.target.select()}
-                            className={`w-11 h-13 text-center text-lg font-semibold rounded-lg border transition-all duration-200 outline-none
+                            className={`w-12 h-14 text-center text-xl font-bold rounded-xl border transition-all duration-200 outline-none
                               ${digits[i]
                                 ? 'bg-gold/[0.08] border-gold/40 text-gold'
-                                : 'bg-white/[0.04] border-white/[0.08] text-white'
+                                : 'bg-canvas/80 border-slate-700 text-white'
                               }
                               focus:border-gold/60 focus:bg-gold/[0.06] focus:ring-1 focus:ring-gold/20`}
                             aria-label={`Digit ${i + 1}`}
@@ -219,21 +218,21 @@ export default function PublicResetPasswordPage() {
 
                   {/* Divider */}
                   <div className="flex items-center gap-3">
-                    <div className="flex-1 h-px bg-white/[0.06]" />
-                    <span className="text-[11px] uppercase tracking-[0.12em] text-white/20">Set new password</span>
-                    <div className="flex-1 h-px bg-white/[0.06]" />
+                    <div className="flex-1 h-px bg-slate-700/60" />
+                    <span className="text-[11px] uppercase tracking-[0.12em] text-slate-500/60">Set new password</span>
+                    <div className="flex-1 h-px bg-slate-700/60" />
                   </div>
 
                   {/* Section 2 — New Password */}
-                  <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5">
+                  <div className="rounded-2xl border border-slate-700/60 bg-canvas/60 p-5">
                     <div className="flex items-center gap-2 mb-4">
                       <ShieldCheck className="h-4 w-4 text-gold/70" />
-                      <span className="text-xs uppercase tracking-[0.12em] text-white/50 font-medium">New Password</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-gold-highlight">New Password</span>
                     </div>
 
                     <div className="space-y-3">
                       <div>
-                        <label htmlFor="rp_password" className="text-[11px] uppercase tracking-[0.12em] text-white/30 block mb-1.5">Password</label>
+                        <label htmlFor="rp_password" className="text-xs font-semibold uppercase tracking-wider text-gold-highlight block mb-2">Password</label>
                         <div className="relative">
                           <input
                             id="rp_password"
@@ -242,7 +241,7 @@ export default function PublicResetPasswordPage() {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                             minLength={8}
-                            className="input-public text-sm pr-10"
+                            className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 pr-10 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full"
                             placeholder="Min. 8 characters"
                           />
                           <button type="button" onClick={() => setShowPassword(!showPassword)} tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
@@ -255,15 +254,15 @@ export default function PublicResetPasswordPage() {
                               {c.met ? (
                                 <CircleCheck className="h-3 w-3 text-success" />
                               ) : (
-                                <Circle className="h-3 w-3 text-white/20" />
+                                <Circle className="h-3 w-3 text-slate-500/40" />
                               )}
-                              <span className={`text-[11px] ${c.met ? 'text-success' : 'text-white/30'}`}>{c.label}</span>
+                              <span className={`text-[11px] ${c.met ? 'text-success' : 'text-slate-500/40'}`}>{c.label}</span>
                             </div>
                           ))}
                         </div>
                       </div>
                       <div>
-                        <label htmlFor="rp_password_confirmation" className="text-[11px] uppercase tracking-[0.12em] text-white/30 block mb-1.5">Confirm Password</label>
+                        <label htmlFor="rp_password_confirmation" className="text-xs font-semibold uppercase tracking-wider text-gold-highlight block mb-2">Confirm Password</label>
                         <div className="relative">
                           <input
                             id="rp_password_confirmation"
@@ -272,7 +271,7 @@ export default function PublicResetPasswordPage() {
                             onChange={(e) => setPasswordConfirmation(e.target.value)}
                             required
                             minLength={8}
-                            className="input-public text-sm pr-10"
+                            className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 pr-10 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full"
                             placeholder="Re-enter your password"
                           />
                           <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
@@ -287,7 +286,7 @@ export default function PublicResetPasswordPage() {
                   <button
                     type="submit"
                     disabled={resetPassword.isPending || !codeComplete || !pwChecks.every(c => c.met)}
-                    className="btn-gold w-full flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="bg-gold hover:bg-gold-dark text-slate-950 font-bold py-3.5 rounded-xl uppercase tracking-wider text-xs shadow-lg shadow-gold/10 w-full flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {resetPassword.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                     Reset Password
@@ -295,24 +294,24 @@ export default function PublicResetPasswordPage() {
                 </form>
 
                 {/* Footer links */}
-                <div className="mt-8 text-center text-sm text-white/30">
+                <div className="mt-6 text-center text-sm text-slate-400">
                   <Link to="/public/forgot-password" className="text-gold hover:underline">Request a new code</Link>
                   {' '}&middot;{' '}
                   <Link to="/public/login" className="hover:text-gold transition-colors">Back to login</Link>
-                  <p className="text-[11px] text-white/20 mt-2">Tip: You can also check your spam folder.</p>
+                  <p className="text-xs text-slate-500/50 mt-2">Tip: You can also check your spam folder.</p>
                 </div>
 
-                <p className="text-center text-[11px] text-white/15 mt-8">
+                <p className="text-center text-xs text-slate-500/50 mt-6">
                   <Link to="/public" className="hover:text-gold transition-colors">&larr; Back to hotel website</Link>
                 </p>
-              </>
+              </div>
             )}
           </div>
         </div>
 
         {/* Compact footer */}
-        <div className="border-t border-white/5 py-6 px-6">
-          <p className="text-center text-[11px] text-white/20">
+        <div className="border-t border-slate-800 py-6 px-6">
+          <p className="text-center text-[11px] text-slate-500">
             &copy; {new Date().getFullYear()} {hotelName}. All rights reserved.
           </p>
         </div>

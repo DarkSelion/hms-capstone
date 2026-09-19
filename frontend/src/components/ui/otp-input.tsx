@@ -81,11 +81,11 @@ export function OTPInput({
           onFocus={(e) => e.target.select()}
           autoFocus={autoFocus && i === 0}
           disabled={disabled}
-          className={`w-11 h-13 text-center text-lg font-semibold rounded-lg border transition-all duration-200 outline-none
+          className={`w-12 h-14 text-center text-xl font-bold rounded-xl border transition-all duration-200 outline-none
             ${isPortal
               ? value[i]
                 ? 'bg-gold/[0.08] border-gold/40 text-gold'
-                : 'bg-white/[0.04] border-white/[0.08] text-white'
+                : 'bg-[#0B132B]/80 border-slate-700 text-white'
               : value[i]
                 ? 'bg-primary/5 border-primary/30 text-primary'
                 : 'bg-card border-border text-foreground'

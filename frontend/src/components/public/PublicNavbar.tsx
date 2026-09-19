@@ -32,10 +32,10 @@ export function PublicNavbar() {
   }
 
   const linkClass = (path: string) =>
-    `relative text-[12px] uppercase tracking-[0.2em] transition-colors duration-300 px-3 py-1 pb-2 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:bg-gold after:transition-all after:duration-300 ${
+    `relative text-xs font-semibold uppercase tracking-wider px-3 py-2 transition-colors ${
       isActive(path)
-        ? 'text-gold after:w-full bg-white/[0.06] rounded-full'
-        : 'text-white/50 hover:text-white hover:bg-white/[0.03] hover:rounded-full after:w-0 hover:after:w-full'
+        ? 'text-[#E6C687] font-bold after:content-[\'\'] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-3/4 after:h-[2px] after:bg-[#C5A880] after:rounded-full'
+        : 'text-slate-300 hover:text-[#C5A880]'
     }`
 
   const [brandFirst, ...brandRest] = hotelName.split(' ')
@@ -81,13 +81,11 @@ export function PublicNavbar() {
               <div className="relative">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2.5 bg-white/[0.06] border border-white/10 rounded-full pl-1.5 pr-3 py-1.5 hover:bg-white/[0.1] transition-colors"
+                  className="h-10 px-4 inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-surface/80 hover:bg-surface text-slate-200 text-xs font-semibold uppercase tracking-wider transition-all"
                 >
-                  <div className="w-8 h-8 rounded-full bg-dark border border-gold/30 flex items-center justify-center">
-                    <User className="h-4 w-4 text-gold" />
-                  </div>
-                  <span className="text-[13px] font-medium text-white/80">{user?.first_name}</span>
-                  <ChevronDown className={`h-3 w-3 text-white/50 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
+                  <User className="w-4 h-4 text-gold" />
+                  <span className="min-w-[70px] text-center">{user?.first_name}</span>
+                  <ChevronDown className={`h-3 w-3 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-3 w-52 bg-dark border border-white/10 rounded-xl shadow-2xl py-2 animate-fade-in">
@@ -114,10 +112,10 @@ export function PublicNavbar() {
               <div className="relative">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2 bg-white/[0.06] border border-white/10 hover:bg-white/[0.1] rounded-full px-4 py-1.5 text-[12px] text-white/70 uppercase tracking-[0.15em] transition-colors"
+                  className="h-10 px-4 inline-flex items-center gap-2 rounded-full border border-slate-700/60 bg-surface/80 hover:bg-surface text-slate-200 text-xs font-semibold uppercase tracking-wider transition-all"
                 >
-                  <User className="h-3.5 w-3.5" />
-                  Guest
+                  <User className="w-4 h-4 text-gold" />
+                  <span className="min-w-[70px] text-center">Guest</span>
                   <ChevronDown className={`h-3 w-3 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {dropdownOpen && (
@@ -136,7 +134,7 @@ export function PublicNavbar() {
             {/* Book Now CTA — far right */}
             <Link
               to={token ? '/public/book' : '/public/rooms'}
-              className="inline-flex items-center gap-2 bg-gold text-dark font-semibold text-[12px] uppercase tracking-[0.15em] px-5 py-2 rounded-lg hover:bg-gold-light hover:shadow-lg hover:shadow-gold/20 transition-all"
+              className="h-10 px-5 bg-gold hover:bg-gold-dark text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl inline-flex items-center gap-2 shadow-md shadow-gold/10 transition-all duration-200"
             >
               <Calendar className="h-3.5 w-3.5" />
               Book Now

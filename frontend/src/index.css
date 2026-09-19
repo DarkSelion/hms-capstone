@@ -7,9 +7,10 @@
   --color-plum-light: #8a3048;
   --color-dark: #110809;
   --color-magenta: #b8607a;
-  --color-gold: #c89b6c;
+  --color-gold: #C5A880;
   --color-gold-light: #deb48c;
-  --color-gold-dark: #a87c4e;
+  --color-gold-dark: #B5976F;
+  --color-gold-highlight: #E6C687;
   --color-cream: #f5ede3;
   --color-cream-warm: #e8dcd0;
   --color-primary: #1e3a5f;
@@ -32,6 +33,8 @@
   --color-sidebar-text: #CBD5E1;
   --color-sidebar-muted: #7C8DA6;
   --color-sidebar-hover-bg: rgba(255,255,255,.06);
+  --color-canvas: #0B132B;
+  --color-surface: #151E33;
   --font-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
 }
@@ -163,48 +166,63 @@
 
 .home-theme {
   --color-dark: #2C2C2C;
-  --color-gold: #C4A88A;
+  --color-gold: #C5A880;
   --color-gold-light: #D8C0A8;
-  --color-gold-dark: #A88C70;
+  --color-gold-dark: #B5976F;
+  --color-gold-highlight: #E6C687;
   --color-cream: #FAFAF8;
   --color-cream-warm: #F2F0ED;
+  --color-canvas: #0B132B;
+  --color-surface: #151E33;
 }
 
 /* Theme presets (applied via .theme-{preset} on the portal layout) */
 .theme-gold {
   --color-dark: #2C2C2C;
-  --color-gold: #C4A88A;
+  --color-gold: #C5A880;
   --color-gold-light: #D8C0A8;
-  --color-gold-dark: #A88C70;
+  --color-gold-dark: #B5976F;
+  --color-gold-highlight: #E6C687;
   --color-cream: #FAFAF8;
   --color-cream-warm: #F2F0ED;
+  --color-canvas: #0B132B;
+  --color-surface: #151E33;
 }
 
 .theme-emerald {
   --color-dark: #22301F;
-  --color-gold: #7C9A6E;
+  --color-gold: #C5A880;
   --color-gold-light: #9BB88C;
-  --color-gold-dark: #5F7A52;
+  --color-gold-dark: #B5976F;
+  --color-gold-highlight: #E6C687;
   --color-cream: #F4F7F1;
   --color-cream-warm: #E6EDE0;
+  --color-canvas: #0F1F15;
+  --color-surface: #1A2E20;
 }
 
 .theme-navy {
   --color-dark: #12233A;
-  --color-gold: #C0A062;
+  --color-gold: #C5A880;
   --color-gold-light: #D4B87F;
-  --color-gold-dark: #A0824D;
+  --color-gold-dark: #B5976F;
+  --color-gold-highlight: #E6C687;
   --color-cream: #F6F3EC;
   --color-cream-warm: #EAE4D8;
+  --color-canvas: #0D1B2E;
+  --color-surface: #162540;
 }
 
 .theme-neutral {
   --color-dark: #2E2A26;
-  --color-gold: #B09A82;
+  --color-gold: #C5A880;
   --color-gold-light: #C9B59E;
-  --color-gold-dark: #937F68;
+  --color-gold-dark: #B5976F;
+  --color-gold-highlight: #E6C687;
   --color-cream: #FAF8F5;
   --color-cream-warm: #F0EBE4;
+  --color-canvas: #1A1714;
+  --color-surface: #252220;
 }
 
 @layer components {
