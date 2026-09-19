@@ -86,10 +86,14 @@ export default function PublicRoomsPage() {
 
   const checkIn = searchParams.get('check_in') || ''
   const checkOut = searchParams.get('check_out') || ''
+  const adults = searchParams.get('adults') || ''
+  const children = searchParams.get('children') || ''
 
   const { data: roomTypes, isLoading } = usePublicRoomTypes({
     check_in: checkIn || undefined,
     check_out: checkOut || undefined,
+    adults: adults || undefined,
+    children: children || undefined,
   })
 
   const filtered = useMemo(() => {
@@ -120,6 +124,8 @@ export default function PublicRoomsPage() {
     const q = new URLSearchParams()
     if (checkIn) q.set('check_in', checkIn)
     if (checkOut) q.set('check_out', checkOut)
+    if (adults) q.set('adults', adults)
+    if (children) q.set('children', children)
     navigate(`/public/rooms/${slug}?${q.toString()}`)
   }
 

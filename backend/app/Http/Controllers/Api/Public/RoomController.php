@@ -23,22 +23,60 @@ class RoomController extends Controller
     {
         $query = RoomType::where('is_active', true);
 
+        $totalGuests = (int) $request->input('adults', 0) + (int) $request->input('children', 0);
+
         if ($request->filled(['check_in', 'check_out'])) {
             $bookedRoomIds = Reservation::overlapping($request->check_in, $request->check_out)->pluck('room_id');
 
-            $query->whereHas('rooms', function ($q) use ($bookedRoomIds) {
+            $query->whereHas('rooms', function ($q) use ($bookedRoomIds, $totalGuests) {
                 $q->where('status', 'available')
                     ->where('is_active', true)
                     ->whereNotIn('id', $bookedRoomIds);
+
+                if ($totalGuests > 0) {
+                    $q->where(function ($sub) use ($totalGuests) {
+                        $sub->where('capacity', '>=', $totalGuests)
+                            ->orWhere(function ($fallback) use ($totalGuests) {
+                                $fallback->where(function ($z) {
+                                    $z->whereNull('capacity')->orWhere('capacity', '<=', 0);
+                                })->whereHas('roomType', fn($rq) => $rq->where('capacity', '>=', $totalGuests));
+                            });
+                    });
+                }
             });
         } else {
-            $query->whereHas('rooms', function ($q) {
+            $query->whereHas('rooms', function ($q) use ($totalGuests) {
                 $q->where('status', 'available')->where('is_active', true);
+
+                if ($totalGuests > 0) {
+                    $q->where(function ($sub) use ($totalGuests) {
+                        $sub->where('capacity', '>=', $totalGuests)
+                            ->orWhere(function ($fallback) use ($totalGuests) {
+                                $fallback->where(function ($z) {
+                                    $z->whereNull('capacity')->orWhere('capacity', '<=', 0);
+                                })->whereHas('roomType', fn($rq) => $rq->where('capacity', '>=', $totalGuests));
+                            });
+                    });
+                }
             });
         }
 
-        $roomTypes = $query->withCount(['rooms' => function ($q) {
+        if ($totalGuests > 0) {
+            $query->where('capacity', '>=', $totalGuests);
+        }
+
+        $roomTypes = $query->withCount(['rooms' => function ($q) use ($totalGuests) {
             $q->where('status', 'available')->where('is_active', true);
+            if ($totalGuests > 0) {
+                $q->where(function ($sub) use ($totalGuests) {
+                    $sub->where('capacity', '>=', $totalGuests)
+                        ->orWhere(function ($fallback) use ($totalGuests) {
+                            $fallback->where(function ($z) {
+                                $z->whereNull('capacity')->orWhere('capacity', '<=', 0);
+                            })->whereHas('roomType', fn($rq) => $rq->where('capacity', '>=', $totalGuests));
+                        });
+                });
+            }
         }])->with(['rooms' => fn($q) => $q->where('is_active', true)->with('images')->limit(1), 'typeImages'])
             ->orderBy('sort_order')->get();
 
@@ -104,6 +142,8 @@ class RoomController extends Controller
             'check_in' => 'required|date',
             'check_out' => 'required|date|after:check_in',
             'room_type_id' => 'nullable|exists:room_types,id',
+            'adults' => 'nullable|integer|min:1',
+            'children' => 'nullable|integer|min:0',
         ]);
 
         $query = Room::where('status', 'available')
@@ -112,6 +152,18 @@ class RoomController extends Controller
 
         if ($roomTypeId = $request->room_type_id) {
             $query->where('room_type_id', $roomTypeId);
+        }
+
+        $totalGuests = (int) ($data['adults'] ?? 0) + (int) ($data['children'] ?? 0);
+        if ($totalGuests > 0) {
+            $query->where(function ($q) use ($totalGuests) {
+                $q->where('capacity', '>=', $totalGuests)
+                    ->orWhere(function ($sq) use ($totalGuests) {
+                        $sq->where(function ($z) {
+                            $z->whereNull('capacity')->orWhere('capacity', '<=', 0);
+                        })->whereHas('roomType', fn($rq) => $rq->where('capacity', '>=', $totalGuests));
+                    });
+            });
         }
 
         $bookedRoomIds = Reservation::overlapping($data['check_in'], $data['check_out'])->pluck('room_id');

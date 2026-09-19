@@ -650,6 +650,20 @@ class PublicTest extends TestCase
         $this->assertEquals($deluxe->id, $response->json()[0]['room_type_id']);
     }
 
+    public function test_public_available_rooms_filters_by_capacity(): void
+    {
+        $type = $this->roomType('standard', 100);
+        $smallRoom = $this->room($type, ['capacity' => 2]);
+        $largeRoom = $this->room($type, ['capacity' => 4]);
+
+        $response = $this->getJson('/api/public/rooms/available?check_in=2026-10-10&check_out=2026-10-12&adults=3&children=0');
+
+        $response->assertStatus(200);
+        $data = $response->json();
+        $this->assertCount(1, $data);
+        $this->assertEquals($largeRoom->id, $data[0]['id']);
+    }
+
     public function test_public_available_rooms_validation(): void
     {
         $response = $this->getJson('/api/public/rooms/available?check_in=2026-10-10');

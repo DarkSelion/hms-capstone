@@ -102,18 +102,33 @@ export default function PublicBookingPage() {
 
   const roomTypeParam = searchParams.get('room_type')
 
+  const totalGuests = Number(adults) + Number(childrenCount)
+
   const dateParams = useMemo(() => {
-    if (checkIn && checkOut) return { check_in: checkIn, check_out: checkOut }
+    if (checkIn && checkOut) {
+      return {
+        check_in: checkIn,
+        check_out: checkOut,
+        adults: String(adults),
+        children: String(childrenCount),
+      }
+    }
     return undefined
-  }, [checkIn, checkOut])
+  }, [checkIn, checkOut, adults, childrenCount])
 
   const { data: rooms, isLoading: roomsLoading } = usePublicAvailableRooms(dateParams)
 
   const filteredRooms = useMemo(() => {
     if (!rooms) return rooms
-    if (!roomTypeParam) return rooms
-    return rooms.filter((r) => String(r.room_type?.id) === roomTypeParam)
-  }, [rooms, roomTypeParam])
+    let result = rooms
+    if (roomTypeParam) {
+      result = result.filter((r) => String(r.room_type?.id) === roomTypeParam)
+    }
+    return result.filter((r) => {
+      const cap = r.capacity ?? r.room_type?.capacity ?? 0
+      return cap >= totalGuests
+    })
+  }, [rooms, roomTypeParam, totalGuests])
 
   const roomGroups = useMemo<RoomGroup[]>(() => {
     if (!filteredRooms) return []
