@@ -14,15 +14,11 @@ const SUBJECTS = [
 const DEFAULT_FAQ = [
   {
     q: 'What time is check-in and check-out?',
-    a: 'Check-in is available 24/7 at our front desk. Check-out time is 11:00 AM. Need more time? Ask our team about late check-out options.',
+    a: 'Thanks to our 24/7 front desk, you can check in and check out at any time that suits you.',
   },
   {
-    q: 'Do you offer airport transfers?',
-    a: 'Yes, we offer complimentary airport transfers for guests staying 3 nights or more. Contact our concierge to arrange your pickup.',
-  },
-  {
-    q: 'Is breakfast included in the room rate?',
-    a: 'Breakfast is included with select room types. Please check your booking details or contact us for more information.',
+    q: 'What is your cancellation policy?',
+    a: 'Free cancellation is available up to 24 hours before your scheduled check-in. Cancellations within 24 hours may be subject to a one-night charge.',
   },
 ]
 
