@@ -40,7 +40,7 @@ export function ReservationRowActions({
 
   const overdue = status === 'confirmed' && !!is_overdue && !alwaysAllowCheckIn
   const showCheckIn = (status === 'pending' || status === 'confirmed') && onCheckIn && reservation.refund_status !== 'approved'
-  const showCheckOut = status === 'checked_in' && onCheckOut
+  const showCheckOut = status === 'checked_in' && onCheckOut && reservation.refund_status !== 'approved'
 
   const buttons: ReactNode[] = [
     <RowActionButton key="view" tone="neutral" title="View" icon={<Eye className="h-4 w-4" />} onClick={onView} />,
@@ -62,7 +62,7 @@ export function ReservationRowActions({
   if (showCheckOut) {
     buttons.push(<RowActionButton key="checkout" tone="info" title="Check Out" icon={<LogOut className="h-4 w-4" />} onClick={onCheckOut} />)
   }
-  if (status === 'checked_in' && onExtendStay) {
+  if (status === 'checked_in' && onExtendStay && reservation.refund_status !== 'approved') {
     buttons.push(<RowActionButton key="extend" tone="info" title="Extend Stay" icon={<CalendarClock className="h-4 w-4" />} onClick={onExtendStay} />)
   }
 

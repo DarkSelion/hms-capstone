@@ -169,24 +169,27 @@ class Reservation extends Model
      */
     public function recordedPaid(): float
     {
-        return (float) $this->payments()->where('status', 'completed')->sum('amount')
+        return (float) $this->payments()->where('status', 'completed')->where('payment_type', '!=', 'refund')->sum('amount')
             + (float) $this->invoices()->where('status', 'paid')->sum('total_amount');
     }
 
     public function reconcileBalances(): void
     {
         $paid = $this->recordedPaid();
-        $hasRefunds = $this->payments()->where('status', 'refunded')->exists();
+        $hasRefunds = $this->payments()->where('payment_type', 'refund')->where('status', 'completed')->exists();
         $totalRefunded = (float) $this->payments()
-            ->where('status', 'refunded')
+            ->where('payment_type', 'refund')
+            ->where('status', 'completed')
             ->sum('amount');
 
         $this->update([
             'paid_amount' => $paid,
-            'payment_status' => $paid <= 0
-                ? ($hasRefunds ? 'refunded' : 'unpaid')
-                : ($paid >= (float) $this->total_amount ? 'paid' : 'partial'),
-            'due_amount' => max(0, (float) $this->total_amount - $paid - $totalRefunded),
+            'payment_status' => $hasRefunds
+                ? 'refunded'
+                : ($paid <= 0
+                    ? 'unpaid'
+                    : ($paid >= (float) $this->total_amount ? 'paid' : 'partial')),
+            'due_amount' => $hasRefunds ? 0 : max(0, (float) $this->total_amount - $paid),
         ]);
     }
 

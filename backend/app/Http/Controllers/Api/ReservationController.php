@@ -450,6 +450,10 @@ class ReservationController extends Controller
             return response()->json(['message' => 'Reservation must be checked in to check out.'], 422);
         }
 
+        if ($reservation->refund_status === 'approved') {
+            return response()->json(['message' => 'This reservation has been refunded and cannot be checked out.'], 422);
+        }
+
         $data = $request->validate([
             'actual_check_out' => ['nullable', 'date', function ($attribute, $value, $fail) use ($reservation) {
                 if (now()->parse($value)->lt(now()->parse($reservation->check_out))) {
@@ -559,6 +563,10 @@ class ReservationController extends Controller
     {
         if ($reservation->status !== 'checked_in') {
             return response()->json(['message' => 'Reservation must be checked in.'], 422);
+        }
+
+        if ($reservation->refund_status === 'approved') {
+            return response()->json(['message' => 'This reservation has been refunded.'], 422);
         }
 
         $data = $request->validate([
@@ -697,6 +705,10 @@ class ReservationController extends Controller
             ], 422);
         }
 
+        if ($reservation->refund_status === 'approved') {
+            return response()->json(['message' => 'This reservation has been refunded.'], 422);
+        }
+
         $data = $request->validate([
             'deadline' => ['required', 'date', 'after:now'],
             'notes' => ['nullable', 'string', 'max:500'],
@@ -766,6 +778,10 @@ class ReservationController extends Controller
     {
         if ($reservation->status !== 'checked_in') {
             return response()->json(['message' => 'Only checked-in reservations can be extended.'], 422);
+        }
+
+        if ($reservation->refund_status === 'approved') {
+            return response()->json(['message' => 'This reservation has been refunded and cannot be extended.'], 422);
         }
 
         $data = $request->validate([
