@@ -249,7 +249,7 @@ export default function RoomsPage() {
     {
       key: 'price',
       label: 'Price',
-      className: 'text-right font-semibold',
+      className: 'text-center font-semibold',
       render: (r) => (
         <span className="text-foreground">{formatCurrency(getPrice(r))}</span>
       ),
