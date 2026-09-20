@@ -77,6 +77,7 @@ export default function PaymentsPage() {
   const [dateTo, setDateTo] = useState('')
   const [sortBy, setSortBy] = useState('-paid_at')
   const [page, setPage] = useState(1)
+  const [viewMode, setViewMode] = useState<'payments' | 'refunds'>('payments')
 
 const [showFormModal, setShowFormModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
@@ -84,6 +85,25 @@ const [showFormModal, setShowFormModal] = useState(false)
   const refundablePayments = (refundablePaymentsData?.data ?? []) as PaymentExtended[]
   const [showRefundModal, setShowRefundModal] = useState(false)
   const [selectedPayment, setSelectedPayment] = useState<PaymentExtended | null>(null)
+
+  // Refund requests state
+  const [refundTarget, setRefundTarget] = useState<Reservation | null>(null)
+  const [refundSearch, setRefundSearch] = useState('')
+  const { data: refundRequestsData, isLoading: refundLoading } = useReservations({
+    per_page: 100,
+    refund_requested: '1',
+  })
+  const refundRequests = useMemo(() => {
+    const all = (refundRequestsData?.data ?? []) as Reservation[]
+    if (!refundSearch.trim()) return all
+    const q = refundSearch.toLowerCase()
+    return all.filter((r) => {
+      const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.toLowerCase()
+      const num = (r.reservation_number ?? '').toLowerCase()
+      const room = (r.room?.room_number ?? '').toLowerCase()
+      return name.includes(q) || num.includes(q) || room.includes(q)
+    })
+  }, [refundRequestsData, refundSearch])
 
   const queryParams = useMemo(() => {
     const params: Record<string, string | number | undefined> = { page, sort: sortBy }
@@ -264,25 +284,140 @@ const [showFormModal, setShowFormModal] = useState(false)
     },
   ]
 
+  const refundColumns: Column<Reservation>[] = [
+    {
+      key: 'reservation_number',
+      label: 'Booking #',
+      sortable: false,
+      render: (r) => (
+        <span className="font-medium text-primary">{r.reservation_number}</span>
+      ),
+    },
+    {
+      key: 'guest',
+      label: 'Guest',
+      sortable: false,
+      render: (r) => {
+        const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
+        const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
+        return (
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <span className="block truncate text-sm font-medium text-foreground">{name}</span>
+              <span className="block truncate text-xs text-muted">{r.guest?.email}</span>
+            </div>
+          </div>
+        )
+      },
+    },
+    {
+      key: 'room',
+      label: 'Room',
+      sortable: false,
+      render: (r) => (
+        <div className="min-w-0">
+          <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
+          <span className="block truncate text-xs text-muted">{r.room?.room_type?.name ?? ''}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'refund_reason',
+      label: 'Reason',
+      sortable: false,
+      render: (r) => (
+        <p className="max-w-[200px] truncate text-sm text-foreground" title={r.refund_reason ?? ''}>
+          {r.refund_reason || '-'}
+        </p>
+      ),
+    },
+    {
+      key: 'total_amount',
+      label: 'Amount',
+      sortable: false,
+      render: (r) => (
+        <div>
+          <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
+          <span className="block text-xs text-muted">Paid: {formatCurrency(r.paid_amount ?? 0)}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'refund_status',
+      label: 'Status',
+      sortable: false,
+      render: (r) => {
+        if (r.refund_status === 'approved') {
+          return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60">Approved</span>
+        }
+        if (r.refund_status === 'rejected') {
+          return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">Rejected</span>
+        }
+        return <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">Pending</span>
+      },
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      sortable: false,
+      render: (r) => (
+        <RowActions>
+          {r.refund_status === 'pending' && (
+            <RowActionButton
+              tone="success"
+              title="Process"
+              icon={<RotateCcw className="h-4 w-4" />}
+              onClick={() => setRefundTarget(r)}
+            />
+          )}
+        </RowActions>
+      ),
+    },
+  ]
+
   return (
     <div>
       <PageHeader
         title="Payments"
-        description="Track and manage all payments."
+        description="Track and manage all payments and refund requests."
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="gold" onClick={() => setShowRefundModal(true)}>
-              <RotateCcw className="h-4 w-4" />
-              Record Refund
-            </Button>
-            <Button variant="gold" onClick={openNewForm}>
-              <Plus className="h-4 w-4" />
-              Record Payment
-            </Button>
+            {viewMode === 'payments' ? (
+              <>
+                <Button
+                  variant={refundRequests.length > 0 ? 'gold' : 'outline'}
+                  onClick={() => setViewMode('refunds')}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Refund Requests
+                  {refundRequests.length > 0 && (
+                    <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-[10px] font-bold text-white">
+                      {refundRequests.filter(r => r.refund_status === 'pending').length}
+                    </span>
+                  )}
+                </Button>
+                <Button variant="gold" onClick={() => setShowRefundModal(true)}>
+                  <RotateCcw className="h-4 w-4" />
+                  Record Refund
+                </Button>
+                <Button variant="gold" onClick={openNewForm}>
+                  <Plus className="h-4 w-4" />
+                  Record Payment
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={() => setViewMode('payments')}>
+                Back to Payments
+              </Button>
+            )}
           </div>
         }
       />
 
+      {viewMode === 'payments' && (
       <Card>
         <CardContent className="pt-6">
           <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -398,6 +533,38 @@ const [showFormModal, setShowFormModal] = useState(false)
           />
         </CardContent>
       </Card>
+      )}
+
+      {/* Refund Requests View */}
+      {viewMode === 'refunds' && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="relative max-w-sm flex-1">
+                <Input
+                  placeholder="Search by booking #, guest, or room..."
+                  value={refundSearch}
+                  onChange={(e) => setRefundSearch(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <DataTable
+              columns={refundColumns}
+              data={refundRequests}
+              loading={refundLoading}
+              emptyState={
+                <div className="flex flex-col items-center justify-center py-12">
+                  <RotateCcw className="mb-3 h-10 w-10 text-muted/50" />
+                  <p className="text-sm font-medium text-foreground">No refund requests</p>
+                  <p className="text-sm text-muted">All refund requests have been processed.</p>
+                </div>
+              }
+              keyExtractor={(r) => r.id}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <Modal
         isOpen={showDetailModal}
@@ -598,11 +765,20 @@ const [showFormModal, setShowFormModal] = useState(false)
         isOpen={showRefundModal}
         onClose={() => setShowRefundModal(false)}
         payments={refundablePayments}
+        mode="ad-hoc"
         onSuccess={(_payment) => {
           setShowRefundModal(false)
           addToast('Refund processed successfully', 'success')
           refetch()
         }}
+      />
+
+      <RefundModal
+        isOpen={!!refundTarget}
+        onClose={() => setRefundTarget(null)}
+        payments={refundablePayments}
+        reservation={refundTarget}
+        mode="request"
       />
 
     </div>

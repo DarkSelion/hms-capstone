@@ -47,6 +47,8 @@ class Reservation extends Model
         'checked_in_at',
         'checked_out_at',
         'refund_requested_at',
+        'refund_status',
+        'refund_reason',
         'cancellation_tier',
         'cancellation_reason',
     ];

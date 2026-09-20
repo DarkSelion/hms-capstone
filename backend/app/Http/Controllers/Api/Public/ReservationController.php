@@ -259,7 +259,7 @@ class ReservationController extends Controller
             return response()->json(['message' => 'Refund requests are only available for fully paid reservations.'], 422);
         }
 
-        if ($reservation->refund_requested_at !== null) {
+        if (in_array($reservation->refund_status, ['pending', 'approved'])) {
             return response()->json(['message' => 'A refund request has already been submitted for this reservation.'], 422);
         }
 
@@ -267,7 +267,11 @@ class ReservationController extends Controller
             'reason' => 'required|string|max:500',
         ]);
 
-        $reservation->update(['refund_requested_at' => now()]);
+        $reservation->update([
+            'refund_requested_at' => now(),
+            'refund_status' => 'pending',
+            'refund_reason' => $data['reason'],
+        ]);
 
         ActivityLog::create([
             'user_id' => null,

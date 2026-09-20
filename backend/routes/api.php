@@ -88,6 +88,10 @@ Route::middleware(['auth:sanctum', 'role:admin,staff', 'throttle:api'])->group(f
     Route::apiResource('payments', PaymentController::class);
     Route::post('/payments/{payment}/refund', [PaymentController::class, 'refund'])
         ->middleware(['role:admin,cashier']);
+    Route::post('/reservations/{reservation}/refund-approve', [PaymentController::class, 'approveRefund'])
+        ->middleware(['role:admin']);
+    Route::post('/reservations/{reservation}/refund-reject', [PaymentController::class, 'rejectRefund'])
+        ->middleware(['role:admin']);
 
     // Invoices
     Route::apiResource('invoices', InvoiceController::class);

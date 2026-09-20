@@ -355,4 +355,134 @@ class PaymentController extends Controller
     {
         return response()->json(['message' => 'Payments cannot be deleted.'], 422);
     }
+
+    public function approveRefund(Request $request, Reservation $reservation)
+    {
+        if ($reservation->refund_status !== 'pending') {
+            return response()->json(['message' => 'No pending refund request for this reservation.'], 422);
+        }
+
+        $data = $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'reason' => 'required|string|max:255',
+        ]);
+
+        // Find a completed payment to refund from
+        $completedPayments = $reservation->payments()->where('status', 'completed')->get();
+        if ($completedPayments->isEmpty()) {
+            return response()->json(['message' => 'No completed payments found to refund.'], 422);
+        }
+
+        $totalPaid = (float) $completedPayments->sum('amount');
+        $totalRefunded = (float) $reservation->payments()
+            ->where('payment_type', 'refund')
+            ->where('status', 'completed')
+            ->sum('amount');
+        $maxRefundable = $totalPaid - $totalRefunded;
+
+        if ($data['amount'] > $maxRefundable) {
+            return response()->json(['message' => 'Refund amount cannot exceed ₱' . number_format($maxRefundable, 2) . '.'], 422);
+        }
+
+        $originalPayment = $completedPayments->first();
+
+        DB::transaction(function () use ($reservation, $data, $originalPayment, $request) {
+            // Create refund payment record
+            Payment::create([
+                'reservation_id' => $reservation->id,
+                'guest_id' => $reservation->guest_id,
+                'amount' => $data['amount'],
+                'payment_method' => $originalPayment->payment_method,
+                'payment_type' => 'refund',
+                'status' => 'completed',
+                'reference_number' => 'REF-' . now()->format('Ymd') . '-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6)),
+                'notes' => $data['reason'],
+                'processed_by' => $request->user()->id,
+                'paid_at' => now(),
+            ]);
+
+            $reservation->update([
+                'refund_status' => 'approved',
+                'refund_requested_at' => null,
+            ]);
+
+            $reservation->reconcileBalances();
+        });
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'refund_approved',
+            'module' => 'reservations',
+            'model_type' => 'Reservation',
+            'model_id' => $reservation->id,
+            'description' => "Approved refund of ₱" . number_format($data['amount'], 2) . " for reservation #{$reservation->reservation_number} — {$data['reason']}",
+        ]);
+
+        // Send email notification
+        try {
+            $guest = $reservation->guest;
+            if ($guest && $guest->email) {
+                $hotelName = Setting::where('key', 'hotel_name')->value('value') ?? 'Pampanga Home Suites';
+                \Illuminate\Support\Facades\Mail::to($guest->email)->send(
+                    new \App\Mail\RefundApprovedMail($reservation, $data['amount'], $data['reason'], $hotelName)
+                );
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to send refund approval email', [
+                'reservation_id' => $reservation->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Refund approved and processed.',
+            'reservation' => $reservation->fresh(['room.roomType', 'guest']),
+        ]);
+    }
+
+    public function rejectRefund(Request $request, Reservation $reservation)
+    {
+        if ($reservation->refund_status !== 'pending') {
+            return response()->json(['message' => 'No pending refund request for this reservation.'], 422);
+        }
+
+        $data = $request->validate([
+            'reason' => 'required|string|max:255',
+        ]);
+
+        $reservation->update([
+            'refund_status' => 'rejected',
+            'refund_requested_at' => null,
+        ]);
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'refund_rejected',
+            'module' => 'reservations',
+            'model_type' => 'Reservation',
+            'model_id' => $reservation->id,
+            'description' => "Rejected refund request for reservation #{$reservation->reservation_number} — {$data['reason']}",
+        ]);
+
+        // Send email notification
+        try {
+            $guest = $reservation->guest;
+            if ($guest && $guest->email) {
+                $hotelName = Setting::where('key', 'hotel_name')->value('value') ?? 'Pampanga Home Suites';
+                \Illuminate\Support\Facades\Mail::to($guest->email)->send(
+                    new \App\Mail\RefundRejectedMail($reservation, $data['reason'], $hotelName)
+                );
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to send refund rejection email', [
+                'reservation_id' => $reservation->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Refund request rejected.',
+            'reservation' => $reservation->fresh(['room.roomType', 'guest']),
+        ]);
+    }
 }

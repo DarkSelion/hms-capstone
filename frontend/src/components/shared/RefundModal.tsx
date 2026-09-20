@@ -7,7 +7,10 @@ import { cn } from '@/lib/utils'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/shared/StatusBadge'
-import { RotateCcw, Loader2, AlertCircle, UserRound, BedDouble, CalendarDays, CreditCard, ChevronDown, Search, ReceiptText, Info } from 'lucide-react'
+import {
+  RotateCcw, Loader2, AlertCircle, UserRound, BedDouble, CalendarDays,
+  CreditCard, ChevronDown, Search, ReceiptText, Info, CheckCircle2, XCircle, MessageSquareText,
+} from 'lucide-react'
 import type { Payment, Reservation } from '@/types'
 
 interface PaymentExtended extends Payment {
@@ -28,6 +31,8 @@ interface RefundModalProps {
   payments: PaymentExtended[]
   onSuccess?: (payment: Payment) => void
   reservation?: Reservation | null
+  /** 'ad-hoc' = Record Refund (pick payment, process). 'request' = Process guest refund request (approve/reject). */
+  mode?: 'ad-hoc' | 'request'
 }
 
 const METHOD_LABELS: Record<string, string> = {
@@ -201,6 +206,7 @@ export function RefundModal({
   payments,
   onSuccess,
   reservation,
+  mode = 'ad-hoc',
 }: RefundModalProps) {
   const { addToast } = useToast()
   const queryClient = useQueryClient()
@@ -208,8 +214,14 @@ export function RefundModal({
   const [selectedPayment, setSelectedPayment] = useState<PaymentExtended | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [reason, setReason] = useState('')
+  const [refundAmount, setRefundAmount] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
 
+  const isRequestMode = mode === 'request'
+
+  // Ad-hoc refund mutation (existing behavior)
   const refundMutation = useMutation({
     mutationFn: ({ paymentId, amount, reason }: { paymentId: number; amount: number; reason: string }) =>
       api.post<{ message: string; refund_id?: string }>(`/payments/${paymentId}/refund`, { amount, reason }),
@@ -225,12 +237,47 @@ export function RefundModal({
     },
   })
 
+  // Approve refund mutation (request mode)
+  const approveMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { amount: number; reason: string } }) =>
+      api.post<{ message: string }>(`/reservations/${id}/refund-approve`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] })
+      queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      addToast('Refund approved and processed', 'success')
+      onClose()
+    },
+    onError: (err: { message?: string }) => {
+      addToast(err.message || 'Failed to approve refund.', 'error')
+    },
+  })
+
+  // Reject refund mutation (request mode)
+  const rejectMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { reason: string } }) =>
+      api.post<{ message: string }>(`/reservations/${id}/refund-reject`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] })
+      queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      addToast('Refund request rejected', 'success')
+      onClose()
+    },
+    onError: (err: { message?: string }) => {
+      addToast(err.message || 'Failed to reject refund.', 'error')
+    },
+  })
+
   useEffect(() => {
     if (!isOpen) {
       setSelectedPayment(null)
       setReason('')
+      setRefundAmount('')
       setError(null)
+      setShowRejectConfirm(false)
+      setRejectReason('')
       refundMutation.reset()
+      approveMutation.reset()
+      rejectMutation.reset()
       return
     }
     // Auto-select: pick first completed payment from the reservation
@@ -249,6 +296,7 @@ export function RefundModal({
           },
         }
         setSelectedPayment(enriched)
+        setRefundAmount(String(completed.amount))
       }
     }
   }, [isOpen, reservation])
@@ -256,81 +304,224 @@ export function RefundModal({
   const paymentAmount = selectedPayment?.amount ?? 0
   const isCompleted = selectedPayment?.status === 'completed'
   const isOnline = selectedPayment?.payment_method === 'online'
+  const parsedAmount = parseFloat(refundAmount) || 0
+  const maxRefundable = paymentAmount
+  const amountValid = parsedAmount > 0 && parsedAmount <= maxRefundable
+  const canSubmitAdHoc = !!selectedPayment && isCompleted && reason.trim().length > 0 && amountValid && !refundMutation.isPending
+  const canApprove = isRequestMode && amountValid && reason.trim().length > 0 && !approveMutation.isPending
+  const canReject = isRequestMode && rejectReason.trim().length > 0 && !rejectMutation.isPending
 
-  const canSubmit = !!selectedPayment && isCompleted && reason.trim().length > 0 && !refundMutation.isPending
-
-  function handleSubmit() {
+  function handleAdHocSubmit() {
     if (!selectedPayment) return
     setError(null)
     refundMutation.mutate({
       paymentId: selectedPayment.id,
-      amount: paymentAmount,
+      amount: parsedAmount,
       reason: reason.trim(),
     })
   }
+
+  function handleApprove() {
+    if (!reservation) return
+    setError(null)
+    approveMutation.mutate({
+      id: reservation.id,
+      data: { amount: parsedAmount, reason: reason.trim() },
+    })
+  }
+
+  function handleReject() {
+    if (!reservation) return
+    setError(null)
+    rejectMutation.mutate({
+      id: reservation.id,
+      data: { reason: rejectReason.trim() },
+    })
+  }
+
+  const title = isRequestMode ? 'Process Refund Request' : 'Record Refund'
+  const subtitle = isRequestMode
+    ? 'Review the guest\'s refund request and take action.'
+    : 'Search for a completed payment to refund.'
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Record Refund"
-      size="lg"
+      title={title}
+      size="xl"
       className={selectedPayment || pickerOpen ? 'h-[70vh]' : undefined}
       footer={
-        <>
-          <Button variant="outline" onClick={onClose} disabled={refundMutation.isPending}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleSubmit} disabled={!canSubmit}>
-            {refundMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            Process Refund
-          </Button>
-        </>
+        isRequestMode && !showRejectConfirm ? (
+          <>
+            <Button variant="outline" onClick={onClose} disabled={approveMutation.isPending || rejectMutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => setShowRejectConfirm(true)}
+              disabled={approveMutation.isPending || rejectMutation.isPending}
+            >
+              <XCircle className="h-4 w-4" />
+              Reject
+            </Button>
+            <Button variant="primary" onClick={handleApprove} disabled={!canApprove}>
+              {approveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              <CheckCircle2 className="h-4 w-4" />
+              Approve & Refund
+            </Button>
+          </>
+        ) : isRequestMode && showRejectConfirm ? (
+          <>
+            <Button variant="outline" onClick={() => { setShowRejectConfirm(false); setRejectReason('') }} disabled={rejectMutation.isPending}>
+              Back
+            </Button>
+            <Button variant="danger" onClick={handleReject} disabled={!canReject}>
+              {rejectMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Confirm Rejection
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="outline" onClick={onClose} disabled={refundMutation.isPending}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleAdHocSubmit} disabled={!canSubmitAdHoc}>
+              {refundMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Process Refund
+            </Button>
+          </>
+        )
       }
     >
       <div className="space-y-4">
+        {/* Request Mode: Guest Refund Reason Callout */}
+        {isRequestMode && reservation?.refund_reason && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <div className="mb-2 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+                <MessageSquareText className="h-4 w-4" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-amber-800">Guest's Refund Reason</h4>
+                <p className="text-xs text-amber-600">
+                  Submitted {reservation.refund_requested_at ? formatDateDisplay(reservation.refund_requested_at) : ''}
+                </p>
+              </div>
+            </div>
+            <p className="text-sm text-amber-800 whitespace-pre-wrap">{reservation.refund_reason}</p>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-danger/10 text-danger">
+          <div className={cn(
+            'flex h-11 w-11 items-center justify-center rounded-xl',
+            isRequestMode ? 'bg-amber-100 text-amber-600' : 'bg-danger/10 text-danger',
+          )}>
             <RotateCcw className="h-5 w-5" />
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-foreground">Process Refund</h4>
-            <p className="text-xs text-muted">Search for a completed payment to refund.</p>
+            <h4 className="text-sm font-semibold text-foreground">{title}</h4>
+            <p className="text-xs text-muted">{subtitle}</p>
           </div>
         </div>
 
-        {/* Payment Picker */}
-        <PaymentSearchPicker
-          payments={payments}
-          selected={selectedPayment}
-          onSelect={(p) => { setSelectedPayment(p); setError(null) }}
-          onOpenChange={setPickerOpen}
-        />
-
-        {/* After payment selected */}
-        {selectedPayment && (
-          <>
-            {/* Refund Summary — Hero Card */}
+        {/* Payment Picker (ad-hoc mode) or Payment Summary (request mode) */}
+        {isRequestMode ? (
+          selectedPayment && (
             <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-medium text-muted">Refund Amount</p>
-                  <p className="mt-0.5 text-2xl font-bold text-foreground">{formatCurrency(paymentAmount)}</p>
+                  <p className="text-xs font-medium text-muted">Original Payment</p>
+                  <p className="mt-0.5 text-lg font-bold text-foreground">{formatCurrency(paymentAmount)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-medium text-muted">Date Paid</p>
-                  <p className="mt-0.5 text-sm font-medium text-foreground">
-                    {formatDateDisplay(selectedPayment.paid_at ?? selectedPayment.created_at)}
-                  </p>
+                  <p className="text-xs font-medium text-muted">Method</p>
+                  <span className={cn('mt-0.5 inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-medium', methodBadgeClass(selectedPayment.payment_method))}>
+                    {METHOD_LABELS[selectedPayment.payment_method] ?? selectedPayment.payment_method}
+                  </span>
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-2 border-t border-gray-100 pt-3">
-                <StatusBadge status={selectedPayment.status} />
-                <span className={cn('inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium', methodBadgeClass(selectedPayment.payment_method))}>
-                  {METHOD_LABELS[selectedPayment.payment_method] ?? selectedPayment.payment_method}
-                </span>
+              <div className="mt-3 grid grid-cols-2 gap-3 border-t border-gray-100 pt-3 text-xs">
+                <div>
+                  <span className="text-muted">Reference</span>
+                  <p className="font-medium text-foreground">{selectedPayment.reference_number ?? `PAY-${selectedPayment.id}`}</p>
+                </div>
+                <div>
+                  <span className="text-muted">Date</span>
+                  <p className="font-medium text-foreground">{formatDateDisplay(selectedPayment.paid_at ?? selectedPayment.created_at)}</p>
+                </div>
               </div>
+            </div>
+          )
+        ) : (
+          <PaymentSearchPicker
+            payments={payments}
+            selected={selectedPayment}
+            onSelect={(p) => { setSelectedPayment(p); setRefundAmount(String(p.amount)); setError(null) }}
+            onOpenChange={setPickerOpen}
+          />
+        )}
+
+        {/* Reject Confirmation (request mode) */}
+        {isRequestMode && showRejectConfirm && (
+          <div className="rounded-2xl border border-danger/20 bg-danger/5 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-danger/10 text-danger">
+                <XCircle className="h-4 w-4" />
+              </div>
+              <h4 className="text-sm font-semibold text-danger">Reject Refund Request</h4>
+            </div>
+            <p className="mb-3 text-xs text-muted">
+              The guest will be notified that their refund request was not approved. Please provide a reason.
+            </p>
+            <textarea
+              placeholder="Reason for rejection (required)"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              aria-label="Rejection reason"
+              rows={3}
+              disabled={rejectMutation.isPending}
+              className="w-full rounded-lg border border-border bg-bg py-2 pl-3 pr-3 text-sm font-medium text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
+              maxLength={255}
+            />
+          </div>
+        )}
+
+        {/* After payment selected */}
+        {selectedPayment && !showRejectConfirm && (
+          <>
+            {/* Refund Amount Input */}
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <ReceiptText className="h-4 w-4" />
+                </div>
+                <h4 className="text-sm font-semibold text-foreground">Refund Amount</h4>
+              </div>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-muted">₱</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  max={maxRefundable}
+                  value={refundAmount}
+                  onChange={(e) => { setRefundAmount(e.target.value); setError(null) }}
+                  aria-label="Refund amount"
+                  disabled={refundMutation.isPending || approveMutation.isPending}
+                  className="w-full rounded-lg border border-border bg-bg py-2.5 pl-7 pr-3 text-sm font-medium text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
+                />
+              </div>
+              <p className="mt-1.5 text-xs text-muted">
+                Max refundable: {formatCurrency(maxRefundable)}
+              </p>
+              {parsedAmount > 0 && parsedAmount < maxRefundable && (
+                <p className="mt-1 text-xs text-amber-600">
+                  Partial refund — {formatCurrency(maxRefundable - parsedAmount)} will remain on the original payment.
+                </p>
+              )}
             </div>
 
             {/* Payment Details — Key Facts Grid */}
@@ -396,15 +587,17 @@ export function RefundModal({
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-warning/10 text-warning">
                     <AlertCircle className="h-4 w-4" />
                   </div>
-                  <h4 className="text-sm font-semibold text-foreground">Refund Reason</h4>
+                  <h4 className="text-sm font-semibold text-foreground">
+                    {isRequestMode ? 'Admin Note' : 'Refund Reason'}
+                  </h4>
                 </div>
                 <textarea
-                  placeholder="Enter refund reason (required)"
+                  placeholder={isRequestMode ? 'Add a note for this refund (required)' : 'Enter refund reason (required)'}
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   aria-label="Refund reason"
                   rows={3}
-                  disabled={refundMutation.isPending}
+                  disabled={refundMutation.isPending || approveMutation.isPending}
                   className="w-full rounded-lg border border-border bg-bg py-2 pl-3 pr-3 text-sm font-medium text-foreground outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/50"
                   maxLength={255}
                 />

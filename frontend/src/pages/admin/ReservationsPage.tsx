@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
-  useReservations, useCancelReservation, useMarkNoShow, useExtendStay, usePayments,
+  useReservations, useCancelReservation, useMarkNoShow, useExtendStay,
 } from '@/hooks/useApi'
 import { useCheckInOutModal } from '@/hooks/useCheckInOutModal'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
@@ -18,7 +18,6 @@ import { ReservationFormModal } from '@/components/shared/ReservationFormModal'
 import { ReservationCheckInOutModal } from '@/components/shared/ReservationCheckInOutModal'
 import { ReservationRowActions } from '@/components/shared/ReservationRowActions'
 import { ExtendStayModal } from '@/components/shared/ExtendStayModal'
-import { RefundModal } from '@/components/shared/RefundModal'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { DatePicker } from '@/components/ui/date-picker'
@@ -60,7 +59,6 @@ export default function ReservationsPage() {
   const [cancelTarget, setCancelTarget] = useState<Reservation | null>(null)
   const [noShowTarget, setNoShowTarget] = useState<Reservation | null>(null)
   const [extendTarget, setExtendTarget] = useState<Reservation | null>(null)
-  const [refundTarget, setRefundTarget] = useState<Reservation | null>(null)
 
   const checkInModal = useCheckInOutModal('check-in')
   const checkOutModal = useCheckInOutModal('check-out')
@@ -94,8 +92,6 @@ export default function ReservationsPage() {
   const cancelReservation = useCancelReservation()
   const markNoShow = useMarkNoShow()
   const extendStay = useExtendStay()
-  const { data: refundablePaymentsData } = usePayments({ per_page: 100, status: 'completed' })
-  const refundablePayments = (refundablePaymentsData?.data ?? []) as any[]
 
   const reservations = reservationsData?.data ?? []
   const totalPages = reservationsData?.last_page ?? 1
@@ -359,7 +355,6 @@ export default function ReservationsPage() {
           onCheckOut={() => openCheckOut(r)}
           onMarkNoShow={() => setNoShowTarget(r)}
           onExtendStay={() => openExtendStay(r)}
-          onProcessRefund={() => setRefundTarget(r)}
         />
       ),
     },
@@ -616,7 +611,6 @@ export default function ReservationsPage() {
                               onCheckOut={() => openCheckOut(r)}
                               onMarkNoShow={() => setNoShowTarget(r)}
                               onExtendStay={() => openExtendStay(r)}
-                              onProcessRefund={() => setRefundTarget(r)}
                             />
                           </td>
                         </tr>
@@ -729,13 +723,6 @@ export default function ReservationsPage() {
         reservation={noShowTarget}
         isLoading={markNoShow.isPending}
         onConfirm={handleMarkNoShowConfirm}
-      />
-
-      <RefundModal
-        isOpen={!!refundTarget}
-        onClose={() => setRefundTarget(null)}
-        payments={refundablePayments}
-        reservation={refundTarget}
       />
     </div>
   )

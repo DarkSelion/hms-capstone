@@ -131,26 +131,12 @@ describe('ReservationRowActions', () => {
     expect(screen.getByTitle('Extend Stay')).toBeInTheDocument()
   })
 
-  it('shows Process Refund when refund is pending', () => {
+  it('does not show Process Refund (removed — managed via PaymentsPage)', () => {
     render(
       <ReservationRowActions
         reservation={reservation({ refund_requested_at: '2026-10-11T00:00:00.000000Z', payment_status: 'partial' })}
         onView={vi.fn()}
         onEdit={vi.fn()}
-        onProcessRefund={vi.fn()}
-      />,
-    )
-
-    expect(screen.getByTitle('Process Refund')).toBeInTheDocument()
-  })
-
-  it('hides Process Refund when already refunded', () => {
-    render(
-      <ReservationRowActions
-        reservation={reservation({ refund_requested_at: '2026-10-11T00:00:00.000000Z', payment_status: 'refunded' })}
-        onView={vi.fn()}
-        onEdit={vi.fn()}
-        onProcessRefund={vi.fn()}
       />,
     )
 

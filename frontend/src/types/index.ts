@@ -138,6 +138,8 @@ export interface Reservation {
   payments?: Payment[];
   cancellation_tier?: 'flexible' | 'non_refundable';
   refund_requested_at?: string;
+  refund_status?: 'pending' | 'approved' | 'rejected';
+  refund_reason?: string;
   created_at: string;
 }
 
@@ -427,6 +429,8 @@ payment_status: string
   checked_out_at?: string
   special_requests?: string
   refund_requested_at?: string
+  refund_status?: 'pending' | 'approved' | 'rejected'
+  refund_reason?: string
   cancellation_tier?: 'flexible' | 'non_refundable'
   created_at: string
 }

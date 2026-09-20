@@ -526,6 +526,32 @@ export function useDeletePayment() {
   })
 }
 
+// ── Refund Requests ──────────────────────────────────
+
+export function useApproveRefund() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { amount: number; reason: string } }) =>
+      api.post<ApiResponse<Reservation>>(`/reservations/${id}/refund-approve`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['payments'] })
+    },
+  })
+}
+
+export function useRejectRefund() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { reason: string } }) =>
+      api.post<ApiResponse<Reservation>>(`/reservations/${id}/refund-reject`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['payments'] })
+    },
+  })
+}
+
 // ── Invoices ───────────────────────────────────────────
 
 export function useInvoices(params?: Record<string, string | number | undefined>) {

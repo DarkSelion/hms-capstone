@@ -836,10 +836,22 @@ function ReservationCard({
               Refund
             </button>
           )}
-          {r.refund_requested_at && (
+          {r.refund_requested_at && r.refund_status === 'pending' && (
             <span className="px-3 py-1.5 rounded-lg text-xs bg-gold/10 border border-gold/20 text-gold inline-flex items-center gap-1.5">
               <Clock className="h-3 w-3" />
               Refund Requested
+            </span>
+          )}
+          {r.refund_status === 'approved' && (
+            <span className="px-3 py-1.5 rounded-lg text-xs bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 inline-flex items-center gap-1.5">
+              <CheckCircle className="h-3 w-3" />
+              Refund Approved
+            </span>
+          )}
+          {r.refund_status === 'rejected' && (
+            <span className="px-3 py-1.5 rounded-lg text-xs bg-rose-500/10 border border-rose-500/20 text-rose-400 inline-flex items-center gap-1.5">
+              <XCircle className="h-3 w-3" />
+              Refund Denied
             </span>
           )}
           {r.cancellation_tier === 'non_refundable' && isAlive && (
