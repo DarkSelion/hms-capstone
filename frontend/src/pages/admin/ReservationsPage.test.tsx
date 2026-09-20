@@ -229,7 +229,7 @@ describe('ReservationsPage', () => {
     renderPage()
 
     expect(screen.getByText('1 Aug 2026')).toBeInTheDocument()
-    expect(screen.getByText('3 Aug 2026')).toBeInTheDocument()
+    expect(screen.getByText(/Departs 3 Aug 2026/)).toBeInTheDocument()
   })
 
   it('shows due amount under total for unpaid reservations', () => {

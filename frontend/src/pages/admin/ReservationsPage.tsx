@@ -310,17 +310,27 @@ export default function ReservationsPage() {
       sortable: false,
       className: 'w-[11%] whitespace-nowrap',
       render: (r) => {
-        const hasOverdue = r.status === 'confirmed' && r.is_overdue
+        const hasNoShow = r.status === 'confirmed' && r.is_overdue
+        const isOverstay = r.status === 'checked_in' && r.check_out < todayStr
+        const overstayDays = isOverstay
+          ? Math.ceil((new Date(todayStr).getTime() - new Date(r.check_out).getTime()) / 86400000)
+          : 0
         const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
-        if (!hasOverdue && !hasRefund) {
+        if (!hasNoShow && !isOverstay && !hasRefund) {
           return <span className="text-slate-300">—</span>
         }
         return (
           <div className="flex items-center gap-1 flex-wrap">
-            {hasOverdue && (
+            {hasNoShow && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
                 <AlertTriangle className="h-3 w-3" />
                 Overdue
+              </span>
+            )}
+            {isOverstay && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-orange-50 text-orange-700 border border-orange-200/60">
+                <AlertTriangle className="h-3 w-3" />
+                Overstay ({overstayDays}d)
               </span>
             )}
             {hasRefund && (
@@ -573,17 +583,27 @@ export default function ReservationsPage() {
                           </td>
                           <td className="px-4 whitespace-nowrap">
                             {(() => {
-                              const hasOverdue = r.status === 'confirmed' && r.is_overdue
+                              const hasNoShow = r.status === 'confirmed' && r.is_overdue
+                              const isOverstay = r.status === 'checked_in' && r.check_out < todayStr
+                              const overstayDays = isOverstay
+                                ? Math.ceil((new Date(todayStr).getTime() - new Date(r.check_out).getTime()) / 86400000)
+                                : 0
                               const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
-                              if (!hasOverdue && !hasRefund) {
+                              if (!hasNoShow && !isOverstay && !hasRefund) {
                                 return <span className="text-slate-300">—</span>
                               }
                               return (
                                 <div className="flex items-center gap-1 flex-wrap">
-                                  {hasOverdue && (
+                                  {hasNoShow && (
                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
                                       <AlertTriangle className="h-3 w-3" />
                                       Overdue
+                                    </span>
+                                  )}
+                                  {isOverstay && (
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-orange-50 text-orange-700 border border-orange-200/60">
+                                      <AlertTriangle className="h-3 w-3" />
+                                      Overstay ({overstayDays}d)
                                     </span>
                                   )}
                                   {hasRefund && (

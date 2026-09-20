@@ -11,15 +11,15 @@ class OverdueReservationService
     public function detectAndFlagOverdue(): array
     {
         $today = now()->startOfDay();
-        $overdueReservations = Reservation::where('status', 'confirmed')
+        $flaggedIds = [];
+
+        // Phase 1: Detect unchecked-in no-shows (confirmed + check_in < today)
+        $noShows = Reservation::where('status', 'confirmed')
             ->whereDate('check_in', '<', $today)
             ->where('is_overdue', false)
             ->get();
 
-        $flagged = [];
-        $flaggedIds = [];
-
-        foreach ($overdueReservations as $reservation) {
+        foreach ($noShows as $reservation) {
             $reservation->update([
                 'is_overdue' => true,
                 'overdue_at' => now()->parse($reservation->check_in)->startOfDay(),
@@ -34,7 +34,30 @@ class OverdueReservationService
                 'description' => "Overdue reservation #{$reservation->reservation_number} flagged for No Show review",
             ]);
 
-            $flagged[] = $reservation;
+            $flaggedIds[] = $reservation->id;
+        }
+
+        // Phase 2: Detect overstay guests (checked_in + check_out < today)
+        $overstays = Reservation::where('status', 'checked_in')
+            ->whereDate('check_out', '<', $today)
+            ->where('is_overdue', false)
+            ->get();
+
+        foreach ($overstays as $reservation) {
+            $reservation->update([
+                'is_overdue' => true,
+                'overdue_at' => now()->parse($reservation->check_out)->startOfDay(),
+            ]);
+
+            ActivityLog::create([
+                'user_id' => null,
+                'action' => 'flagged_overdue',
+                'module' => 'reservations',
+                'model_type' => 'Reservation',
+                'model_id' => $reservation->id,
+                'description' => "Overstay guest on reservation #{$reservation->reservation_number} — guest has passed scheduled check-out",
+            ]);
+
             $flaggedIds[] = $reservation->id;
         }
 
@@ -43,7 +66,7 @@ class OverdueReservationService
         }
 
         return [
-            'count' => count($flagged),
+            'count' => count($flaggedIds),
             'reservation_ids' => $flaggedIds,
         ];
     }

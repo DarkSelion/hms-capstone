@@ -6,7 +6,7 @@ import type {
   Reservation, PaginatedResponse, Guest, GuestHistory, Room, RoomImage, RoomType, RoomTypeImage,
   Payment, Invoice, HousekeepingTask, MaintenanceRequest, Technician,
   Expense, ExpenseSummary, User, Role, ActivityLog, ApiResponse, StaffSchedule, LeaveRequest, ContactMessage,
-  CheckoutPreview,
+  CheckoutPreview, ExtendPreview,
 } from '@/types'
 
 function buildQueryString(params?: Record<string, string | number | undefined | null>): string {
@@ -192,6 +192,17 @@ export function useExtendStay() {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['guests'] })
     },
+  })
+}
+
+export function useExtendPreview(id: number, newCheckOut?: string) {
+  return useQuery({
+    queryKey: ['reservations', id, 'extend-preview', newCheckOut],
+    queryFn: () => {
+      const qs = `?new_check_out=${encodeURIComponent(newCheckOut!)}`
+      return api.get<ExtendPreview>(`/reservations/${id}/extend-preview${qs}`)
+    },
+    enabled: !!id && !!newCheckOut,
   })
 }
 

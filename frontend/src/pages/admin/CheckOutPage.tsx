@@ -18,7 +18,7 @@ import { ExtendStayModal } from '@/components/shared/ExtendStayModal'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { CheckCircle2, DoorOpen, CalendarDays } from 'lucide-react'
+import { CheckCircle2, DoorOpen, CalendarDays, AlertTriangle } from 'lucide-react'
 import type { Reservation } from '@/types'
 
 function nightsBetween(checkIn?: string, checkOut?: string): number {
@@ -218,16 +218,20 @@ export default function CheckOutPage() {
       sortable: false,
       className: 'w-[11%] whitespace-nowrap',
       render: (r) => {
-        const hasOverdue = r.is_overdue
+        const isOverstay = r.status === 'checked_in' && r.check_out < todayStr
+        const overstayDays = isOverstay
+          ? Math.ceil((new Date(todayStr).getTime() - new Date(r.check_out).getTime()) / 86400000)
+          : 0
         const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
-        if (!hasOverdue && !hasRefund) {
+        if (!isOverstay && !hasRefund) {
           return <span className="text-slate-300">—</span>
         }
         return (
           <div className="flex items-center gap-1 flex-wrap">
-            {hasOverdue && (
-              <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
-                Overdue
+            {isOverstay && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-orange-50 text-orange-700 border border-orange-200/60">
+                <AlertTriangle className="h-3 w-3" />
+                Overstay ({overstayDays}d)
               </span>
             )}
             {hasRefund && (
@@ -306,7 +310,10 @@ export default function CheckOutPage() {
                   <tbody className="divide-y divide-amber-100/60">
                     {todayDepartures.map((r) => {
                       const due = Number(r.due_amount ?? 0)
-                      const hasOverdue = r.is_overdue
+                      const isOverstay = r.status === 'checked_in' && r.check_out < todayStr
+                      const overstayDays = isOverstay
+                        ? Math.ceil((new Date(todayStr).getTime() - new Date(r.check_out).getTime()) / 86400000)
+                        : 0
                       const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
                       return (
                       <tr key={r.id} className="bg-amber-50/30 hover:bg-amber-50/60 transition-colors">
@@ -358,13 +365,14 @@ export default function CheckOutPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          {!hasOverdue && !hasRefund ? (
+                          {!isOverstay && !hasRefund ? (
                             <span className="text-slate-300">—</span>
                           ) : (
                             <div className="flex items-center gap-1 flex-wrap">
-                              {hasOverdue && (
-                                <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
-                                  Overdue
+                              {isOverstay && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-orange-50 text-orange-700 border border-orange-200/60">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  Overstay ({overstayDays}d)
                                 </span>
                               )}
                               {hasRefund && (

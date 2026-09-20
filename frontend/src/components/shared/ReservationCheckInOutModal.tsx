@@ -408,6 +408,7 @@ export function ReservationCheckInOutModal({
               value={actualDeparture}
               onChange={setDepartureDate}
               min={effective.check_in}
+              max={todayStr}
               placeholder="Select departure date"
             />
 

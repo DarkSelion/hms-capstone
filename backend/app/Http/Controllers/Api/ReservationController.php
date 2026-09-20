@@ -706,6 +706,7 @@ class ReservationController extends Controller
         ]);
 
         $newCheckOut = $data['new_check_out'];
+        $originalCheckOut = $reservation->check_out->toDateString();
 
         $reservationId = $reservation->id;
 
@@ -744,7 +745,67 @@ class ReservationController extends Controller
             'description' => "Extended stay for reservation #{$reservation->reservation_number} to {$newCheckOut}",
         ]);
 
+        $timezone = (string) (Setting::where('key', 'timezone')->value('value') ?? config('app.timezone'));
+        $cutoff = (string) (Setting::where('key', 'check_out_time')->value('value') ?? '11:00');
+        if (now($timezone)->toDateString() === $originalCheckOut
+            && now($timezone)->format('H:i') > $cutoff) {
+            ActivityLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'late_checkout',
+                'module' => 'reservations',
+                'model_type' => 'Reservation',
+                'model_id' => $reservation->id,
+                'description' => "Extension processed after check-out cutoff ({$cutoff}) for #{$reservation->reservation_number}",
+            ]);
+        }
+
         return response()->json($reservation->fresh()->load(['guest', 'room.roomType']));
+    }
+
+    public function extendPreview(Request $request, Reservation $reservation)
+    {
+        if ($reservation->status !== 'checked_in') {
+            return response()->json(['message' => 'Reservation must be checked in.'], 422);
+        }
+
+        $data = $request->validate([
+            'new_check_out' => ['required', 'date', function ($attribute, $value, $fail) use ($reservation) {
+                if (now()->parse($value)->lte(now()->parse($reservation->check_out))) {
+                    $fail('The new check-out date must be after the current check-out date.');
+                }
+            }],
+        ]);
+
+        $newCheckOut = $data['new_check_out'];
+
+        $currentPricing = $reservation->computePricing($reservation->check_out->toDateString());
+        $projectedPricing = $reservation->computePricing($newCheckOut);
+
+        $currentTotal = (float) $currentPricing['total_amount'];
+        $projectedTotal = (float) $projectedPricing['total_amount'];
+        $extraNights = max(0, (int) $projectedPricing['nights'] - (int) $currentPricing['nights']);
+        $extraAmount = max(0, round($projectedTotal - $currentTotal, 2));
+        $paid = $reservation->recordedPaid();
+        $projectedDue = max(0, $projectedTotal - $paid);
+
+        $overlap = $this->roomHasOverlap(
+            $reservation->room_id,
+            $reservation->check_in->toDateString(),
+            $newCheckOut,
+            $reservation->id
+        );
+
+        return response()->json([
+            'current_total' => $currentTotal,
+            'current_nights' => (int) $currentPricing['nights'],
+            'projected_total' => $projectedTotal,
+            'projected_nights' => (int) $projectedPricing['nights'],
+            'extra_nights' => $extraNights,
+            'extra_amount' => $extraAmount,
+            'projected_due' => $projectedDue,
+            'paid_amount' => $paid,
+            'overlap' => $overlap,
+        ]);
     }
 
     private function recalculatePricing(Reservation $reservation): void

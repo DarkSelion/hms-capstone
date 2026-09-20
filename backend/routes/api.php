@@ -75,6 +75,7 @@ Route::middleware(['auth:sanctum', 'role:admin,staff', 'throttle:api'])->group(f
     Route::post('/reservations/{reservation}/cancel', [ReservationController::class, 'cancel']);
     Route::post('/reservations/{reservation}/no-show', [ReservationController::class, 'markNoShow']);
     Route::post('/reservations/{reservation}/extend-stay', [ReservationController::class, 'extendStay']);
+Route::get('/reservations/{reservation}/extend-preview', [ReservationController::class, 'extendPreview']);
 
     // Guests
     Route::apiResource('guests', GuestController::class)->except(['destroy']);

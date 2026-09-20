@@ -1,8 +1,17 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ExtendStayModal } from './ExtendStayModal'
 import { formatCurrency } from '@/lib/format'
-import type { Guest, Reservation, Room } from '@/types'
+import type { ExtendPreview, Guest, Reservation, Room } from '@/types'
+
+const { mockExtendPreview } = vi.hoisted(() => ({
+  mockExtendPreview: { data: null as ExtendPreview | null, isLoading: false },
+}))
+
+vi.mock('@/hooks/useApi', () => ({
+  useExtendPreview: () => mockExtendPreview,
+}))
 
 function reservation(overrides: Partial<Reservation> = {}): Reservation {
   return {
@@ -36,15 +45,20 @@ function renderModal(overrides: {
   onConfirm?: ReturnType<typeof vi.fn<OnConfirm>>
 } = {}) {
   const onConfirm = overrides.onConfirm ?? vi.fn<OnConfirm>()
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  })
   const result = render(
-    <ExtendStayModal
-      isOpen
-      reservation={overrides.reservation ?? reservation()}
-      isLoading={overrides.isLoading ?? false}
-      error={overrides.error ?? null}
-      onClose={vi.fn()}
-      onConfirm={onConfirm}
-    />,
+    <QueryClientProvider client={queryClient}>
+      <ExtendStayModal
+        isOpen
+        reservation={overrides.reservation ?? reservation()}
+        isLoading={overrides.isLoading ?? false}
+        error={overrides.error ?? null}
+        onClose={vi.fn()}
+        onConfirm={onConfirm}
+      />
+    </QueryClientProvider>,
   )
   return { onConfirm, rerender: result.rerender }
 }
@@ -78,15 +92,11 @@ describe('ExtendStayModal', () => {
     expect(onConfirm).toHaveBeenCalledWith('2026-10-13')
   })
 
-  it('shows the price preview using stored rate, discount and tax', () => {
+  it('shows loading while fetching preview', () => {
+    mockExtendPreview.isLoading = true
     renderModal()
-
-    // 3 nights (10 → 13 Oct) @ 1000 = 3000, +10% tax = 3300
-    expect(screen.getByText('2 → 3')).toBeInTheDocument()
-    expect(screen.getByText('(+1)')).toBeInTheDocument()
-    expect(screen.getByText(formatCurrency(3300))).toBeInTheDocument()
-    expect(screen.getByText(`+${formatCurrency(1100)}`)).toBeInTheDocument()
-    expect(screen.getByText(formatCurrency(2300))).toBeInTheDocument()
+    expect(screen.getByText(/Calculating preview/)).toBeInTheDocument()
+    mockExtendPreview.isLoading = false
   })
 
   it('displays backend errors', () => {

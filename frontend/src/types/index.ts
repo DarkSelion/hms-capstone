@@ -158,6 +158,18 @@ export interface CheckoutPreview {
   late_checkout_applies: boolean
 }
 
+export interface ExtendPreview {
+  current_total: number
+  current_nights: number
+  projected_total: number
+  projected_nights: number
+  extra_nights: number
+  extra_amount: number
+  projected_due: number
+  paid_amount: number
+  overlap: boolean
+}
+
 export interface GuestHistory {
   guest: Guest;
   reservations: PaginatedResponse<Reservation>;

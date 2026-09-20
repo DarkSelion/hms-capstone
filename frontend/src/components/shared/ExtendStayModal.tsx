@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { DatePicker } from '@/components/ui/date-picker'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
+import { useExtendPreview } from '@/hooks/useApi'
 import { AlertCircle, CalendarPlus } from 'lucide-react'
 import type { Reservation } from '@/types'
 
@@ -30,12 +31,6 @@ function addDays(dateStr: string, days: number): string {
   return toDateStr(y, m, d + days)
 }
 
-function daysBetween(from: string, to: string): number {
-  const [y1, m1, d1] = parseDateParts(from)
-  const [y2, m2, d2] = parseDateParts(to)
-  return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000)
-}
-
 export function ExtendStayModal({
   isOpen,
   onClose,
@@ -54,32 +49,8 @@ export function ExtendStayModal({
     }
   }, [isOpen, minNewCheckOut])
 
-  const preview = useMemo(() => {
-    if (!reservation || !newCheckOut || !currentCheckOut) return null
-
-    const pricePerNight = reservation.price_per_night ?? 0
-    const discountPercent = reservation.discount_percent ?? 0
-    const taxPercent = reservation.tax_percent ?? 0
-
-    const existingNights = daysBetween(reservation.check_in, currentCheckOut)
-    const newNights = daysBetween(reservation.check_in, newCheckOut)
-    const extraNights = Math.max(0, newNights - existingNights)
-
-    const subtotal = pricePerNight * newNights
-    const discount = subtotal * (discountPercent / 100)
-    const tax = (subtotal - discount) * (taxPercent / 100)
-    const newTotal = Math.round((subtotal - discount + tax) * 100) / 100
-    const newDue = Math.max(0, Math.round((newTotal - (reservation.paid_amount ?? 0)) * 100) / 100)
-
-    return {
-      existingNights,
-      newNights,
-      extraNights,
-      extraAmount: Math.round((newTotal - reservation.total_amount) * 100) / 100,
-      newTotal,
-      newDue,
-    }
-  }, [reservation, newCheckOut, currentCheckOut])
+  const previewQuery = useExtendPreview(reservation?.id ?? 0, newCheckOut || undefined)
+  const preview = previewQuery.data
 
   const invalid = !newCheckOut || (currentCheckOut && newCheckOut <= currentCheckOut)
 
@@ -94,7 +65,7 @@ export function ExtendStayModal({
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={() => onConfirm(newCheckOut)} disabled={invalid || isLoading}>
+          <Button variant="primary" onClick={() => onConfirm(newCheckOut)} disabled={invalid || isLoading || previewQuery.isLoading}>
             <CalendarPlus className="h-4 w-4" />
             {isLoading ? 'Processing...' : 'Extend Stay'}
           </Button>
@@ -137,31 +108,42 @@ export function ExtendStayModal({
             />
           </div>
 
+          {previewQuery.isLoading && newCheckOut && (
+            <p className="text-[13px] text-muted">Calculating preview…</p>
+          )}
+
           {preview && (
             <div className="rounded-lg border border-border bg-bg text-sm">
               <div className="flex items-center justify-between px-3 py-2">
                 <span className="text-muted">Nights</span>
                 <span className="font-medium text-foreground">
-                  {preview.existingNights} → {preview.newNights}
-                  {preview.extraNights > 0 && (
-                    <span className="ml-1 text-xs text-success">(+{preview.extraNights})</span>
+                  {preview.current_nights} → {preview.projected_nights}
+                  {preview.extra_nights > 0 && (
+                    <span className="ml-1 text-xs text-success">(+{preview.extra_nights})</span>
                   )}
                 </span>
               </div>
               <div className="flex items-center justify-between border-t border-border px-3 py-2">
                 <span className="text-muted">New Total</span>
-                <span className="font-medium text-foreground">{formatCurrency(preview.newTotal)}</span>
+                <span className="font-medium text-foreground">{formatCurrency(preview.projected_total)}</span>
               </div>
-              {preview.extraAmount !== 0 && (
+              {preview.extra_amount !== 0 && (
                 <div className="flex items-center justify-between border-t border-border px-3 py-2">
                   <span className="text-muted">Extra Charge</span>
-                  <span className="font-medium text-success">+{formatCurrency(preview.extraAmount)}</span>
+                  <span className="font-medium text-success">+{formatCurrency(preview.extra_amount)}</span>
                 </div>
               )}
               <div className="flex items-center justify-between border-t border-border px-3 py-2">
                 <span className="text-muted">Amount Due After</span>
-                <span className="font-semibold text-foreground">{formatCurrency(preview.newDue)}</span>
+                <span className="font-semibold text-foreground">{formatCurrency(preview.projected_due)}</span>
               </div>
+            </div>
+          )}
+
+          {preview?.overlap && (
+            <div className="flex items-start gap-2.5 rounded-lg border border-amber-200/60 bg-amber-50/50 px-3 py-2.5 text-sm text-amber-700">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>Another reservation overlaps this room during the extended period.</span>
             </div>
           )}
 

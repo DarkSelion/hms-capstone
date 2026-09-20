@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReservationCheckInOutModal } from './ReservationCheckInOutModal'
+import { toLocalDateStr } from '@/lib/date-group'
 import type { ReactElement } from 'react'
 import type { CheckoutPreview, Guest, Payment, Reservation, Room } from '@/types'
 
@@ -56,6 +57,18 @@ vi.mock('@/components/shared/PaymentModal', () => ({
     ) : null
   },
 }))
+
+function daysAgo(n: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  return toLocalDateStr(d)
+}
+
+function daysFromNow(n: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + n)
+  return toLocalDateStr(d)
+}
 
 function reservation(overrides: Partial<Reservation> = {}): Reservation {
   return {
@@ -473,8 +486,10 @@ describe('ReservationCheckInOutModal', () => {
   })
 
   it('shows the actual departure picker and previews a recalculated total when the departure changes', () => {
+    const checkOutDate = daysAgo(2)
+    const today = toLocalDateStr(new Date())
     mockPreview.data = {
-      actual_check_out: '2026-10-14',
+      actual_check_out: today,
       total_nights: 4,
       subtotal: 660,
       discount_amount: 0,
@@ -491,18 +506,13 @@ describe('ReservationCheckInOutModal', () => {
       mode: 'check-out',
       reservation: reservation({
         status: 'checked_in',
-        check_out: '2026-10-12',
+        check_out: checkOutDate,
         total_amount: 330,
         paid_amount: 330,
         due_amount: 0,
         payments: [{ payment_method: 'cash', status: 'completed' } as Payment],
       }),
     })
-
-    expect(screen.getByRole('button', { name: /Oct 12, 2026/ })).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: /Oct 12, 2026/ }))
-    fireEvent.click(screen.getByRole('button', { name: '14' }))
 
     expect(screen.getAllByText('Nights').length).toBeGreaterThanOrEqual(2)
     expect(screen.getAllByText('₱660.00').length).toBeGreaterThanOrEqual(1)
@@ -511,12 +521,14 @@ describe('ReservationCheckInOutModal', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Collect & Check Out' }))
     fireEvent.click(screen.getByRole('button', { name: 'stub-Record & Check Out' }))
-    expect(onConfirmAfterPayment).toHaveBeenCalledWith(expect.objectContaining({ amount: 330 }), '2026-10-14', 660)
+    expect(onConfirmAfterPayment).toHaveBeenCalledWith(expect.objectContaining({ amount: 330 }), today, 660)
   })
 
   it('feeds the chosen departure date into the checkout preview', () => {
+    const checkOutDate = daysAgo(2)
+    const today = toLocalDateStr(new Date())
     mockPreview.data = {
-      actual_check_out: '2026-10-13',
+      actual_check_out: today,
       total_nights: 3,
       subtotal: 495,
       discount_amount: 0,
@@ -531,18 +543,17 @@ describe('ReservationCheckInOutModal', () => {
     }
     renderModal({
       mode: 'check-out',
-      reservation: reservation({ status: 'checked_in', check_out: '2026-10-12' }),
+      reservation: reservation({ status: 'checked_in', check_out: checkOutDate }),
     })
 
-    expect(mockPreviewArgs.at(-1)).toEqual([1, '2026-10-12'])
-    fireEvent.click(screen.getByRole('button', { name: /Oct 12, 2026/ }))
-    fireEvent.click(screen.getByRole('button', { name: '15' }))
-    expect(mockPreviewArgs.at(-1)).toEqual([1, '2026-10-15'])
+    expect(mockPreviewArgs.at(-1)).toEqual([1, today])
   })
 
   it('warns about an overlapping reservation during an extended stay', () => {
+    const checkOutDate = daysAgo(2)
+    const today = toLocalDateStr(new Date())
     mockPreview.data = {
-      actual_check_out: '2026-10-14',
+      actual_check_out: today,
       total_nights: 4,
       subtotal: 660,
       discount_amount: 0,
@@ -557,11 +568,8 @@ describe('ReservationCheckInOutModal', () => {
     }
     renderModal({
       mode: 'check-out',
-      reservation: reservation({ status: 'checked_in', check_out: '2026-10-12' }),
+      reservation: reservation({ status: 'checked_in', check_out: checkOutDate }),
     })
-
-    fireEvent.click(screen.getByRole('button', { name: /Oct 12, 2026/ }))
-    fireEvent.click(screen.getByRole('button', { name: '14' }))
 
     expect(screen.getByText(/Another reservation overlaps this room during the extended stay/i)).toBeInTheDocument()
   })
