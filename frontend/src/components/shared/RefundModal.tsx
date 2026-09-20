@@ -33,6 +33,8 @@ interface RefundModalProps {
   reservation?: Reservation | null
   /** 'ad-hoc' = Record Refund (pick payment, process). 'request' = Process guest refund request (approve/reject). */
   mode?: 'ad-hoc' | 'request'
+  /** When 'request' mode, opens directly to the approve or reject flow. */
+  defaultAction?: 'approve' | 'reject'
 }
 
 const METHOD_LABELS: Record<string, string> = {
@@ -207,6 +209,7 @@ export function RefundModal({
   onSuccess,
   reservation,
   mode = 'ad-hoc',
+  defaultAction,
 }: RefundModalProps) {
   const { addToast } = useToast()
   const queryClient = useQueryClient()
@@ -279,6 +282,10 @@ export function RefundModal({
       approveMutation.reset()
       rejectMutation.reset()
       return
+    }
+    // When opened with defaultAction='reject', skip the approve step
+    if (isRequestMode && defaultAction === 'reject') {
+      setShowRejectConfirm(true)
     }
     // Auto-select: pick first completed payment from the reservation
     if (reservation?.payments?.length) {

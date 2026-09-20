@@ -19,7 +19,7 @@ import { useToast } from '@/components/ui/toast'
 import { PAYMENT_METHODS } from '@/lib/constants'
 import {
   Plus, Eye, Banknote, Smartphone, CreditCard,
-  AlertCircle, Loader2, UserRound, BedDouble, CalendarDays, ReceiptText, Hash, Wallet, X, RotateCcw,
+  AlertCircle, Loader2, UserRound, BedDouble, CalendarDays, ReceiptText, Hash, Wallet, X, RotateCcw, XCircle,
 } from 'lucide-react'
 
 interface PaymentExtended extends Payment {
@@ -81,13 +81,11 @@ export default function PaymentsPage() {
 
 const [showFormModal, setShowFormModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
-  const { data: refundablePaymentsData } = usePayments({ per_page: 100, status: 'completed' })
-  const refundablePayments = (refundablePaymentsData?.data ?? []) as PaymentExtended[]
-  const [showRefundModal, setShowRefundModal] = useState(false)
   const [selectedPayment, setSelectedPayment] = useState<PaymentExtended | null>(null)
 
   // Refund requests state
   const [refundTarget, setRefundTarget] = useState<Reservation | null>(null)
+  const [rejectTarget, setRejectTarget] = useState<Reservation | null>(null)
   const [refundSearch, setRefundSearch] = useState('')
   const { data: refundRequestsData, isLoading: refundLoading } = useReservations({
     per_page: 100,
@@ -366,12 +364,20 @@ const [showFormModal, setShowFormModal] = useState(false)
       render: (r) => (
         <RowActions>
           {r.refund_status === 'pending' && (
-            <RowActionButton
-              tone="success"
-              title="Process"
-              icon={<RotateCcw className="h-4 w-4" />}
-              onClick={() => setRefundTarget(r)}
-            />
+            <>
+              <RowActionButton
+                tone="success"
+                title="Process"
+                icon={<RotateCcw className="h-4 w-4" />}
+                onClick={() => setRefundTarget(r)}
+              />
+              <RowActionButton
+                tone="danger"
+                title="Reject"
+                icon={<XCircle className="h-4 w-4" />}
+                onClick={() => setRejectTarget(r)}
+              />
+            </>
           )}
         </RowActions>
       ),
@@ -398,10 +404,6 @@ const [showFormModal, setShowFormModal] = useState(false)
                       {refundRequests.filter(r => r.refund_status === 'pending').length}
                     </span>
                   )}
-                </Button>
-                <Button variant="gold" onClick={() => setShowRefundModal(true)}>
-                  <RotateCcw className="h-4 w-4" />
-                  Record Refund
                 </Button>
                 <Button variant="gold" onClick={openNewForm}>
                   <Plus className="h-4 w-4" />
@@ -762,23 +764,20 @@ const [showFormModal, setShowFormModal] = useState(false)
       />
 
       <RefundModal
-        isOpen={showRefundModal}
-        onClose={() => setShowRefundModal(false)}
-        payments={refundablePayments}
-        mode="ad-hoc"
-        onSuccess={(_payment) => {
-          setShowRefundModal(false)
-          addToast('Refund processed successfully', 'success')
-          refetch()
-        }}
+        isOpen={!!refundTarget}
+        onClose={() => setRefundTarget(null)}
+        payments={[]}
+        reservation={refundTarget}
+        mode="request"
       />
 
       <RefundModal
-        isOpen={!!refundTarget}
-        onClose={() => setRefundTarget(null)}
-        payments={refundablePayments}
-        reservation={refundTarget}
+        isOpen={!!rejectTarget}
+        onClose={() => setRejectTarget(null)}
+        payments={[]}
+        reservation={rejectTarget}
         mode="request"
+        defaultAction="reject"
       />
 
     </div>
