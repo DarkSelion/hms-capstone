@@ -176,11 +176,7 @@ class Reservation extends Model
     public function reconcileBalances(): void
     {
         $paid = $this->recordedPaid();
-        $hasRefunds = $this->payments()->where('payment_type', 'refund')->where('status', 'completed')->exists();
-        $totalRefunded = (float) $this->payments()
-            ->where('payment_type', 'refund')
-            ->where('status', 'completed')
-            ->sum('amount');
+        $hasRefunds = $this->payments()->where('status', 'refunded')->exists();
 
         $this->update([
             'paid_amount' => $paid,
