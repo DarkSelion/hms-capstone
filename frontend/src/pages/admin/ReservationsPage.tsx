@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button'
 import { DatePicker } from '@/components/ui/date-picker'
 import type { Reservation } from '@/types'
 import {
-  Plus, AlertTriangle, X, ArrowRight, CalendarX2, RotateCcw, CalendarDays, Search,
+  Plus, AlertTriangle, X, CalendarX2, RotateCcw, CalendarDays, Search,
 } from 'lucide-react'
 
 function formatDate(dateStr: string) {
@@ -267,16 +267,15 @@ export default function ReservationsPage() {
         const isTodayCheckIn = getDateGroup(r.check_in) === 'today'
         const isTodayCheckOut = getDateGroup(r.check_out) === 'today'
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-1.5 text-sm">
               {isTodayCheckIn && <TodayBadge variant="arrival" />}
               <span>{formatDate(r.check_in)}</span>
             </div>
-            <ArrowRight className="h-3 w-3 shrink-0 text-slate-300" />
-            <div className="flex items-center gap-1.5 text-sm">
-              <span>{formatDate(r.check_out)}</span>
+            <span className="text-xs text-slate-500">
+              Departs {formatDate(r.check_out)}
               {isTodayCheckOut && <TodayBadge variant="departure" />}
-            </div>
+            </span>
           </div>
         )
       },
@@ -553,13 +552,12 @@ export default function ReservationsPage() {
                             </div>
                           </td>
                           <td className="px-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-col gap-0.5">
                               <div className="flex items-center gap-1.5 text-sm">
                                 <TodayBadge variant="arrival" />
                                 <span>{formatDate(r.check_in)}</span>
                               </div>
-                              <ArrowRight className="h-3 w-3 shrink-0 text-slate-300" />
-                              <span className="text-sm">{formatDate(r.check_out)}</span>
+                              <span className="text-xs text-slate-500">Departs {formatDate(r.check_out)}</span>
                             </div>
                           </td>
                           <td className="px-4 whitespace-nowrap">
