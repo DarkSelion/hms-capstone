@@ -51,6 +51,9 @@ class Reservation extends Model
         'refund_reason',
         'cancellation_tier',
         'cancellation_reason',
+        'late_arrival_deadline',
+        'late_arrival_notes',
+        'late_arrival_notified_by',
     ];
 
     protected $appends = [];
@@ -63,6 +66,7 @@ class Reservation extends Model
             'checked_in_at' => 'datetime',
             'checked_out_at' => 'datetime',
             'overdue_at' => 'datetime',
+            'late_arrival_deadline' => 'datetime',
             'is_overdue' => 'boolean',
             'price_per_night' => 'decimal:2',
             'subtotal' => 'decimal:2',
@@ -114,6 +118,11 @@ class Reservation extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function lateArrivalNotifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'late_arrival_notified_by');
     }
 
     public function scopeActive(Builder $query)

@@ -28,6 +28,8 @@ class SettingController extends Controller
         'late_checkout_fee',
         'check_out_time',
         'auto_cancel_grace_hours',
+        'late_arrival_hold_hours',
+        'auto_cancel_enabled',
         'contact_heading',
         'contact_description',
         'contact_reception_hours',
@@ -168,7 +170,7 @@ class SettingController extends Controller
         if (in_array($key, ['password_min_length', 'session_timeout', 'max_login_attempts', 'two_factor_auth'])) {
             return 'security';
         }
-        if (in_array($key, ['default_discount', 'cancellation_policy', 'max_advance_days', 'early_checkin_fee', 'late_checkout_fee', 'check_out_time', 'auto_cancel_grace_hours'])) {
+        if (in_array($key, ['default_discount', 'cancellation_policy', 'max_advance_days', 'early_checkin_fee', 'late_checkout_fee', 'check_out_time', 'auto_cancel_grace_hours', 'late_arrival_hold_hours', 'auto_cancel_enabled'])) {
             return 'booking';
         }
         if (str_starts_with($key, 'online_')) {

@@ -51,6 +51,17 @@ class DashboardController extends Controller
 
         $pendingReservations = Reservation::where('status', 'pending')->count();
 
+        $overdueCount = Reservation::where('status', 'confirmed')
+            ->where('is_overdue', true)
+            ->count();
+
+        $overstayCount = Reservation::where('status', 'checked_in')
+            ->whereDate('check_out', '<', $today)
+            ->count();
+
+        $lateArrivalCount = Reservation::where('status', 'late_arrival')
+            ->count();
+
         return response()->json([
             'today_revenue' => $todayRevenue,
             'occupancy_rate' => $occupancyRate,
@@ -61,6 +72,9 @@ class DashboardController extends Controller
             'check_outs_today' => $checkOutsToday,
             'pending_reservations' => $pendingReservations,
             'total_rooms' => $totalRooms,
+            'overdue_count' => $overdueCount,
+            'overstay_count' => $overstayCount,
+            'late_arrival_count' => $lateArrivalCount,
         ]);
     }
 

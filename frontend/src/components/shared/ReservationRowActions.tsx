@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { RowActions, RowActionButton } from '@/components/shared/RowActions'
-import { Eye, Pencil, XCircle, LogIn, LogOut, AlertTriangle, CalendarClock } from 'lucide-react'
+import { Eye, Pencil, XCircle, LogIn, LogOut, AlertTriangle, CalendarClock, Bell } from 'lucide-react'
 import type { Reservation } from '@/types'
 
 interface ReservationRowActionsProps {
@@ -11,6 +11,7 @@ interface ReservationRowActionsProps {
   onCheckIn?: () => void
   onCheckOut?: () => void
   onMarkNoShow?: () => void
+  onLateArrival?: () => void
   onExtendStay?: () => void
   alwaysAllowCheckIn?: boolean
 }
@@ -23,6 +24,7 @@ export function ReservationRowActions({
   onCheckIn,
   onCheckOut,
   onMarkNoShow,
+  onLateArrival,
   onExtendStay,
   alwaysAllowCheckIn,
 }: ReservationRowActionsProps) {
@@ -50,6 +52,9 @@ export function ReservationRowActions({
   }
   if (showCheckIn && !overdue) {
     buttons.push(<RowActionButton key="checkin" tone="success" title="Check In" icon={<LogIn className="h-4 w-4" />} onClick={onCheckIn} />)
+  }
+  if (overdue && onLateArrival) {
+    buttons.push(<RowActionButton key="latearrival" tone="info" title="Notify Late Arrival" icon={<Bell className="h-4 w-4" />} onClick={onLateArrival} />)
   }
   if (overdue && onMarkNoShow) {
     buttons.push(<RowActionButton key="noshow" tone="warning" title="Mark No Show" icon={<AlertTriangle className="h-4 w-4" />} onClick={onMarkNoShow} />)

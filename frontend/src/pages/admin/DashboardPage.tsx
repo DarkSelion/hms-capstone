@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import {
   DollarSign, LogIn, LogOut,
   Activity, RefreshCw, Calendar, ArrowRight,
+  AlertTriangle, Users, Clock,
 } from 'lucide-react'
 import {
   ResponsiveContainer,
@@ -166,6 +167,38 @@ export default function DashboardPage() {
             <StatCard label="Pending" value={stats.pending_reservations} variant="compact" />
             <StatCard label="Dirty Rooms" value={totalDirtyRooms} variant="compact" />
             <StatCard label="Available" value={`${stats.available_rooms}/${stats.total_rooms}`} variant="compact" />
+          </>
+        )}
+      </div>
+
+      {/* Attention Metrics: Overdue / Overstay / Late Arrival */}
+      <div className="mb-8 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        {initialLoading || !stats ? (
+          <>
+            <StatCardSkeleton compact />
+            <StatCardSkeleton compact />
+            <StatCardSkeleton compact />
+          </>
+        ) : (
+          <>
+            <StatCard
+              icon={<AlertTriangle className="h-4 w-4" />}
+              label="Overdue Arrivals"
+              value={stats.overdue_count}
+              variant="compact"
+            />
+            <StatCard
+              icon={<Users className="h-4 w-4" />}
+              label="Overstaying Guests"
+              value={stats.overstay_count}
+              variant="compact"
+            />
+            <StatCard
+              icon={<Clock className="h-4 w-4" />}
+              label="Late Arrivals"
+              value={stats.late_arrival_count}
+              variant="compact"
+            />
           </>
         )}
       </div>

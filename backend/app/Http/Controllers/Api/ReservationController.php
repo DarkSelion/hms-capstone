@@ -228,7 +228,8 @@ class ReservationController extends Controller
             } else {
                 $allowedTransitions = [
                     'pending' => ['confirmed', 'checked_in', 'cancelled'],
-                    'confirmed' => ['checked_in', 'cancelled', 'no_show'],
+                    'confirmed' => ['checked_in', 'cancelled', 'no_show', 'late_arrival'],
+                    'late_arrival' => ['checked_in', 'cancelled', 'no_show'],
                     'checked_in' => ['checked_out'],
                     'checked_out' => [],
                     'cancelled' => [],
@@ -679,6 +680,69 @@ class ReservationController extends Controller
         ]);
 
         return response()->json($reservation->load(['guest', 'room.roomType']));
+    }
+
+    public function lateArrival(Request $request, Reservation $reservation)
+    {
+        if ($reservation->status !== 'confirmed' || ! $reservation->is_overdue) {
+            return response()->json([
+                'message' => 'Only overdue confirmed reservations can be marked as Late Arrival.',
+            ], 422);
+        }
+
+        $data = $request->validate([
+            'deadline' => ['required', 'date', 'after:now'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $reservation->update([
+            'status' => 'late_arrival',
+            'late_arrival_deadline' => $data['deadline'],
+            'late_arrival_notes' => $data['notes'] ?? null,
+            'late_arrival_notified_by' => $request->user()->id,
+            'is_overdue' => false,
+            'overdue_at' => null,
+        ]);
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'recorded_late_arrival',
+            'module' => 'reservations',
+            'model_type' => 'Reservation',
+            'model_id' => $reservation->id,
+            'description' => "Recorded late arrival for reservation #{$reservation->reservation_number}. Hold deadline: {$data['deadline']}",
+        ]);
+
+        return response()->json($reservation->fresh()->load(['guest', 'room.roomType', 'lateArrivalNotifiedBy']));
+    }
+
+    public function cancelLateArrival(Request $request, Reservation $reservation)
+    {
+        if ($reservation->status !== 'late_arrival') {
+            return response()->json([
+                'message' => 'Only late arrival reservations can be cancelled.',
+            ], 422);
+        }
+
+        $reservation->update([
+            'status' => 'no_show',
+            'no_show_by' => $request->user()->id,
+            'is_overdue' => false,
+            'cancellation_reason' => 'Late arrival hold expired or cancelled by staff',
+        ]);
+
+        $this->reconcileRoomStatus($reservation->room);
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'late_arrival_cancelled',
+            'module' => 'reservations',
+            'model_type' => 'Reservation',
+            'model_id' => $reservation->id,
+            'description' => "Late arrival cancelled for reservation #{$reservation->reservation_number} — marked as No Show",
+        ]);
+
+        return response()->json($reservation->fresh()->load(['guest', 'room.roomType']));
     }
 
     public function refreshOverdue(OverdueReservationService $service)

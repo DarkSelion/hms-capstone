@@ -7,11 +7,13 @@ const {
   mockUseReservations,
   mockUseCancelReservation,
   mockUseMarkNoShow,
+  mockUseNotifyLateArrival,
   mockUseCheckInOutModal,
 } = vi.hoisted(() => ({
   mockUseReservations: vi.fn(),
   mockUseCancelReservation: vi.fn(),
   mockUseMarkNoShow: vi.fn(),
+  mockUseNotifyLateArrival: vi.fn(() => ({ isPending: false, mutateAsync: vi.fn() })),
   mockUseCheckInOutModal: vi.fn(),
 }))
 
@@ -19,6 +21,7 @@ vi.mock('@/hooks/useApi', () => ({
   useReservations: (params?: Record<string, unknown>) => mockUseReservations(params),
   useCancelReservation: () => mockUseCancelReservation(),
   useMarkNoShow: () => mockUseMarkNoShow(),
+  useNotifyLateArrival: () => mockUseNotifyLateArrival(),
 }))
 
 vi.mock('@/hooks/useCheckInOutModal', () => ({
@@ -35,6 +38,7 @@ vi.mock('@/components/shared/ReservationCheckInOutModal', () => ({
   ReservationCheckInOutModal: () => null,
 }))
 vi.mock('@/components/shared/NoShowModal', () => ({ NoShowModal: () => null }))
+vi.mock('@/components/shared/LateArrivalModal', () => ({ LateArrivalModal: () => null }))
 vi.mock('@/components/shared/CancelReservationModal', () => ({
   CancelReservationModal: () => null,
 }))
@@ -90,6 +94,7 @@ function setupMocks({ listData }: { listData: Reservation[] }) {
   }))
   mockUseCancelReservation.mockReturnValue({ mutateAsync: vi.fn(), isPending: false })
   mockUseMarkNoShow.mockReturnValue({ mutateAsync: vi.fn(), isPending: false })
+  mockUseNotifyLateArrival.mockReturnValue({ mutateAsync: vi.fn(), isPending: false })
   mockUseCheckInOutModal.mockReturnValue({
     target: null, error: null, isLoading: false, isOpen: false,
     open: vi.fn(), close: vi.fn(), confirm: vi.fn(), confirmAfterPayment: vi.fn(),

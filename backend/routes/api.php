@@ -74,6 +74,8 @@ Route::middleware(['auth:sanctum', 'role:admin,staff', 'throttle:api'])->group(f
     Route::get('/reservations/{reservation}/checkout-preview', [ReservationController::class, 'checkoutPreview']);
     Route::post('/reservations/{reservation}/cancel', [ReservationController::class, 'cancel']);
     Route::post('/reservations/{reservation}/no-show', [ReservationController::class, 'markNoShow']);
+    Route::post('/reservations/{reservation}/late-arrival', [ReservationController::class, 'lateArrival']);
+    Route::post('/reservations/{reservation}/cancel-late-arrival', [ReservationController::class, 'cancelLateArrival']);
     Route::post('/reservations/{reservation}/extend-stay', [ReservationController::class, 'extendStay']);
 Route::get('/reservations/{reservation}/extend-preview', [ReservationController::class, 'extendPreview']);
 

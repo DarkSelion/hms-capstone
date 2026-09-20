@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import {
-  useReservations, useCancelReservation, useMarkNoShow,
+  useReservations, useCancelReservation, useMarkNoShow, useNotifyLateArrival,
 } from '@/hooks/useApi'
 import { useCheckInOutModal } from '@/hooks/useCheckInOutModal'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
@@ -12,6 +12,7 @@ import { TodayBadge } from '@/components/shared/TodayBadge'
 import { ReservationRowActions } from '@/components/shared/ReservationRowActions'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { NoShowModal } from '@/components/shared/NoShowModal'
+import { LateArrivalModal } from '@/components/shared/LateArrivalModal'
 import { CancelReservationModal } from '@/components/shared/CancelReservationModal'
 import { ReservationDetailModal } from '@/components/shared/ReservationDetailModal'
 import { ReservationFormModal } from '@/components/shared/ReservationFormModal'
@@ -34,6 +35,7 @@ export default function CheckInPage() {
   const [editingReservation, setEditingReservation] = useState<Reservation | null>(null)
   const [cancelTarget, setCancelTarget] = useState<Reservation | null>(null)
   const [noShowTarget, setNoShowTarget] = useState<Reservation | null>(null)
+  const [lateArrivalTarget, setLateArrivalTarget] = useState<Reservation | null>(null)
 
   const checkInModal = useCheckInOutModal('check-in')
   const {
@@ -54,6 +56,7 @@ export default function CheckInPage() {
   const { data: reservationsData, isLoading, error, refetch } = useReservations(queryParams)
   const cancelReservation = useCancelReservation()
   const markNoShow = useMarkNoShow()
+  const notifyLateArrival = useNotifyLateArrival()
 
   const todayStr = toLocalDateStr(new Date())
   const { data: todayData } = useReservations({
@@ -130,6 +133,20 @@ export default function CheckInPage() {
     try {
       await markNoShow.mutateAsync(noShowTarget.id)
       setNoShowTarget(null)
+    } catch {
+      // handled by react-query
+    }
+  }
+
+  function handleLateArrival(reservation: Reservation) {
+    setLateArrivalTarget(reservation)
+  }
+
+  async function handleLateArrivalConfirm(deadline: string, notes: string) {
+    if (!lateArrivalTarget) return
+    try {
+      await notifyLateArrival.mutateAsync({ id: lateArrivalTarget.id, deadline, notes })
+      setLateArrivalTarget(null)
     } catch {
       // handled by react-query
     }
@@ -224,8 +241,9 @@ export default function CheckInPage() {
       className: 'w-[11%] whitespace-nowrap',
       render: (r) => {
         const hasOverdue = r.is_overdue
+        const isLateArrival = r.status === 'late_arrival'
         const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
-        if (!hasOverdue && !hasRefund) {
+        if (!hasOverdue && !isLateArrival && !hasRefund) {
           return <span className="text-slate-300">—</span>
         }
         return (
@@ -233,6 +251,11 @@ export default function CheckInPage() {
             {hasOverdue && (
               <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
                 {r.payment_status === 'paid' || r.payment_status === 'partial' ? 'Late Arrival' : 'Overdue'}
+              </span>
+            )}
+            {isLateArrival && (
+              <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
+                Notified — Hold Active
               </span>
             )}
             {hasRefund && (
@@ -263,6 +286,7 @@ export default function CheckInPage() {
           onCancel={() => setCancelTarget(r)}
           onCheckIn={() => openCheckIn(r)}
           onMarkNoShow={() => handleMarkNoShow(r)}
+          onLateArrival={() => handleLateArrival(r)}
         />
       ),
     },
@@ -390,6 +414,7 @@ export default function CheckInPage() {
                             onCancel={() => setCancelTarget(r)}
                             onCheckIn={() => openCheckIn(r)}
                             onMarkNoShow={() => handleMarkNoShow(r)}
+                            onLateArrival={() => handleLateArrival(r)}
                           />
                         </td>
                       </tr>
@@ -472,6 +497,14 @@ export default function CheckInPage() {
         reservation={noShowTarget}
         isLoading={markNoShow.isPending}
         onConfirm={handleMarkNoShowConfirm}
+      />
+
+      <LateArrivalModal
+        isOpen={!!lateArrivalTarget}
+        onClose={() => setLateArrivalTarget(null)}
+        reservation={lateArrivalTarget}
+        isLoading={notifyLateArrival.isPending}
+        onConfirm={handleLateArrivalConfirm}
       />
     </div>
   )

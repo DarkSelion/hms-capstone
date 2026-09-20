@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
-  useReservations, useCancelReservation, useMarkNoShow, useExtendStay,
+  useReservations, useCancelReservation, useMarkNoShow, useExtendStay, useNotifyLateArrival,
 } from '@/hooks/useApi'
 import { useCheckInOutModal } from '@/hooks/useCheckInOutModal'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
@@ -12,6 +12,7 @@ import { DataTable, type Column } from '@/components/shared/DataTable'
 import { TodayBadge } from '@/components/shared/TodayBadge'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { NoShowModal } from '@/components/shared/NoShowModal'
+import { LateArrivalModal } from '@/components/shared/LateArrivalModal'
 import { CancelReservationModal } from '@/components/shared/CancelReservationModal'
 import { ReservationDetailModal } from '@/components/shared/ReservationDetailModal'
 import { ReservationFormModal } from '@/components/shared/ReservationFormModal'
@@ -23,7 +24,7 @@ import { Button } from '@/components/ui/button'
 import { DatePicker } from '@/components/ui/date-picker'
 import type { Reservation } from '@/types'
 import {
-  Plus, AlertTriangle, X, CalendarX2, RotateCcw, CalendarDays, Search,
+  Plus, AlertTriangle, X, CalendarX2, RotateCcw, CalendarDays, Search, Bell,
 } from 'lucide-react'
 
 function formatDate(dateStr: string) {
@@ -35,6 +36,7 @@ const STATUS_TABS = [
   { value: '', label: 'All', dot: 'bg-slate-400' },
   { value: 'pending', label: 'Pending', dot: 'bg-yellow-500' },
   { value: 'confirmed', label: 'Confirmed', dot: 'bg-sky-500' },
+  { value: 'late_arrival', label: 'Late Arrival', dot: 'bg-amber-500' },
   { value: 'checked_in', label: 'Checked In', dot: 'bg-emerald-500' },
   { value: 'checked_out', label: 'Checked Out', dot: 'bg-slate-400' },
   { value: 'cancelled', label: 'Cancelled', dot: 'bg-red-500' },
@@ -58,6 +60,7 @@ export default function ReservationsPage() {
 
   const [cancelTarget, setCancelTarget] = useState<Reservation | null>(null)
   const [noShowTarget, setNoShowTarget] = useState<Reservation | null>(null)
+  const [lateArrivalTarget, setLateArrivalTarget] = useState<Reservation | null>(null)
   const [extendTarget, setExtendTarget] = useState<Reservation | null>(null)
 
   const checkInModal = useCheckInOutModal('check-in')
@@ -91,6 +94,7 @@ export default function ReservationsPage() {
 
   const cancelReservation = useCancelReservation()
   const markNoShow = useMarkNoShow()
+  const notifyLateArrival = useNotifyLateArrival()
   const extendStay = useExtendStay()
 
   const reservations = reservationsData?.data ?? []
@@ -190,6 +194,20 @@ export default function ReservationsPage() {
     try {
       await markNoShow.mutateAsync(noShowTarget.id)
       setNoShowTarget(null)
+    } catch {
+      // handled by react-query
+    }
+  }
+
+  function handleLateArrival(reservation: Reservation) {
+    setLateArrivalTarget(reservation)
+  }
+
+  async function handleLateArrivalConfirm(deadline: string, notes: string) {
+    if (!lateArrivalTarget) return
+    try {
+      await notifyLateArrival.mutateAsync({ id: lateArrivalTarget.id, deadline, notes })
+      setLateArrivalTarget(null)
     } catch {
       // handled by react-query
     }
@@ -311,12 +329,13 @@ export default function ReservationsPage() {
       className: 'w-[11%] whitespace-nowrap',
       render: (r) => {
         const hasNoShow = r.status === 'confirmed' && r.is_overdue
+        const isLateArrival = r.status === 'late_arrival'
         const isOverstay = r.status === 'checked_in' && r.check_out < todayStr
         const overstayDays = isOverstay
           ? Math.ceil((new Date(todayStr).getTime() - new Date(r.check_out).getTime()) / 86400000)
           : 0
         const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
-        if (!hasNoShow && !isOverstay && !hasRefund) {
+        if (!hasNoShow && !isLateArrival && !isOverstay && !hasRefund) {
           return <span className="text-slate-300">—</span>
         }
         return (
@@ -325,6 +344,12 @@ export default function ReservationsPage() {
               <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
                 <AlertTriangle className="h-3 w-3" />
                 Overdue
+              </span>
+            )}
+            {isLateArrival && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
+                <Bell className="h-3 w-3" />
+                Hold Active
               </span>
             )}
             {isOverstay && (
@@ -363,6 +388,7 @@ export default function ReservationsPage() {
           onCheckIn={() => openCheckIn(r)}
           onCheckOut={() => openCheckOut(r)}
           onMarkNoShow={() => setNoShowTarget(r)}
+          onLateArrival={() => handleLateArrival(r)}
           onExtendStay={() => openExtendStay(r)}
         />
       ),
@@ -628,6 +654,7 @@ export default function ReservationsPage() {
                               onCheckIn={() => openCheckIn(r)}
                               onCheckOut={() => openCheckOut(r)}
                               onMarkNoShow={() => setNoShowTarget(r)}
+                              onLateArrival={() => handleLateArrival(r)}
                               onExtendStay={() => openExtendStay(r)}
                             />
                           </td>
@@ -741,6 +768,14 @@ export default function ReservationsPage() {
         reservation={noShowTarget}
         isLoading={markNoShow.isPending}
         onConfirm={handleMarkNoShowConfirm}
+      />
+
+      <LateArrivalModal
+        isOpen={!!lateArrivalTarget}
+        onClose={() => setLateArrivalTarget(null)}
+        reservation={lateArrivalTarget}
+        isLoading={notifyLateArrival.isPending}
+        onConfirm={handleLateArrivalConfirm}
       />
     </div>
   )

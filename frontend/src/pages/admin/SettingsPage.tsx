@@ -217,7 +217,7 @@ export default function SettingsPage() {
     hotel_name: '', default_currency: 'PHP', timezone: 'Asia/Manila',
   })
   const [bookingForm, setBookingForm] = useState({
-    default_discount: 0, cancellation_policy: '', early_checkin_fee: 0, late_checkout_fee: 0, check_out_time: '11:00', max_advance_days: 30, auto_cancel_grace_hours: 24,
+    default_discount: 0, cancellation_policy: '', early_checkin_fee: 0, late_checkout_fee: 0, check_out_time: '11:00', max_advance_days: 30, auto_cancel_grace_hours: 24, late_arrival_hold_hours: 48, auto_cancel_enabled: true,
   })
   const [taxForm, setTaxForm] = useState({ tax_name: '', tax_rate: 0 })
   const [securityForm, setSecurityForm] = useState({
@@ -262,6 +262,8 @@ export default function SettingsPage() {
         check_out_time: s.check_out_time ?? '11:00',
         max_advance_days: s.max_advance_days ?? 30,
         auto_cancel_grace_hours: s.auto_cancel_grace_hours ?? 24,
+        late_arrival_hold_hours: s.late_arrival_hold_hours ?? 48,
+        auto_cancel_enabled: s.auto_cancel_enabled === '1' || s.auto_cancel_enabled === true,
       })
       setTaxForm({
         tax_name: s.tax_name ?? '',
@@ -320,7 +322,10 @@ export default function SettingsPage() {
     if (activeTab === 'Hotel') {
       Object.assign(payload, hotelForm)
     } else if (activeTab === 'Booking') {
-      Object.assign(payload, bookingForm)
+      Object.assign(payload, {
+        ...bookingForm,
+        auto_cancel_enabled: bookingForm.auto_cancel_enabled ? '1' : '0',
+      })
     } else if (activeTab === 'Taxes') {
       Object.assign(payload, taxForm)
     } else if (activeTab === 'Security') {
@@ -675,7 +680,24 @@ export default function SettingsPage() {
                           />
                           <p className="mt-1 text-xs text-muted">Hours after check-in before unpaid reservations are automatically cancelled.</p>
                         </div>
+                        <div>
+                          <Input
+                            label="Late Arrival Hold Hours"
+                            type="number"
+                            min={1}
+                            value={bookingForm.late_arrival_hold_hours}
+                            onChange={(e) => setBookingForm((p) => ({ ...p, late_arrival_hold_hours: Number(e.target.value) }))}
+                          />
+                          <p className="mt-1 text-xs text-muted">Default hold period when staff records a late arrival notification.</p>
+                        </div>
                       </div>
+                      <ToggleRow
+                        id="auto_cancel_enabled"
+                        title="Enable Auto-Cancel"
+                        description="When enabled, unpaid confirmed reservations are automatically cancelled after the grace period and late arrival holds expire automatically."
+                        checked={bookingForm.auto_cancel_enabled}
+                        onChange={(v) => setBookingForm((p) => ({ ...p, auto_cancel_enabled: v }))}
+                      />
                       <p className="rounded-xl bg-bg px-4 py-3 text-xs leading-relaxed text-muted">
                         Staying past the booked check-out date bills extra nights at check-out — only same-day late departures are charged the flat fee.
                       </p>

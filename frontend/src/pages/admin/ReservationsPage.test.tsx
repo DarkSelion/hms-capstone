@@ -7,6 +7,7 @@ const {
   mockUseReservations,
   mockUseCancelReservation,
   mockUseMarkNoShow,
+  mockUseNotifyLateArrival,
   mockUseExtendStay,
   mockUsePayments,
   mockUseCheckInOutModal,
@@ -15,6 +16,7 @@ const {
   mockUseReservations: vi.fn(),
   mockUseCancelReservation: vi.fn(),
   mockUseMarkNoShow: vi.fn(),
+  mockUseNotifyLateArrival: vi.fn(),
   mockUseExtendStay: vi.fn(),
   mockUsePayments: vi.fn(),
   mockUseCheckInOutModal: vi.fn(),
@@ -25,6 +27,7 @@ vi.mock('@/hooks/useApi', () => ({
   useReservations: (params?: Record<string, unknown>) => mockUseReservations(params),
   useCancelReservation: () => mockUseCancelReservation(),
   useMarkNoShow: () => mockUseMarkNoShow(),
+  useNotifyLateArrival: () => mockUseNotifyLateArrival(),
   useExtendStay: () => mockUseExtendStay(),
   usePayments: (params?: Record<string, unknown>) => mockUsePayments(params),
 }))
@@ -58,6 +61,7 @@ vi.mock('@/components/shared/ReservationRowActions', () => ({
   ),
 }))
 vi.mock('@/components/shared/NoShowModal', () => ({ NoShowModal: () => null }))
+vi.mock('@/components/shared/LateArrivalModal', () => ({ LateArrivalModal: () => null }))
 vi.mock('@/components/shared/CancelReservationModal', () => ({
   CancelReservationModal: ({ reservation }: { reservation: Reservation | null }) =>
     reservation ? <div>Cancel dialog for {reservation.reservation_number}</div> : null,
@@ -105,6 +109,7 @@ function renderPage(data: ReturnType<typeof paginated> = paginated([reservation(
     .mockReturnValue({ data: paginated([]), isLoading: false, error: null, refetch: vi.fn() })
   mockUseCancelReservation.mockReturnValue({ mutateAsync: vi.fn() })
   mockUseMarkNoShow.mockReturnValue({ mutateAsync: vi.fn() })
+  mockUseNotifyLateArrival.mockReturnValue({ mutateAsync: vi.fn() })
   mockUseExtendStay.mockReturnValue({ mutateAsync: vi.fn() })
   mockUsePayments.mockReturnValue({ data: { data: [] }, isLoading: false, error: null })
   const modal = {
@@ -167,6 +172,7 @@ describe('ReservationsPage', () => {
     mockUseReservations.mockReturnValue({ data: undefined, isLoading: true, error: null, refetch: vi.fn() })
     mockUseCancelReservation.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseMarkNoShow.mockReturnValue({ mutateAsync: vi.fn() })
+  mockUseNotifyLateArrival.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseExtendStay.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseCheckInOutModal.mockReturnValue({
       target: null, error: null, isLoading: false, isOpen: false,
@@ -183,6 +189,7 @@ describe('ReservationsPage', () => {
     mockUseReservations.mockReturnValue({ data: undefined, isLoading: false, error: new Error('boom'), refetch: vi.fn() })
     mockUseCancelReservation.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseMarkNoShow.mockReturnValue({ mutateAsync: vi.fn() })
+  mockUseNotifyLateArrival.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseExtendStay.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseCheckInOutModal.mockReturnValue({
       target: null, error: null, isLoading: false, isOpen: false,
@@ -211,6 +218,7 @@ describe('ReservationsPage', () => {
     })
     mockUseCancelReservation.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseMarkNoShow.mockReturnValue({ mutateAsync: vi.fn() })
+  mockUseNotifyLateArrival.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseExtendStay.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseCheckInOutModal.mockReturnValue({
       target: null, error: null, isLoading: false, isOpen: false,
@@ -272,6 +280,7 @@ describe('ReservationsPage', () => {
       })
     mockUseCancelReservation.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseMarkNoShow.mockReturnValue({ mutateAsync: vi.fn() })
+  mockUseNotifyLateArrival.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseExtendStay.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseCheckInOutModal.mockReturnValue({
       target: null, error: null, isLoading: false, isOpen: false,

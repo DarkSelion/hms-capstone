@@ -217,6 +217,29 @@ export function useRefreshOverdue() {
   })
 }
 
+export function useNotifyLateArrival() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, deadline, notes }: { id: number; deadline: string; notes?: string }) =>
+      api.post<ApiResponse<Reservation>>(`/reservations/${id}/late-arrival`, { deadline, notes }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
+}
+
+export function useCancelLateArrival() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api.post<ApiResponse<Reservation>>(`/reservations/${id}/cancel-late-arrival`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reservations'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
+}
+
 export function useCheckInOutWithPayment() {
   const checkIn = useCheckIn()
   const checkOut = useCheckOut()

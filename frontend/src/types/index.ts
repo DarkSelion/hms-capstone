@@ -118,7 +118,7 @@ export interface Reservation {
   reservation_number: string;
   guest: Guest;
   room: Room;
-  status: 'pending' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show';
+  status: 'pending' | 'confirmed' | 'checked_in' | 'checked_out' | 'cancelled' | 'no_show' | 'late_arrival';
   check_in: string;
   check_out: string;
   adults: number;
@@ -140,6 +140,9 @@ export interface Reservation {
   refund_requested_at?: string;
   refund_status?: 'pending' | 'approved' | 'rejected';
   refund_reason?: string;
+  late_arrival_deadline?: string;
+  late_arrival_notes?: string;
+  late_arrival_notified_by?: number;
   created_at: string;
 }
 
@@ -302,6 +305,9 @@ export interface DashboardStats {
   pending_reservations: number;
   total_rooms: number;
   dirty_rooms: number;
+  overdue_count: number;
+  overstay_count: number;
+  late_arrival_count: number;
 }
 
 export interface RevenueData {
