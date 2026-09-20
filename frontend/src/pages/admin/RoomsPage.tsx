@@ -55,6 +55,7 @@ interface RoomFormData {
   room_number: string
   room_type_id: number | ''
   floor: number | ''
+  capacity: number | ''
   price_override: string
   status: string
   description: string
@@ -65,6 +66,7 @@ const defaultFormData: RoomFormData = {
   room_number: '',
   room_type_id: '',
   floor: '',
+  capacity: '',
   price_override: '',
   status: 'available',
   description: '',
@@ -122,6 +124,7 @@ export default function RoomsPage() {
       room_number: room.room_number,
       room_type_id: getRoomTypeId(room),
       floor: room.floor,
+      capacity: room.capacity,
       price_override: room.price_override?.toString() ?? '',
       status: room.status,
       description: room.description ?? '',
@@ -142,6 +145,8 @@ export default function RoomsPage() {
     if (formData.room_type_id === '') errors.room_type_id = 'Room type is required'
     if (formData.floor === '') errors.floor = 'Floor is required'
     else if (Number(formData.floor) < 0) errors.floor = 'Floor must be 0 or greater'
+    if (formData.capacity === '' || formData.capacity === 0) errors.capacity = 'Capacity is required'
+    else if (Number(formData.capacity) < 1) errors.capacity = 'Capacity must be at least 1'
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -155,6 +160,7 @@ export default function RoomsPage() {
       room_number: formData.room_number,
       room_type_id: formData.room_type_id,
       floor: Number(formData.floor),
+      capacity: Number(formData.capacity),
       status: formData.status,
       description: formData.description === '' ? null : formData.description,
       notes: formData.notes === '' ? null : formData.notes,
@@ -528,7 +534,7 @@ export default function RoomsPage() {
                   <p className="text-xs text-muted">Floor assignment and per-night rate.</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <Input
                   label="Floor"
                   type="number"
@@ -537,6 +543,15 @@ export default function RoomsPage() {
                   value={formData.floor === '' ? '' : formData.floor}
                   onChange={(e) => updateField('floor', e.target.value ? Number(e.target.value) : '')}
                   error={formErrors.floor}
+                />
+                <Input
+                  label="Capacity"
+                  type="number"
+                  min={1}
+                  placeholder="2"
+                  value={formData.capacity === '' ? '' : formData.capacity}
+                  onChange={(e) => updateField('capacity', e.target.value ? Number(e.target.value) : '')}
+                  error={formErrors.capacity}
                 />
                 <div className="space-y-1">
                   <Input
