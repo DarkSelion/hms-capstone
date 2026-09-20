@@ -460,6 +460,7 @@ class PaymentController extends Controller
         $reservation->update([
             'refund_status' => 'rejected',
             'refund_requested_at' => null,
+            'refund_rejection_reason' => $data['reason'],
         ]);
 
         ActivityLog::create([

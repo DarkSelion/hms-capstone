@@ -685,7 +685,7 @@ function ReservationCard({
   const showPayButton = hasBalance && canPayOnline(r)
   const isAlive = r.status === 'pending' || r.status === 'confirmed' || r.status === 'checked_in'
   const showCancelButton = !r.refund_requested_at && r.payment_status !== 'paid' && (r.status === 'pending' || r.status === 'confirmed') && r.cancellation_tier !== 'non_refundable'
-  const showRefundButton = !r.refund_requested_at && r.payment_status === 'paid' && isAlive && r.cancellation_tier !== 'non_refundable' && r.refund_status !== 'approved'
+  const showRefundButton = !r.refund_requested_at && r.payment_status === 'paid' && isAlive && r.cancellation_tier !== 'non_refundable' && r.refund_status !== 'approved' && r.refund_status !== 'rejected'
   const showWriteReview = r.status === 'checked_out'
 
   return (
@@ -1041,6 +1041,27 @@ function ReservationDetailsModal({
             <span className="text-lg font-bold text-gold">{fmt(toNum(r.due_amount))}</span>
           </div>
         </div>
+
+        {r.refund_status === 'rejected' && (
+          <div className="rounded-xl bg-rose-500/5 border border-rose-500/20 p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <XCircle className="h-4 w-4 text-rose-400" />
+              <p className="text-sm font-semibold text-rose-400">Refund Rejected</p>
+            </div>
+            {r.refund_reason && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-rose-400/60 mb-0.5">Your reason</p>
+                <p className="text-sm text-foreground/80">{r.refund_reason}</p>
+              </div>
+            )}
+            {r.refund_rejection_reason && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-rose-400/60 mb-0.5">Why it was rejected</p>
+                <p className="text-sm text-foreground/80">{r.refund_rejection_reason}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex items-start gap-2 rounded-lg bg-gold/10 border border-gold/20 px-3 py-2.5">
           <Clock className="h-4 w-4 text-gold shrink-0 mt-0.5" />

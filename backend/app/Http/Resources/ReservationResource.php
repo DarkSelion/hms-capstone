@@ -35,6 +35,7 @@ class ReservationResource extends JsonResource
             'refund_requested_at' => $this->refund_requested_at,
             'refund_status' => $this->refund_status,
             'refund_reason' => $this->refund_reason,
+            'refund_rejection_reason' => $this->refund_rejection_reason,
             'notes' => $this->notes,
             'source' => $this->source,
             'payments' => PaymentResource::collection($this->whenLoaded('payments')),

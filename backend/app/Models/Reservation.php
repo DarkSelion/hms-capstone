@@ -49,6 +49,7 @@ class Reservation extends Model
         'refund_requested_at',
         'refund_status',
         'refund_reason',
+        'refund_rejection_reason',
         'cancellation_tier',
         'cancellation_reason',
         'late_arrival_deadline',

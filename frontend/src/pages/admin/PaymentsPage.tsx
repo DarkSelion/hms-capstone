@@ -87,21 +87,26 @@ const [showFormModal, setShowFormModal] = useState(false)
   const [refundTarget, setRefundTarget] = useState<Reservation | null>(null)
   const [rejectTarget, setRejectTarget] = useState<Reservation | null>(null)
   const [refundSearch, setRefundSearch] = useState('')
+  const [refundStatusFilter, setRefundStatusFilter] = useState<'all' | 'pending' | 'rejected' | 'approved'>('all')
   const { data: refundRequestsData, isLoading: refundLoading } = useReservations({
     per_page: 100,
     refund_requested: '1',
   })
   const refundRequests = useMemo(() => {
     const all = (refundRequestsData?.data ?? []) as Reservation[]
-    if (!refundSearch.trim()) return all
+    let filtered = all
+    if (refundStatusFilter !== 'all') {
+      filtered = filtered.filter((r) => r.refund_status === refundStatusFilter)
+    }
+    if (!refundSearch.trim()) return filtered
     const q = refundSearch.toLowerCase()
-    return all.filter((r) => {
+    return filtered.filter((r) => {
       const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.toLowerCase()
       const num = (r.reservation_number ?? '').toLowerCase()
       const room = (r.room?.room_number ?? '').toLowerCase()
       return name.includes(q) || num.includes(q) || room.includes(q)
     })
-  }, [refundRequestsData, refundSearch])
+  }, [refundRequestsData, refundSearch, refundStatusFilter])
 
   const queryParams = useMemo(() => {
     const params: Record<string, string | number | undefined> = { page, sort: sortBy }
@@ -548,6 +553,21 @@ const [showFormModal, setShowFormModal] = useState(false)
                   value={refundSearch}
                   onChange={(e) => setRefundSearch(e.target.value)}
                 />
+              </div>
+              <div className="flex items-center gap-1 rounded-lg border border-border bg-bg p-0.5">
+                {(['all', 'pending', 'rejected', 'approved'] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setRefundStatusFilter(s)}
+                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                      refundStatusFilter === s
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'text-muted hover:text-foreground'
+                    }`}
+                  >
+                    {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+                  </button>
+                ))}
               </div>
             </div>
 

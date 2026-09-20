@@ -140,6 +140,7 @@ export interface Reservation {
   refund_requested_at?: string;
   refund_status?: 'pending' | 'approved' | 'rejected';
   refund_reason?: string;
+  refund_rejection_reason?: string;
   late_arrival_deadline?: string;
   late_arrival_notes?: string;
   late_arrival_notified_by?: number;
@@ -449,6 +450,7 @@ payment_status: string
   refund_requested_at?: string
   refund_status?: 'pending' | 'approved' | 'rejected'
   refund_reason?: string
+  refund_rejection_reason?: string
   cancellation_tier?: 'flexible' | 'non_refundable'
   created_at: string
 }
