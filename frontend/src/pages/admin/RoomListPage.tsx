@@ -48,6 +48,7 @@ interface RoomFormData {
   room_number: string
   room_type_id: number | ''
   floor: number | ''
+  capacity: number | ''
   bed_type: string
   price_override: string
   status: string
@@ -59,6 +60,7 @@ const defaultFormData: RoomFormData = {
   room_number: '',
   room_type_id: '',
   floor: '',
+  capacity: '',
   bed_type: '',
   price_override: '',
   status: 'available',
@@ -114,6 +116,7 @@ export default function RoomListPage() {
       room_number: room.room_number,
       room_type_id: getRoomTypeId(room),
       floor: room.floor,
+      capacity: room.capacity,
       bed_type: room.bed_type ?? '',
       price_override: room.price_override?.toString() ?? '',
       status: room.status,
@@ -135,6 +138,8 @@ export default function RoomListPage() {
     if (formData.room_type_id === '') errors.room_type_id = 'Room type is required'
     if (formData.floor === '') errors.floor = 'Floor is required'
     else if (Number(formData.floor) < 0) errors.floor = 'Floor must be 0 or greater'
+    if (formData.capacity === '' || formData.capacity === 0) errors.capacity = 'Capacity is required'
+    else if (Number(formData.capacity) < 1) errors.capacity = 'Capacity must be at least 1'
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -148,6 +153,7 @@ export default function RoomListPage() {
       room_number: formData.room_number,
       room_type_id: formData.room_type_id,
       floor: Number(formData.floor),
+      capacity: Number(formData.capacity),
       bed_type: formData.bed_type === '' ? null : formData.bed_type,
       status: formData.status,
       description: formData.description === '' ? null : formData.description,
@@ -390,7 +396,7 @@ export default function RoomListPage() {
                   ))}
                 </Select>
               </div>
-              <div className="mt-4 space-y-1">
+              <div className="mt-4 grid grid-cols-2 gap-4">
                 <Select
                   label="Bed Type"
                   value={formData.bed_type}
@@ -401,8 +407,17 @@ export default function RoomListPage() {
                     <option key={bt} value={bt}>{bt}</option>
                   ))}
                 </Select>
-                <p className="text-xs text-muted">Optional — overrides the room type's default bed configuration.</p>
+                <Input
+                  label="Capacity"
+                  type="number"
+                  min={1}
+                  placeholder="2"
+                  value={formData.capacity === '' ? '' : formData.capacity}
+                  onChange={(e) => updateField('capacity', e.target.value ? Number(e.target.value) : '')}
+                  error={formErrors.capacity}
+                />
               </div>
+              <p className="mt-2 text-xs text-muted">Bed type overrides the room type's default. Capacity is the max guests for this room.</p>
             </section>
 
             <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
