@@ -16,11 +16,10 @@ import { CancelReservationModal } from '@/components/shared/CancelReservationMod
 import { ReservationDetailModal } from '@/components/shared/ReservationDetailModal'
 import { ReservationFormModal } from '@/components/shared/ReservationFormModal'
 import { ReservationCheckInOutModal } from '@/components/shared/ReservationCheckInOutModal'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { AlertTriangle, Luggage, CalendarDays } from 'lucide-react'
+import { Luggage, CalendarDays } from 'lucide-react'
 import type { Reservation } from '@/types'
 
 export default function CheckInPage() {
