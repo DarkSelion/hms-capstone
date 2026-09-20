@@ -404,9 +404,16 @@ class PaymentController extends Controller
             $reservation->update([
                 'refund_status' => 'approved',
                 'refund_requested_at' => null,
+                'status' => 'cancelled',
+                'cancellation_reason' => 'Refund approved',
             ]);
 
             $reservation->reconcileBalances();
+
+            $room = $reservation->room;
+            if ($room) {
+                $room->reconcileStatus();
+            }
         });
 
         ActivityLog::create([

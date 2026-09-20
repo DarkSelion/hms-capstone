@@ -685,7 +685,7 @@ function ReservationCard({
   const showPayButton = hasBalance && canPayOnline(r)
   const isAlive = r.status === 'pending' || r.status === 'confirmed' || r.status === 'checked_in'
   const showCancelButton = !r.refund_requested_at && r.payment_status !== 'paid' && (r.status === 'pending' || r.status === 'confirmed') && r.cancellation_tier !== 'non_refundable'
-  const showRefundButton = !r.refund_requested_at && r.payment_status === 'paid' && isAlive && r.cancellation_tier !== 'non_refundable'
+  const showRefundButton = !r.refund_requested_at && r.payment_status === 'paid' && isAlive && r.cancellation_tier !== 'non_refundable' && r.refund_status !== 'approved'
   const showWriteReview = r.status === 'checked_out'
 
   return (

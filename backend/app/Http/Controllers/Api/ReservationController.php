@@ -246,6 +246,9 @@ class ReservationController extends Controller
             // Audit timestamps only reflect an ACTUAL status change, never a
             // same-status re-save of an edit form.
             if ($statusChanged && $newStatus === 'checked_in') {
+                if ($reservation->refund_status === 'approved') {
+                    return response()->json(['message' => 'This reservation has been refunded and cannot be checked in.'], 422);
+                }
                 if ($reservation->due_amount > 0 && ! $reservation->hasRecordedPayment()) {
                     return response()->json(['message' => 'Collect a payment before checking in.'], 422);
                 }
@@ -411,6 +414,10 @@ class ReservationController extends Controller
     {
         if (! in_array($reservation->status, ['confirmed', 'pending'])) {
             return response()->json(['message' => 'Only confirmed or pending reservations can be checked in.'], 422);
+        }
+
+        if ($reservation->refund_status === 'approved') {
+            return response()->json(['message' => 'This reservation has been refunded and cannot be checked in.'], 422);
         }
 
         if ($reservation->due_amount > 0 && ! $reservation->hasRecordedPayment()) {

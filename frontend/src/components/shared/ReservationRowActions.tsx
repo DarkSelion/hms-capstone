@@ -39,7 +39,7 @@ export function ReservationRowActions({
   }
 
   const overdue = status === 'confirmed' && !!is_overdue && !alwaysAllowCheckIn
-  const showCheckIn = (status === 'pending' || status === 'confirmed') && onCheckIn
+  const showCheckIn = (status === 'pending' || status === 'confirmed') && onCheckIn && reservation.refund_status !== 'approved'
   const showCheckOut = status === 'checked_in' && onCheckOut
 
   const buttons: ReactNode[] = [
