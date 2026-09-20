@@ -363,7 +363,7 @@ const [showFormModal, setShowFormModal] = useState(false)
       sortable: false,
       render: (r) => (
         <RowActions>
-          {r.refund_status === 'pending' && (
+          {(r.refund_status === 'pending' || (!r.refund_status && r.refund_requested_at)) && (
             <>
               <RowActionButton
                 tone="success"
