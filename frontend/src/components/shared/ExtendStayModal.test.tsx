@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ExtendStayModal } from './ExtendStayModal'
-import { formatCurrency } from '@/lib/format'
 import type { ExtendPreview, Guest, Reservation, Room } from '@/types'
 
 const { mockExtendPreview } = vi.hoisted(() => ({

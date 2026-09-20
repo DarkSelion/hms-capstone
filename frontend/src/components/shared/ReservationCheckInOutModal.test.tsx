@@ -64,12 +64,6 @@ function daysAgo(n: number): string {
   return toLocalDateStr(d)
 }
 
-function daysFromNow(n: number): string {
-  const d = new Date()
-  d.setDate(d.getDate() + n)
-  return toLocalDateStr(d)
-}
-
 function reservation(overrides: Partial<Reservation> = {}): Reservation {
   return {
     id: 1,

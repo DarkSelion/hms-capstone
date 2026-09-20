@@ -6,7 +6,6 @@ import { formatCurrency, formatDateDisplay } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
-import { StatusBadge } from '@/components/shared/StatusBadge'
 import {
   RotateCcw, Loader2, AlertCircle, UserRound, BedDouble, CalendarDays,
   CreditCard, ChevronDown, Search, ReceiptText, Info, CheckCircle2, XCircle, MessageSquareText,
