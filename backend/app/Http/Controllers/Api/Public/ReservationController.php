@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use App\Mail\BookingConfirmationMail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class ReservationController extends Controller
@@ -184,9 +185,22 @@ class ReservationController extends Controller
         $guest = $request->user();
 
         $reservations = Reservation::where('guest_id', $guest->id)
-            ->with(['room.roomType'])
+            ->with(['room.images', 'room.roomType.typeImages'])
             ->orderBy('created_at', 'desc')
             ->paginate($request->per_page ?? 10);
+
+        foreach ($reservations as $reservation) {
+            $room = $reservation->room;
+            if ($room) {
+                $image = $room->images->firstWhere('is_primary', true) ?? $room->images->first();
+                $room->setAttribute('image_url', $this->resolveImageUrl($image));
+            }
+            $roomType = $room?->roomType;
+            if ($roomType && !$roomType->getAttribute('image_url')) {
+                $typeImage = $roomType->typeImages->firstWhere('is_primary', true) ?? $roomType->typeImages->first();
+                $roomType->setAttribute('image_url', $this->resolveImageUrl($typeImage));
+            }
+        }
 
         return response()->json($reservations);
     }
@@ -199,9 +213,29 @@ class ReservationController extends Controller
             return response()->json(['message' => 'Not found.'], 404);
         }
 
-        return response()->json(
-            $reservation->load(['room.roomType', 'payments'])
-        );
+        $reservation->load(['room.images', 'room.roomType.typeImages', 'payments']);
+
+        $room = $reservation->room;
+        if ($room) {
+            $image = $room->images->firstWhere('is_primary', true) ?? $room->images->first();
+            $room->setAttribute('image_url', $this->resolveImageUrl($image));
+        }
+
+        $roomType = $room?->roomType;
+        if ($roomType) {
+            $typeImage = $roomType->typeImages->firstWhere('is_primary', true) ?? $roomType->typeImages->first();
+            $roomType->setAttribute('image_url', $this->resolveImageUrl($typeImage));
+        }
+
+        return response()->json($reservation);
+    }
+
+    private function resolveImageUrl($image): ?string
+    {
+        if (!$image) return null;
+        return str_starts_with($image->image_path, 'http')
+            ? $image->image_path
+            : Storage::url($image->image_path);
     }
 
     public function cancel(Request $request, Reservation $reservation)
