@@ -124,7 +124,8 @@ export function useDeleteReservation() {
 export function useCheckIn() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => api.post(`/reservations/${id}/check-in`),
+    mutationFn: ({ id, waive_early_checkin_fee }: { id: number; waive_early_checkin_fee?: boolean }) =>
+      api.post(`/reservations/${id}/check-in`, waive_early_checkin_fee ? { waive_early_checkin_fee: true } : undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reservations'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
@@ -249,8 +250,9 @@ export function useCheckInOutWithPayment() {
     action: 'check-in' | 'check-out',
     reservation: Reservation,
     actualCheckOut?: string,
+    waiveEarlyFee?: boolean,
   ) => {
-    if (action === 'check-in') await checkIn.mutateAsync(reservation.id)
+    if (action === 'check-in') await checkIn.mutateAsync({ id: reservation.id, waive_early_checkin_fee: waiveEarlyFee })
     else await checkOut.mutateAsync({ id: reservation.id, actual_check_out: actualCheckOut })
   }
 

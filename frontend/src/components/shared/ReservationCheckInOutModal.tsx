@@ -20,6 +20,9 @@ interface ReservationCheckInOutModalProps {
   isOpen: boolean
   isLoading?: boolean
   error?: { message: string; paymentRecorded: boolean } | null
+  earlyCheckinFee?: number
+  waiveEarlyFee?: boolean
+  onSetWaive?: (waive: boolean) => void
   onClose: () => void
   onConfirm: (actualCheckOut?: string) => void
   onConfirmAfterPayment?: (payment?: Payment, actualCheckOut?: string, projectedTotal?: number) => void
@@ -96,6 +99,9 @@ export function ReservationCheckInOutModal({
   isOpen,
   isLoading,
   error,
+  earlyCheckinFee = 0,
+  waiveEarlyFee = false,
+  onSetWaive,
   onClose,
   onConfirm,
   onConfirmAfterPayment,
@@ -376,6 +382,29 @@ export function ReservationCheckInOutModal({
             </div>
           </div>
         </Card>
+
+        {isCheckIn && earlyCheckinFee > 0 && effective.check_in && todayStr < effective.check_in && (
+          <div className="flex items-start gap-2.5 rounded-xl border border-amber-200/60 bg-amber-50 px-3.5 py-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div className="min-w-0 flex-1 text-sm">
+              <p className="font-medium text-amber-700">
+                Early check-in — {formatCurrency(earlyCheckinFee)} fee applies
+              </p>
+              <p className="mt-0.5 text-[13px] text-amber-600">
+                Guest is arriving before the booked date ({formatDateDisplay(effective.check_in)}). The fee will be added to the total.
+              </p>
+              <label className="mt-2 flex items-center gap-2 text-sm text-amber-700">
+                <input
+                  type="checkbox"
+                  checked={!waiveEarlyFee}
+                  onChange={(e) => onSetWaive?.(!e.target.checked)}
+                  className="h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                />
+                Apply {formatCurrency(earlyCheckinFee)} early check-in fee
+              </label>
+            </div>
+          </div>
+        )}
 
         <Card title="Payments" icon={<ReceiptText className="h-4 w-4" />} tone="sky">
           {payments.length > 0 ? (

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Guest;
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Room;
@@ -424,6 +425,10 @@ class ReservationController extends Controller
             return response()->json(['message' => 'Collect a payment before checking in.'], 422);
         }
 
+        $data = $request->validate([
+            'waive_early_checkin_fee' => 'sometimes|boolean',
+        ]);
+
         $reservation->update([
             'status' => 'checked_in',
             'checked_in_by' => $request->user()->id,
@@ -432,16 +437,76 @@ class ReservationController extends Controller
 
         $reservation->room->update(['status' => 'occupied']);
 
-        ActivityLog::create([
-            'user_id' => $request->user()->id,
-            'action' => 'checked_in',
-            'module' => 'reservations',
-            'model_type' => 'Reservation',
-            'model_id' => $reservation->id,
-            'description' => "Checked in reservation #{$reservation->reservation_number}",
-        ]);
+        // ── Early check-in fee ──────────────────────────────────────────────
+        $earlyFee = (float) (Setting::where('key', 'early_checkin_fee')->value('value') ?? 0);
+        $today = now()->toDateString();
+        $bookedCheckIn = $reservation->check_in->toDateString();
+        $waived = ($data['waive_early_checkin_fee'] ?? false) === true;
 
-        return response()->json($reservation->load(['guest', 'room.roomType']));
+        if ($earlyFee > 0 && $today < $bookedCheckIn && ! $waived) {
+            $newTotal = round((float) $reservation->total_amount + $earlyFee, 2);
+            $newDue = max(0.0, $newTotal - (float) $reservation->paid_amount);
+            $reservation->update([
+                'total_amount' => $newTotal,
+                'due_amount' => $newDue,
+            ]);
+
+            $year = now()->year;
+            $lastId = Invoice::whereBetween('created_at', ["$year-01-01 00:00:00", "$year-12-31 23:59:59"])->max('id') ?? 0;
+
+            $invoice = Invoice::firstOrCreate(
+                ['reservation_id' => $reservation->id, 'status' => 'draft'],
+                [
+                    'invoice_number' => 'INV-'.$year.'-'.str_pad($lastId + 1, 4, '0', STR_PAD_LEFT),
+                    'guest_id' => $reservation->guest_id,
+                    'amount' => 0,
+                    'tax_amount' => 0,
+                    'discount_amount' => 0,
+                    'total_amount' => 0,
+                    'paid_amount' => 0,
+                    'due_amount' => 0,
+                    'issued_date' => now()->toDateString(),
+                    'due_date' => now()->addDays(30)->toDateString(),
+                    'created_by' => $request->user()->id,
+                ]
+            );
+
+            $invoice->items()->create([
+                'description' => 'Early check-in fee',
+                'quantity' => 1,
+                'unit_price' => $earlyFee,
+                'total_price' => $earlyFee,
+                'type' => 'service',
+            ]);
+
+            $invoice->update([
+                'amount' => $invoice->items()->sum('total_price'),
+                'total_amount' => $invoice->items()->sum('total_price'),
+                'due_amount' => $invoice->items()->sum('total_price'),
+            ]);
+
+            $reservation->reconcileBalances();
+
+            ActivityLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'checked_in',
+                'module' => 'reservations',
+                'model_type' => 'Reservation',
+                'model_id' => $reservation->id,
+                'description' => "Checked in reservation #{$reservation->reservation_number} with early check-in fee of ".number_format($earlyFee, 2),
+            ]);
+        } else {
+            ActivityLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'checked_in',
+                'module' => 'reservations',
+                'model_type' => 'Reservation',
+                'model_id' => $reservation->id,
+                'description' => "Checked in reservation #{$reservation->reservation_number}",
+            ]);
+        }
+
+        return response()->json($reservation->fresh()->load(['guest', 'room.roomType']));
     }
 
     public function checkOut(Request $request, Reservation $reservation)
@@ -708,13 +773,17 @@ class ReservationController extends Controller
         }
 
         $data = $request->validate([
-            'deadline' => ['required', 'date', 'after:now'],
+            'deadline' => ['nullable', 'date', 'after:now'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
+        // Compute default deadline from setting when not provided
+        $holdHours = (int) (Setting::where('key', 'late_arrival_hold_hours')->value('value') ?? 48);
+        $deadline = $data['deadline'] ?? now()->addHours($holdHours)->toDateTimeString();
+
         $reservation->update([
             'status' => 'late_arrival',
-            'late_arrival_deadline' => $data['deadline'],
+            'late_arrival_deadline' => $deadline,
             'late_arrival_notes' => $data['notes'] ?? null,
             'late_arrival_notified_by' => $request->user()->id,
             'is_overdue' => false,
@@ -727,7 +796,7 @@ class ReservationController extends Controller
             'module' => 'reservations',
             'model_type' => 'Reservation',
             'model_id' => $reservation->id,
-            'description' => "Recorded late arrival for reservation #{$reservation->reservation_number}. Hold deadline: {$data['deadline']}",
+            'description' => "Recorded late arrival for reservation #{$reservation->reservation_number}. Hold deadline: {$deadline}",
         ]);
 
         return response()->json($reservation->fresh()->load(['guest', 'room.roomType', 'lateArrivalNotifiedBy']));

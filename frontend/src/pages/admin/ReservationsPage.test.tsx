@@ -30,6 +30,7 @@ vi.mock('@/hooks/useApi', () => ({
   useNotifyLateArrival: () => mockUseNotifyLateArrival(),
   useExtendStay: () => mockUseExtendStay(),
   usePayments: (params?: Record<string, unknown>) => mockUsePayments(params),
+  useSettings: () => ({ data: undefined }),
 }))
 
 vi.mock('@/hooks/useCheckInOutModal', () => ({
@@ -117,6 +118,8 @@ function renderPage(data: ReturnType<typeof paginated> = paginated([reservation(
     error: null,
     isLoading: false,
     isOpen: false,
+    waiveEarlyFee: false,
+    setWaive: vi.fn(),
     open: vi.fn(),
     close: vi.fn(),
     confirm: vi.fn(),
@@ -176,6 +179,7 @@ describe('ReservationsPage', () => {
     mockUseExtendStay.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseCheckInOutModal.mockReturnValue({
       target: null, error: null, isLoading: false, isOpen: false,
+      waiveEarlyFee: false, setWaive: vi.fn(),
       open: vi.fn(), close: vi.fn(), confirm: vi.fn(), confirmAfterPayment: vi.fn(),
     })
 
@@ -193,6 +197,7 @@ describe('ReservationsPage', () => {
     mockUseExtendStay.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseCheckInOutModal.mockReturnValue({
       target: null, error: null, isLoading: false, isOpen: false,
+      waiveEarlyFee: false, setWaive: vi.fn(),
       open: vi.fn(), close: vi.fn(), confirm: vi.fn(), confirmAfterPayment: vi.fn(),
     })
 
@@ -222,6 +227,7 @@ describe('ReservationsPage', () => {
     mockUseExtendStay.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseCheckInOutModal.mockReturnValue({
       target: null, error: null, isLoading: false, isOpen: false,
+      waiveEarlyFee: false, setWaive: vi.fn(),
       open: vi.fn(), close: vi.fn(), confirm: vi.fn(), confirmAfterPayment: vi.fn(),
     })
 
@@ -284,6 +290,7 @@ describe('ReservationsPage', () => {
     mockUseExtendStay.mockReturnValue({ mutateAsync: vi.fn() })
     mockUseCheckInOutModal.mockReturnValue({
       target: null, error: null, isLoading: false, isOpen: false,
+      waiveEarlyFee: false, setWaive: vi.fn(),
       open: vi.fn(), close: vi.fn(), confirm: vi.fn(), confirmAfterPayment: vi.fn(),
     })
 

@@ -81,6 +81,7 @@ function setupMocks({ listData }: { listData: Reservation[] }) {
   mockUseExtendStay.mockReturnValue({ mutateAsync: vi.fn(), isPending: false })
   mockUseCheckInOutModal.mockReturnValue({
     target: null, error: null, isLoading: false, isOpen: false,
+    waiveEarlyFee: false, setWaive: vi.fn(),
     open: vi.fn(), close: vi.fn(), confirm: vi.fn(), confirmAfterPayment: vi.fn(),
   })
 }

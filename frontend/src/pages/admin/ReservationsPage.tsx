@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
-  useReservations, useCancelReservation, useMarkNoShow, useExtendStay, useNotifyLateArrival,
+  useReservations, useCancelReservation, useMarkNoShow, useExtendStay, useNotifyLateArrival, useSettings,
 } from '@/hooks/useApi'
 import { useCheckInOutModal } from '@/hooks/useCheckInOutModal'
 import { formatCurrency, formatDateDisplay } from '@/lib/format'
@@ -66,6 +66,22 @@ export default function ReservationsPage() {
   const checkOutModal = useCheckInOutModal('check-out')
   const { open: openCheckIn, confirmAfterPayment: confirmAfterCheckIn } = checkInModal
   const { open: openCheckOut, confirmAfterPayment: confirmAfterCheckOut } = checkOutModal
+
+  const { data: settings } = useSettings()
+  const bookingSettings = settings as Record<string, unknown> | undefined
+  const holdHours = Number(bookingSettings?.late_arrival_hold_hours ?? 48)
+  const earlyCheckinFeeSetting = Number(bookingSettings?.early_checkin_fee ?? 0)
+
+  const lateArrivalDefaultDeadline = useMemo(() => {
+    const d = new Date()
+    d.setHours(d.getHours() + holdHours)
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    const h = String(d.getHours()).padStart(2, '0')
+    const min = String(d.getMinutes()).padStart(2, '0')
+    return `${y}-${m}-${day}T${h}:${min}`
+  }, [holdHours])
 
   const queryParams = useMemo(() => {
     const params: Record<string, string | number | undefined> = {
@@ -690,6 +706,9 @@ export default function ReservationsPage() {
         isOpen={checkInModal.isOpen}
         isLoading={checkInModal.isLoading}
         error={checkInModal.error}
+        earlyCheckinFee={earlyCheckinFeeSetting}
+        waiveEarlyFee={checkInModal.waiveEarlyFee}
+        onSetWaive={checkInModal.setWaive}
         onClose={checkInModal.close}
         onConfirm={checkInModal.confirm}
         onConfirmAfterPayment={confirmAfterCheckIn}
@@ -735,6 +754,7 @@ export default function ReservationsPage() {
         isOpen={!!lateArrivalTarget}
         onClose={() => setLateArrivalTarget(null)}
         reservation={lateArrivalTarget}
+        defaultDeadline={lateArrivalDefaultDeadline}
         isLoading={notifyLateArrival.isPending}
         onConfirm={handleLateArrivalConfirm}
       />

@@ -68,7 +68,7 @@ describe('useCheckInOutModal', () => {
     await act(async () => {
       await result.current.confirm()
     })
-    expect(mockStatusChange).toHaveBeenCalledWith('check-in', res, undefined)
+    expect(mockStatusChange).toHaveBeenCalledWith('check-in', res, undefined, false)
     expect(result.current.isOpen).toBe(false)
     expect(result.current.error).toBeNull()
   })
@@ -97,7 +97,7 @@ describe('useCheckInOutModal', () => {
     await act(async () => {
       await result.current.confirmAfterPayment(payment({ amount: 165 }))
     })
-    expect(mockStatusChange).toHaveBeenCalledWith('check-in', res, undefined)
+    expect(mockStatusChange).toHaveBeenCalledWith('check-in', res, undefined, false)
     expect(result.current.error?.paymentRecorded).toBe(true)
     expect(result.current.error?.message).toMatch(/Payment was recorded, but check-in failed/)
     expect(result.current.target?.paid_amount).toBe(165)
@@ -148,5 +148,20 @@ describe('useCheckInOutModal', () => {
     expect(mockStatusChange).toHaveBeenCalledTimes(2)
     expect(result.current.isOpen).toBe(false)
     expect(result.current.error).toBeNull()
+  })
+
+  it('waiveEarlyFee is passed through to performStatusChange', async () => {
+    mockStatusChange.mockResolvedValue(undefined)
+    const { result } = renderHook(() => useCheckInOutModal('check-in'))
+    const res = makeReservation()
+    act(() => result.current.open(res))
+
+    act(() => result.current.setWaive(true))
+    expect(result.current.waiveEarlyFee).toBe(true)
+
+    await act(async () => {
+      await result.current.confirm()
+    })
+    expect(mockStatusChange).toHaveBeenCalledWith('check-in', res, undefined, true)
   })
 })

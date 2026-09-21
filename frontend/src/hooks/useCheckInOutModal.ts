@@ -7,6 +7,7 @@ export type CheckInOutError = { message: string; paymentRecorded: boolean } | nu
 export function useCheckInOutModal(action: 'check-in' | 'check-out') {
   const [target, setTarget] = useState<Reservation | null>(null)
   const [error, setError] = useState<CheckInOutError>(null)
+  const [waiveEarlyFee, setWaiveEarlyFee] = useState(false)
   const { performStatusChange, isLoading } = useCheckInOutWithPayment()
 
   const verb = action === 'check-in' ? 'check-in' : 'check-out'
@@ -15,18 +16,22 @@ export function useCheckInOutModal(action: 'check-in' | 'check-out') {
   const open = useCallback((reservation: Reservation) => {
     setTarget(reservation)
     setError(null)
+    setWaiveEarlyFee(false)
   }, [])
 
   const close = useCallback(() => {
     setTarget(null)
     setError(null)
+    setWaiveEarlyFee(false)
   }, [])
+
+  const setWaive = useCallback((waive: boolean) => setWaiveEarlyFee(waive), [])
 
   const runStatusChange = useCallback(
     async (paymentRecorded: boolean, actualCheckOut?: string) => {
       if (!target) return
       try {
-        await performStatusChange(action, target, actualCheckOut)
+        await performStatusChange(action, target, actualCheckOut, waiveEarlyFee)
         setTarget(null)
         setError(null)
       } catch (err) {
@@ -39,7 +44,7 @@ export function useCheckInOutModal(action: 'check-in' | 'check-out') {
         })
       }
     },
-    [action, target, performStatusChange, verb, Verb],
+    [action, target, performStatusChange, verb, Verb, waiveEarlyFee],
   )
 
   const confirm = useCallback((actualCheckOut?: string) => runStatusChange(false, actualCheckOut), [runStatusChange])
@@ -73,6 +78,8 @@ export function useCheckInOutModal(action: 'check-in' | 'check-out') {
     error,
     isLoading,
     isOpen: !!target,
+    waiveEarlyFee,
+    setWaive,
     open,
     close,
     confirm,

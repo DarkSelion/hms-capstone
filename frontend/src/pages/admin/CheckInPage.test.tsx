@@ -22,6 +22,7 @@ vi.mock('@/hooks/useApi', () => ({
   useCancelReservation: () => mockUseCancelReservation(),
   useMarkNoShow: () => mockUseMarkNoShow(),
   useNotifyLateArrival: () => mockUseNotifyLateArrival(),
+  useSettings: () => ({ data: undefined }),
 }))
 
 vi.mock('@/hooks/useCheckInOutModal', () => ({
@@ -96,7 +97,7 @@ function setupMocks({ listData }: { listData: Reservation[] }) {
   mockUseMarkNoShow.mockReturnValue({ mutateAsync: vi.fn(), isPending: false })
   mockUseNotifyLateArrival.mockReturnValue({ mutateAsync: vi.fn(), isPending: false })
   mockUseCheckInOutModal.mockReturnValue({
-    target: null, error: null, isLoading: false, isOpen: false,
+    target: null, error: null, isLoading: false, isOpen: false, waiveEarlyFee: false, setWaive: vi.fn(),
     open: vi.fn(), close: vi.fn(), confirm: vi.fn(), confirmAfterPayment: vi.fn(),
   })
 }
