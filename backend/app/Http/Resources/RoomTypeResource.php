@@ -20,6 +20,8 @@ class RoomTypeResource extends JsonResource
             'bed_type' => $this->bed_type,
             'max_adults' => $this->max_adults,
             'max_children' => $this->max_children,
+            'min_capacity' => $this->whenLoaded('rooms', fn() => $this->rooms->pluck('capacity')->filter()->min() ?? $this->capacity, $this->capacity),
+            'max_capacity' => $this->whenLoaded('rooms', fn() => $this->rooms->pluck('capacity')->filter()->max() ?? $this->capacity, $this->capacity),
             'amenities_json' => $this->amenities_json,
             'is_active' => $this->is_active,
             'rooms_count' => $this->whenCounted('rooms'),

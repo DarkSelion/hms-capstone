@@ -109,20 +109,6 @@ class ReservationController extends Controller
             $tax = $subtotal * $taxRate;
             $total = round($subtotal + $tax, 2);
 
-            $maxAdults = (int) ($roomType->max_adults ?? 0);
-            if ($maxAdults > 0 && (int) $data['adults'] > $maxAdults) {
-                throw ValidationException::withMessages([
-                    'adults' => ["{$roomType->name} accommodates up to {$maxAdults} adults."],
-                ]);
-            }
-
-            $maxChildren = (int) ($roomType->max_children ?? 0);
-            if ($maxChildren > 0 && (int) ($data['children'] ?? 0) > $maxChildren) {
-                throw ValidationException::withMessages([
-                    'children' => ["The number of children cannot exceed {$maxChildren} for this room type."],
-                ]);
-            }
-
             $totalGuests = (int) $data['adults'] + (int) ($data['children'] ?? 0);
             if ($room->capacity && $totalGuests > (int) $room->capacity) {
                 throw ValidationException::withMessages([

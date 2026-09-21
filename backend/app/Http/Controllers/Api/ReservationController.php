@@ -115,16 +115,10 @@ class ReservationController extends Controller
                 ]);
             }
 
-            if ($room->capacity && (int) $data['adults'] > (int) $room->capacity) {
+            $totalGuests = (int) $data['adults'] + (int) ($data['children'] ?? 0);
+            if ($room->capacity && $totalGuests > (int) $room->capacity) {
                 throw ValidationException::withMessages([
-                    'adults' => ["The number of adults cannot exceed the room capacity of {$room->capacity}."],
-                ]);
-            }
-
-            $maxChildren = (int) ($room->roomType->max_children ?? 0);
-            if ($maxChildren > 0 && (int) ($data['children'] ?? 0) > $maxChildren) {
-                throw ValidationException::withMessages([
-                    'children' => ["The number of children cannot exceed {$maxChildren} for this room type."],
+                    'adults' => ["Total guests (adults + children) cannot exceed the room capacity of {$room->capacity}."],
                 ]);
             }
 
@@ -305,16 +299,10 @@ class ReservationController extends Controller
             if ($roomChanged) {
                 $newRoom = Room::find($newRoomId);
                 if ($newRoom) {
-                    if ($newRoom->capacity && (int) $reservation->adults > (int) $newRoom->capacity) {
+                    $totalGuests = (int) $reservation->adults + (int) $reservation->children;
+                    if ($newRoom->capacity && $totalGuests > (int) $newRoom->capacity) {
                         throw ValidationException::withMessages([
-                            'room_id' => ["The selected room cannot accommodate {$reservation->adults} adults (capacity {$newRoom->capacity})."],
-                        ]);
-                    }
-
-                    $maxChildren = (int) ($newRoom->roomType->max_children ?? 0);
-                    if ($maxChildren > 0 && (int) $reservation->children > $maxChildren) {
-                        throw ValidationException::withMessages([
-                            'room_id' => ["The selected room allows a maximum of {$maxChildren} children."],
+                            'room_id' => ["Total guests ({$totalGuests}) exceed the room capacity of {$newRoom->capacity}."],
                         ]);
                     }
 
@@ -324,22 +312,13 @@ class ReservationController extends Controller
                 }
             }
 
-            if (isset($data['adults'])) {
-                $room = $reservation->room;
-                if ($room && $room->capacity && (int) $data['adults'] > (int) $room->capacity) {
-                    throw ValidationException::withMessages([
-                        'adults' => ["The number of adults cannot exceed the room capacity of {$room->capacity}."],
-                    ]);
-                }
-            }
-
-            if (isset($data['children'])) {
+            if (isset($data['adults']) || isset($data['children'])) {
                 $room = $reservation->room;
                 if ($room) {
-                    $maxChildren = (int) ($room->roomType->max_children ?? 0);
-                    if ($maxChildren > 0 && (int) $data['children'] > $maxChildren) {
+                    $totalGuests = (int) $reservation->adults + (int) $reservation->children;
+                    if ($room->capacity && $totalGuests > (int) $room->capacity) {
                         throw ValidationException::withMessages([
-                            'children' => ["The number of children cannot exceed {$maxChildren} for this room type."],
+                            'adults' => ["Total guests ({$totalGuests}) exceed the room capacity of {$room->capacity}."],
                         ]);
                     }
                 }

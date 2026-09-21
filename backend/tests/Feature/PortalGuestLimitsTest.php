@@ -76,18 +76,32 @@ class PortalGuestLimitsTest extends TestCase
         ], $overrides);
     }
 
-    public function test_adults_above_room_type_max_is_rejected(): void
+    public function test_adults_within_room_capacity_succeeds_even_if_above_type_max(): void
     {
         Sanctum::actingAs($this->guest());
         $type = $this->roomType(['max_adults' => 2]);
-        // Room capacity is generous — only the type's max_adults should block this.
+        // Room capacity is generous — 3 adults fit the room even though type max_adults=2.
         $this->room($type, ['capacity' => 4]);
+
+        $res = $this->postJson('/api/public/reservations', $this->payload($type, ['adults' => 3]));
+
+        $res->assertStatus(201);
+        $reservation = \App\Models\Reservation::first();
+        $this->assertNotNull($reservation);
+        $this->assertSame(3, (int) $reservation->adults);
+    }
+
+    public function test_adults_exceeding_room_capacity_is_rejected(): void
+    {
+        Sanctum::actingAs($this->guest());
+        $type = $this->roomType(['max_adults' => 4]);
+        $this->room($type, ['capacity' => 2]);
 
         $res = $this->postJson('/api/public/reservations', $this->payload($type, ['adults' => 3]));
 
         $res->assertStatus(422);
         $res->assertJsonValidationErrors(['adults']);
-        $this->assertStringContainsString('up to 2 adults', $res->json('errors.adults.0'));
+        $this->assertStringContainsString('capacity of 2', $res->json('errors.adults.0'));
         $this->assertSame(0, \App\Models\Reservation::count());
     }
 

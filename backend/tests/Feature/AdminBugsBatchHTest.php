@@ -513,8 +513,9 @@ class AdminBugsBatchHTest extends TestCase
             'children' => 2,
         ]);
 
+        // 2 adults + 2 children = 4 total > room capacity 2 → rejected on adults (total guests)
         $response->assertStatus(422)
-            ->assertJsonValidationErrors('children');
+            ->assertJsonValidationErrors('adults');
 
         $this->assertDatabaseMissing('reservations', [
             'room_id' => $room->id,
@@ -537,8 +538,9 @@ class AdminBugsBatchHTest extends TestCase
             'children' => 2,
         ]);
 
+        // 2 adults + 2 children = 4 total > room capacity 2 → rejected on adults (total guests)
         $response->assertStatus(422)
-            ->assertJsonValidationErrors('children');
+            ->assertJsonValidationErrors('adults');
 
         $this->assertDatabaseHas('reservations', [
             'id' => $reservation->id,

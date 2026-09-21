@@ -279,7 +279,7 @@ class ReservationsPageTest extends TestCase
             'check_in' => now()->addDays(3)->toDateString(),
             'check_out' => now()->addDays(5)->toDateString(),
             'adults' => 2,
-            'children' => 1,
+            'children' => 0,
             'price_per_night' => 1000,
         ]);
 

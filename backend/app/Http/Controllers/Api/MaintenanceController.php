@@ -26,8 +26,21 @@ class MaintenanceController extends Controller
             $query->where('category', $category);
         }
 
+        if ($search = $request->search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        $sortField = $request->sort_field ?? 'created_at';
+        $sortDir = $request->sort_dir ?? 'desc';
+        $allowed = ['priority', 'status', 'created_at', 'category'];
+        $sortField = in_array($sortField, $allowed) ? $sortField : 'created_at';
+        $sortDir = in_array(strtolower($sortDir), ['asc', 'desc']) ? $sortDir : 'desc';
+
         return response()->json(
-            $query->orderBy('created_at', 'desc')->paginate($request->per_page ?? 10)
+            $query->orderBy($sortField, $sortDir)->paginate($request->per_page ?? 10)
         );
     }
 
@@ -37,6 +50,7 @@ class MaintenanceController extends Controller
             'room_id' => 'required|exists:rooms,id',
             'title' => 'required|string|max:200',
             'description' => 'nullable|string',
+            'notes' => 'nullable|string',
             'category' => 'required|string|max:100',
             'priority' => 'sometimes|in:low,medium,high,urgent',
         ]);
@@ -129,12 +143,23 @@ class MaintenanceController extends Controller
         $data = $request->validate([
             'status' => 'required|in:reported,assigned,in_progress,completed,cancelled',
             'resolution_notes' => 'nullable|string',
+            'actual_cost' => 'nullable|numeric|min:0',
         ]);
 
         $updates = ['status' => $data['status']];
 
+        if ($data['status'] === 'in_progress') {
+            $updates['started_at'] = now();
+        }
+
         if ($data['status'] === 'completed') {
             $updates['completed_at'] = now();
+            if (isset($data['resolution_notes'])) {
+                $updates['resolution_notes'] = $data['resolution_notes'];
+            }
+            if (isset($data['actual_cost'])) {
+                $updates['actual_cost'] = $data['actual_cost'];
+            }
         }
 
         $maintenance->update($updates);
@@ -159,10 +184,12 @@ class MaintenanceController extends Controller
     {
         $data = $request->validate([
             'assigned_to' => 'required|exists:technicians,id',
+            'estimated_cost' => 'nullable|numeric|min:0',
         ]);
 
         $maintenance->update([
             'assigned_to' => $data['assigned_to'],
+            'estimated_cost' => $data['estimated_cost'] ?? $maintenance->estimated_cost,
             'status' => 'assigned',
         ]);
 

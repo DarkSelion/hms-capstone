@@ -77,10 +77,14 @@ class RoomController extends Controller
                         });
                 });
             }
-        }])->with(['rooms' => fn($q) => $q->where('is_active', true)->with('images')->limit(1), 'typeImages'])
+        }])->with(['rooms' => fn($q) => $q->where('is_active', true)->where('status', 'available')->with('images'), 'typeImages'])
             ->orderBy('sort_order')->get();
 
         $roomTypes->each(function ($roomType) {
+            $capacities = $roomType->rooms->pluck('capacity')->filter()->values();
+            $roomType->setAttribute('min_capacity', $capacities->isNotEmpty() ? $capacities->min() : $roomType->capacity);
+            $roomType->setAttribute('max_capacity', $capacities->isNotEmpty() ? $capacities->max() : $roomType->capacity);
+
             $firstRoom = $roomType->rooms->first();
             $image = $firstRoom?->images->firstWhere('is_primary', true) ?? $firstRoom?->images->first();
             $url = $this->resolveImageUrl($image);
@@ -132,6 +136,10 @@ class RoomController extends Controller
             }
         }
         $roomType->setAttribute('gallery', $gallery);
+
+        $capacities = $roomType->rooms->pluck('capacity')->filter()->values();
+        $roomType->setAttribute('min_capacity', $capacities->isNotEmpty() ? $capacities->min() : $roomType->capacity);
+        $roomType->setAttribute('max_capacity', $capacities->isNotEmpty() ? $capacities->max() : $roomType->capacity);
 
         return response()->json($roomType);
     }

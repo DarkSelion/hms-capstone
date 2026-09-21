@@ -4,7 +4,7 @@ import { usePublicRoomType, usePortalCurrency, usePublicSettings, usePublicRoomT
 import { usePublicAuthStore } from '@/stores/publicAuthStore'
 import { formatCurrencyWith, toLocalDateStr } from '@/lib/format'
 import { DatePicker } from '@/components/ui/date-picker'
-import { Users, Maximize, BedDouble, Home, Check, ArrowRight, ArrowLeft, Star, Calendar, Shield, CreditCard, Sparkles, ChevronRight, Coffee, Wifi, Wind } from 'lucide-react'
+import { Users, Maximize, BedDouble, Home, Check, ArrowRight, ArrowLeft, Star, Calendar, Shield, CreditCard, Sparkles, ChevronRight, ChevronDown, Coffee, Wifi, Wind } from 'lucide-react'
 import type { PublicRoomType } from '@/types'
 
 const FALLBACK_IMAGES = [
@@ -60,6 +60,8 @@ export default function PublicRoomDetailPage() {
   const { data: taxSettings } = usePublicSettings('tax')
   const [reviewFilter, setReviewFilter] = useState<string>('all')
   const [reviewSort, setReviewSort] = useState<string>('newest')
+  const [sortOpen, setSortOpen] = useState(false)
+  const sortRef = useRef<HTMLDivElement>(null)
   const { data: reviewsResponse } = usePublicRoomReviews(slug || '', { rating: reviewFilter === 'all' ? undefined : Number(reviewFilter), sort: reviewSort })
   const reviewsData = reviewsResponse?.reviews
   const reviewBreakdown = reviewsResponse?.breakdown
@@ -96,6 +98,15 @@ export default function PublicRoomDetailPage() {
   const [adults, setAdults] = useState(initialAdults)
   const [children, setChildren] = useState(initialChildren)
 
+  useEffect(() => {
+    if (!sortOpen) return
+    function handleClickOutside(e: MouseEvent) {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) setSortOpen(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [sortOpen])
+
   const nights = useMemo(() => {
     if (!checkIn || !checkOut) return 0
     const [cy, cm, cd] = checkIn.split('-').map(Number)
@@ -120,6 +131,12 @@ export default function PublicRoomDetailPage() {
       .filter((r: PublicRoomType) => r.id !== roomType.id && r.is_active)
       .slice(0, 3)
   }, [allRoomTypes, roomType])
+
+  const sortOptions = [
+    { value: 'newest', label: 'Most Recent' },
+    { value: 'highest', label: 'Highest Rated' },
+    { value: 'lowest', label: 'Lowest Rated' },
+  ]
 
   if (isLoading) return <RoomDetailSkeleton />
   if (!roomType) {
@@ -281,6 +298,8 @@ export default function PublicRoomDetailPage() {
               sizeSqm={roomType.size_sqm}
               maxAdults={roomType.max_adults}
               maxChildren={roomType.max_children ?? 0}
+              minCapacity={roomType.min_capacity}
+              maxCapacity={roomType.max_capacity}
               bedType={bedTypeDisplay}
               category={category}
             />
@@ -317,8 +336,8 @@ export default function PublicRoomDetailPage() {
               setAdults={setAdults}
               children={children}
               setChildren={setChildren}
-              maxAdults={roomType.max_adults}
-              maxChildren={roomType.max_children}
+              maxAdults={roomType.max_capacity ?? roomType.max_adults}
+              maxChildren={Math.max(0, (roomType.max_capacity ?? roomType.max_adults) - 1)}
               nights={nights}
               subtotal={subtotal}
               taxAmount={taxAmount}
@@ -424,15 +443,33 @@ export default function PublicRoomDetailPage() {
                     </button>
                   ))}
                 </div>
-                <select
-                  value={reviewSort}
-                  onChange={(e) => setReviewSort(e.target.value)}
-                  className="ml-auto bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white/70 focus:outline-none focus:border-gold/50"
-                >
-                  <option value="newest">Most Recent</option>
-                  <option value="highest">Highest Rated</option>
-                  <option value="lowest">Lowest Rated</option>
-                </select>
+                <div ref={sortRef} className="relative ml-auto">
+                  <button
+                    onClick={() => setSortOpen(!sortOpen)}
+                    className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white/70 hover:text-white/90 hover:border-white/20 transition-colors focus:outline-none"
+                  >
+                    {sortOptions.find(o => o.value === reviewSort)?.label ?? 'Sort'}
+                    <ChevronDown className={`h-3 w-3 transition-transform ${sortOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {sortOpen && (
+                    <div className="absolute right-0 top-full mt-1 z-50 min-w-[140px] bg-slate-900/95 border border-amber-500/20 rounded-lg shadow-xl backdrop-blur-md overflow-hidden">
+                      {sortOptions.map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => { setReviewSort(opt.value); setSortOpen(false) }}
+                          className={`flex items-center gap-2 w-full px-3 py-2 text-xs transition-colors ${
+                            reviewSort === opt.value
+                              ? 'text-amber-400 bg-amber-500/10'
+                              : 'text-slate-200 hover:bg-amber-500/10 hover:text-amber-400'
+                          }`}
+                        >
+                          {reviewSort === opt.value && <Check className="h-3 w-3" />}
+                          <span className={reviewSort === opt.value ? '' : 'ml-[18px]'}>{opt.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Review Cards */}
@@ -500,19 +537,26 @@ export default function PublicRoomDetailPage() {
    ABOUT SECTION
    ═══════════════════════════════════════════════════════════════ */
 function AboutSection({
-  description, sizeSqm, maxAdults, maxChildren, bedType, category,
+  description, sizeSqm, maxAdults, maxChildren, minCapacity, maxCapacity, bedType, category,
 }: {
   description: string
   sizeSqm?: number
   maxAdults: number
   maxChildren: number
+  minCapacity?: number
+  maxCapacity?: number
   bedType: string
   category: string
 }) {
   const reveal = useScrollReveal(0.1)
+  const effectiveMin = minCapacity ?? maxAdults
+  const effectiveMax = maxCapacity ?? (maxAdults + maxChildren)
+  const capacityLabel = effectiveMin === effectiveMax
+    ? `Up to ${effectiveMax} Guests`
+    : `${effectiveMin}–${effectiveMax} Guests`
   const specs = [
     { icon: Maximize, label: 'Room Size', value: sizeSqm ? `${sizeSqm} m²` : '—' },
-    { icon: Users, label: 'Max Guests', value: `Up to ${maxAdults + maxChildren} Guests` },
+    { icon: Users, label: 'Max Guests', value: capacityLabel },
     { icon: BedDouble, label: 'Bed Type', value: bedType },
     { icon: Home, label: 'Category', value: category },
   ].filter((s) => s.value !== '—' || s.label === 'Room Size')

@@ -918,8 +918,9 @@ class PublicTest extends TestCase
             'children' => 2,
         ]);
 
+        // 1 adult + 2 children = 3 total > room capacity 2 → rejected on adults (total guests)
         $response->assertStatus(422)
-            ->assertJsonValidationErrors('children');
+            ->assertJsonValidationErrors('adults');
 
         $this->assertDatabaseMissing('reservations', [
             'room_type_id' => $type->id,

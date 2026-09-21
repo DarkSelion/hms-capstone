@@ -65,6 +65,8 @@ export interface RoomType {
   description?: string;
   base_price: number;
   capacity: number;
+  min_capacity: number;
+  max_capacity: number;
   size_sqm?: number;
   bed_type?: string;
   max_adults: number;
@@ -402,6 +404,8 @@ export interface PublicRoomType {
   description?: string
   base_price: number
   capacity: number
+  min_capacity: number
+  max_capacity: number
   size_sqm?: number
   bed_type?: string
   max_adults: number

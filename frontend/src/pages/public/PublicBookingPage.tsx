@@ -225,11 +225,11 @@ export default function PublicBookingPage() {
     return baseRate
   }, [baseRate, cancellationTier, nonRefundableDiscount])
 
-  // Party-size limits come from the selected room type; oversized picks clamp automatically.
-  const maxAdults = Math.max(1, Number(selectedGroup?.roomType.max_adults ?? 6))
-  const maxChildren = Math.max(0, Number(selectedGroup?.roomType.max_children ?? 4))
+  // Party-size limits come from the max capacity of available rooms in the selected type.
+  const maxAdults = Math.max(1, Number(selectedGroup?.roomType.max_capacity ?? selectedGroup?.roomType.max_adults ?? 6))
+  const maxChildren = Math.max(0, maxAdults - 1)
   const adultsSafe = Math.min(adults, maxAdults)
-  const childrenSafe = Math.min(childrenCount, maxChildren)
+  const childrenSafe = Math.min(childrenCount, Math.max(0, maxAdults - adultsSafe))
 
   const nights = useMemo(() => {
     if (!checkIn || !checkOut) return 0
@@ -372,7 +372,7 @@ export default function PublicBookingPage() {
                 <div>
                   <label htmlFor="booking_children" className="text-xs font-semibold tracking-widest text-white/40 uppercase mb-2 block">Children</label>
                   <select id="booking_children" value={childrenSafe} onChange={(e) => setChildrenCount(Number(e.target.value))} className="w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm color-scheme-dark">
-                    {Array.from({ length: maxChildren + 1 }, (_, i) => i).map(n => <option key={n} value={n}>{n}</option>)}
+                    {Array.from({ length: Math.max(0, maxAdults - adultsSafe) + 1 }, (_, i) => i).map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
               </div>
@@ -612,7 +612,7 @@ export default function PublicBookingPage() {
 
                               {/* Specs — plain text, dot-separated */}
                               <p className="text-white/55 text-sm">
-                                {[bedType, `${group.roomType.max_adults} Guest${group.roomType.max_adults > 1 ? 's' : ''}`, group.roomType.size_sqm ? `${group.roomType.size_sqm} m²` : null]
+                                {[bedType, `${group.roomType.max_capacity ?? group.roomType.max_adults} Guest${(group.roomType.max_capacity ?? group.roomType.max_adults) > 1 ? 's' : ''}`, group.roomType.size_sqm ? `${group.roomType.size_sqm} m²` : null]
                                   .filter(Boolean)
                                   .join(' · ')}
                               </p>
@@ -686,8 +686,8 @@ export default function PublicBookingPage() {
                             </h2>
                             <p className="text-white/50 text-sm mb-6">
                               {selectedRoom
-                                ? `${selectedRoom.bed_type || selectedGroup.roomType.bed_type} · Sleeps ${selectedRoom.capacity || selectedGroup.roomType.max_adults} · Floor ${selectedRoom.floor}${selectedGroup.roomType.size_sqm ? ` · ${selectedGroup.roomType.size_sqm} m²` : ''}`
-                                : `${bedTypeDisplay(selectedGroup.roomType.bed_type)} · ${selectedGroup.roomType.max_adults} Guests${selectedGroup.roomType.size_sqm ? ` · ${selectedGroup.roomType.size_sqm} m²` : ''}`}
+                                ? `${selectedRoom.bed_type || selectedGroup.roomType.bed_type} · Sleeps ${selectedRoom.capacity || selectedGroup.roomType.max_capacity || selectedGroup.roomType.max_adults} · Floor ${selectedRoom.floor}${selectedGroup.roomType.size_sqm ? ` · ${selectedGroup.roomType.size_sqm} m²` : ''}`
+                                : `${bedTypeDisplay(selectedGroup.roomType.bed_type)} · ${selectedGroup.roomType.max_capacity ?? selectedGroup.roomType.max_adults} Guests${selectedGroup.roomType.size_sqm ? ` · ${selectedGroup.roomType.size_sqm} m²` : ''}`}
                             </p>
 
                             {/* Stay details — clean key-value rows */}
@@ -842,7 +842,7 @@ export default function PublicBookingPage() {
                       <p className="text-white/50 text-sm mt-2">
                         {[
                           selectedRoom?.bed_type || selectedGroup.roomType.bed_type,
-                          `Sleeps ${selectedRoom?.capacity || selectedGroup.roomType.max_adults}`,
+                          `Sleeps ${selectedRoom?.capacity || selectedGroup.roomType.max_capacity || selectedGroup.roomType.max_adults}`,
                           selectedGroup.roomType.size_sqm ? `${selectedGroup.roomType.size_sqm} m²` : null,
                           selectedRoom ? `Floor ${selectedRoom.floor}` : null,
                         ].filter(Boolean).join(' · ')}

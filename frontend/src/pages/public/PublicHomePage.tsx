@@ -438,7 +438,7 @@ export default function PublicHomePage() {
                           <div className="flex items-center gap-6 mb-5">
                             {heroRoom.max_adults && (
                               <span className="flex items-center gap-2 text-white/70 text-sm">
-                                <Users className="h-4 w-4 text-gold" /> Up to {heroRoom.max_adults} guests
+                                <Users className="h-4 w-4 text-gold" /> Up to {heroRoom.max_capacity ?? heroRoom.max_adults} guests
                               </span>
                             )}
                             {heroRoom.size_sqm && (
@@ -486,7 +486,7 @@ export default function PublicHomePage() {
                           <div className="flex items-center gap-4 mb-3">
                             {rt.max_adults && (
                               <span className="flex items-center gap-1.5 text-white/60 text-xs">
-                                <Users className="h-3 w-3 text-gold" /> {rt.max_adults} guests
+                                <Users className="h-3 w-3 text-gold" /> {rt.min_capacity !== rt.max_capacity ? `${rt.min_capacity}–${rt.max_capacity}` : rt.max_capacity ?? rt.max_adults} guests
                               </span>
                             )}
                             {rt.size_sqm && (

@@ -389,7 +389,7 @@ function RoomCard({
             {/* Meta */}
             <div className="flex items-center gap-2 text-xs text-dark/40 mb-5">
               <span className="flex items-center gap-1.5 bg-bg px-3 py-1.5 rounded-full">
-                <Users className="h-3 w-3 text-gold/60" /> {room.max_adults} guests
+                <Users className="h-3 w-3 text-gold/60" /> {room.min_capacity !== room.max_capacity ? `${room.min_capacity}–${room.max_capacity}` : room.max_capacity ?? room.max_adults} guests
               </span>
               {room.size_sqm && (
                 <span className="flex items-center gap-1.5 bg-bg px-3 py-1.5 rounded-full">
@@ -473,7 +473,7 @@ function RoomCard({
         {/* Meta */}
         <div className="flex items-center gap-2 text-xs text-dark/40 mb-3">
           <span className="flex items-center gap-1.5 bg-bg px-2.5 py-1 rounded-full">
-            <Users className="h-3 w-3 text-gold/60" /> {room.max_adults} guests
+            <Users className="h-3 w-3 text-gold/60" /> {room.min_capacity !== room.max_capacity ? `${room.min_capacity}–${room.max_capacity}` : room.max_capacity ?? room.max_adults} guests
           </span>
           {room.size_sqm && (
             <span className="flex items-center gap-1.5 bg-bg px-2.5 py-1 rounded-full">
