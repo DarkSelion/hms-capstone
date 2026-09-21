@@ -210,7 +210,7 @@ class ReviewCancellationTierTest extends TestCase
             'guest_id' => $guest->id,
             'reservation_id' => $r->id,
             'rating' => 5,
-            'is_approved' => false,
+            'status' => 'pending',
         ]);
     }
 
@@ -283,14 +283,14 @@ class ReviewCancellationTierTest extends TestCase
             'room_type_id' => $rt->id,
             'rating' => 5,
             'title' => 'Amazing',
-            'is_approved' => false,
+            'status' => 'pending',
         ]);
 
         $response = $this->putJson("/api/reviews/{$review->id}/approve");
         $response->assertOk();
 
         $review->refresh();
-        $this->assertTrue($review->is_approved);
+        $this->assertEquals('approved', $review->status);
 
         $rt->refresh();
         $this->assertEquals(5, $rt->avg_rating);
@@ -311,7 +311,7 @@ class ReviewCancellationTierTest extends TestCase
             'reservation_id' => $r->id,
             'room_type_id' => $rt->id,
             'rating' => 3,
-            'is_approved' => true,
+            'status' => 'approved',
         ]);
 
         $rt->update(['avg_rating' => 3, 'review_count' => 1]);
@@ -339,7 +339,7 @@ class ReviewCancellationTierTest extends TestCase
             'reservation_id' => $r->id,
             'room_type_id' => $rt->id,
             'rating' => 4,
-            'is_approved' => true,
+            'status' => 'approved',
         ]);
 
         $response = $this->postJson("/api/reviews/{$review->id}/reply", [
@@ -348,7 +348,7 @@ class ReviewCancellationTierTest extends TestCase
 
         $response->assertOk();
         $review->refresh();
-        $this->assertEquals('Thank you for your feedback!', $review->admin_reply);
+        $this->assertEquals('Thank you for your feedback!', $review->admin_response);
         $this->assertNotNull($review->admin_replied_at);
     }
 
@@ -359,12 +359,12 @@ class ReviewCancellationTierTest extends TestCase
         $room = $this->room($rt);
         $r = $this->reservation($guest, $room, 'flexible', 'checked_out');
 
-        Review::create(['guest_id' => $guest->id, 'reservation_id' => $r->id, 'room_type_id' => $rt->id, 'rating' => 5, 'is_approved' => true]);
+        Review::create(['guest_id' => $guest->id, 'reservation_id' => $r->id, 'room_type_id' => $rt->id, 'rating' => 5, 'status' => 'approved']);
 
         $guest2 = $this->guest();
         $room2 = $this->room($rt, 'R200');
         $r2 = $this->reservation($guest2, $room2, 'flexible', 'checked_out');
-        Review::create(['guest_id' => $guest2->id, 'reservation_id' => $r2->id, 'room_type_id' => $rt->id, 'rating' => 3, 'is_approved' => false, 'title' => 'Hidden']);
+        Review::create(['guest_id' => $guest2->id, 'reservation_id' => $r2->id, 'room_type_id' => $rt->id, 'rating' => 3, 'status' => 'pending', 'title' => 'Hidden']);
 
         $response = $this->getJson("/api/public/rooms/{$rt->slug}/reviews");
         $response->assertOk();
@@ -382,7 +382,7 @@ class ReviewCancellationTierTest extends TestCase
         $room = $this->room($rt);
         $r = $this->reservation($guest, $room, 'flexible', 'checked_out');
 
-        Review::create(['guest_id' => $guest->id, 'reservation_id' => $r->id, 'room_type_id' => $rt->id, 'rating' => 5, 'is_approved' => true]);
+        Review::create(['guest_id' => $guest->id, 'reservation_id' => $r->id, 'room_type_id' => $rt->id, 'rating' => 5, 'status' => 'approved']);
 
         $response = $this->getJson('/api/public/reviews');
         $response->assertOk();
@@ -398,7 +398,7 @@ class ReviewCancellationTierTest extends TestCase
         $room = $this->room($rt);
         $r = $this->reservation($guest, $room, 'flexible', 'checked_out');
 
-        Review::create(['guest_id' => $guest->id, 'reservation_id' => $r->id, 'room_type_id' => $rt->id, 'rating' => 5, 'is_approved' => true]);
+        Review::create(['guest_id' => $guest->id, 'reservation_id' => $r->id, 'room_type_id' => $rt->id, 'rating' => 5, 'status' => 'approved']);
 
         $response = $this->getJson('/api/reviews');
         $response->assertOk();
@@ -418,7 +418,7 @@ class ReviewCancellationTierTest extends TestCase
             'reservation_id' => $r->id,
             'room_type_id' => $rt->id,
             'rating' => 5,
-            'is_approved' => false,
+            'status' => 'pending',
         ]);
 
         $response = $this->putJson("/api/reviews/{$review->id}/approve");
@@ -439,8 +439,8 @@ class ReviewCancellationTierTest extends TestCase
         $r1 = $this->reservation($g1, $room1, 'flexible', 'checked_out');
         $r2 = $this->reservation($g2, $room2, 'flexible', 'checked_out');
 
-        $rev1 = Review::create(['guest_id' => $g1->id, 'reservation_id' => $r1->id, 'room_type_id' => $rt->id, 'rating' => 4, 'is_approved' => false]);
-        $rev2 = Review::create(['guest_id' => $g2->id, 'reservation_id' => $r2->id, 'room_type_id' => $rt->id, 'rating' => 2, 'is_approved' => false]);
+        $rev1 = Review::create(['guest_id' => $g1->id, 'reservation_id' => $r1->id, 'room_type_id' => $rt->id, 'rating' => 4, 'status' => 'pending']);
+        $rev2 = Review::create(['guest_id' => $g2->id, 'reservation_id' => $r2->id, 'room_type_id' => $rt->id, 'rating' => 2, 'status' => 'pending']);
 
         // Approve first — avg=4, count=1
         $this->putJson("/api/reviews/{$rev1->id}/approve")->assertOk();

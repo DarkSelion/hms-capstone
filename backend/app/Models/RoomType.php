@@ -60,7 +60,7 @@ class RoomType extends Model
 
     public function recalculateReviewStats(): void
     {
-        $stats = $this->reviews()->where('is_approved', true)
+        $stats = $this->reviews()->where('status', 'approved')
             ->selectRaw('AVG(rating) as avg, COUNT(*) as count')
             ->first();
 

@@ -184,6 +184,7 @@ Route::get('/reservations/{reservation}/extend-preview', [ReservationController:
         // Reviews (admin)
         Route::get('/reviews', [\App\Http\Controllers\Api\ReviewController::class, 'index']);
         Route::put('/reviews/{review}/approve', [\App\Http\Controllers\Api\ReviewController::class, 'approve']);
+        Route::put('/reviews/{review}/reject', [\App\Http\Controllers\Api\ReviewController::class, 'reject']);
         Route::delete('/reviews/{review}', [\App\Http\Controllers\Api\ReviewController::class, 'destroy']);
         Route::post('/reviews/{review}/reply', [\App\Http\Controllers\Api\ReviewController::class, 'reply']);
 

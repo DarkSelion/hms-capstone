@@ -17,8 +17,9 @@ class Review extends Model
         'rating',
         'title',
         'comment',
-        'is_approved',
-        'admin_reply',
+        'status',
+        'is_verified_stay',
+        'admin_response',
         'admin_replied_at',
     ];
 
@@ -26,7 +27,7 @@ class Review extends Model
     {
         return [
             'rating' => 'integer',
-            'is_approved' => 'boolean',
+            'is_verified_stay' => 'boolean',
             'admin_replied_at' => 'datetime',
         ];
     }
@@ -48,14 +49,14 @@ class Review extends Model
 
     public function approve(): void
     {
-        $this->update(['is_approved' => true]);
+        $this->update(['status' => 'approved']);
         $this->recalculateRoomTypeStats();
     }
 
     public function reject(): void
     {
-        $this->delete();
-        $this->roomType->recalculateReviewStats();
+        $this->update(['status' => 'rejected']);
+        $this->recalculateRoomTypeStats();
     }
 
     public function recalculateRoomTypeStats(): void

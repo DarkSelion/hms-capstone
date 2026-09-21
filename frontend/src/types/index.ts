@@ -463,8 +463,9 @@ export interface Review {
   rating: number
   title?: string
   comment?: string
-  is_approved: boolean
-  admin_reply?: string
+  status: 'pending' | 'approved' | 'rejected'
+  is_verified_stay: boolean
+  admin_response?: string
   admin_replied_at?: string
   guest?: Guest
   room_type?: RoomType
@@ -477,9 +478,27 @@ export interface PublicReview {
   rating: number
   title?: string
   comment?: string
+  is_verified_stay?: boolean
   guest?: { first_name: string; last_name: string; full_name: string }
-  admin_reply?: string
+  admin_response?: string
+  admin_replied_at?: string
   created_at: string
+}
+
+export interface PublicRoomReviewsResponse {
+  avg_rating: number
+  review_count: number
+  breakdown: Record<number, number>
+  reviews: PublicReview[]
+}
+
+export interface ReviewKPIs {
+  total: number
+  pending_count: number
+  approved_count: number
+  rejected_count: number
+  avg_rating: number
+  response_rate: number
 }
 
 export interface PublicReservationsResponse {

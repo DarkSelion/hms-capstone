@@ -58,7 +58,13 @@ export default function PublicRoomDetailPage() {
   const { data: allRoomTypes } = usePublicRoomTypes()
   const { data: bookingSettings } = usePublicSettings('booking')
   const { data: taxSettings } = usePublicSettings('tax')
-  const { data: reviewsData } = usePublicRoomReviews(slug || '')
+  const [reviewFilter, setReviewFilter] = useState<string>('all')
+  const [reviewSort, setReviewSort] = useState<string>('newest')
+  const { data: reviewsResponse } = usePublicRoomReviews(slug || '', { rating: reviewFilter === 'all' ? undefined : Number(reviewFilter), sort: reviewSort })
+  const reviewsData = reviewsResponse?.reviews
+  const reviewBreakdown = reviewsResponse?.breakdown
+  const reviewAvgRating = reviewsResponse?.avg_rating ?? roomType?.avg_rating ?? 0
+  const reviewCount = reviewsResponse?.review_count ?? roomType?.review_count ?? 0
   const currency = usePortalCurrency()
   const fmt = (amount: number) => formatCurrencyWith(amount, currency)
 
@@ -361,55 +367,131 @@ export default function PublicRoomDetailPage() {
       {/* Reviews Section */}
       {roomType && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 border-t border-white/5 mt-8">
-          <div className="flex items-center gap-4 mb-8">
-            <h2 className="font-serif text-2xl text-white">Guest Reviews</h2>
-            {roomType.avg_rating != null && roomType.avg_rating > 0 && (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <Star
-                      key={i}
-                      className={`h-4 w-4 ${i < Math.round(roomType.avg_rating ?? 0) ? 'text-gold fill-gold' : 'text-white/20'}`}
-                    />
-                  ))}
-                </div>
-                <span className="text-white/60 text-sm">{Number(roomType.avg_rating).toFixed(1)}</span>
-                <span className="text-white/30 text-sm">({roomType.review_count} review{roomType.review_count !== 1 ? 's' : ''})</span>
-              </div>
-            )}
-          </div>
-
-          {reviewsData && reviewsData.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {reviewsData.map((review) => (
-                <div key={review.id} className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-6">
-                  <div className="flex items-center gap-1 mb-3">
+          {reviewCount > 0 ? (
+            <>
+              {/* Rating Summary Header */}
+              <div className="flex flex-col md:flex-row gap-8 mb-8">
+                {/* Overall Score */}
+                <div className="flex flex-col items-center justify-center min-w-[140px]">
+                  <span className="text-5xl font-bold text-white">{Number(reviewAvgRating).toFixed(1)}</span>
+                  <div className="flex items-center gap-1 mt-2">
                     {Array.from({ length: 5 }, (_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-3.5 w-3.5 ${i < review.rating ? 'text-gold fill-gold' : 'text-white/20'}`}
-                      />
+                      <Star key={i} className={`h-4 w-4 ${i < Math.round(reviewAvgRating) ? 'text-gold fill-gold' : 'text-white/20'}`} />
                     ))}
                   </div>
-                  {review.title && (
-                    <h3 className="text-white font-medium text-sm mb-2">{review.title}</h3>
-                  )}
-                  {review.comment && (
-                    <p className="text-white/50 text-sm leading-relaxed mb-4">{review.comment}</p>
-                  )}
-                  <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
-                    <span className="text-white/30 text-xs">{review.guest?.first_name || 'Guest'}</span>
-                    <span className="text-white/20 text-xs">{new Date(review.created_at).toLocaleDateString()}</span>
-                  </div>
-                  {review.admin_reply && (
-                    <div className="mt-4 bg-gold/5 border border-gold/10 rounded-lg p-3">
-                      <p className="text-[10px] uppercase tracking-wider text-gold/60 font-medium mb-1">Hotel Reply</p>
-                      <p className="text-white/60 text-xs leading-relaxed">{review.admin_reply}</p>
-                    </div>
-                  )}
+                  <span className="text-white/40 text-sm mt-1">{reviewCount} review{reviewCount !== 1 ? 's' : ''}</span>
                 </div>
-              ))}
-            </div>
+
+                {/* Rating Breakdown Bars */}
+                <div className="flex-1 space-y-2">
+                  {[5, 4, 3, 2, 1].map((star) => {
+                    const count = reviewBreakdown?.[star] ?? 0
+                    const pct = reviewCount > 0 ? (count / reviewCount) * 100 : 0
+                    return (
+                      <button
+                        key={star}
+                        onClick={() => setReviewFilter(reviewFilter === String(star) ? 'all' : String(star))}
+                        className="flex items-center gap-3 w-full group"
+                      >
+                        <span className="text-white/50 text-sm w-4 text-right">{star}</span>
+                        <Star className="h-3.5 w-3.5 text-gold fill-gold" />
+                        <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all ${reviewFilter === String(star) ? 'bg-gold' : 'bg-gold/60 group-hover:bg-gold'}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="text-white/30 text-xs w-6 text-right">{count}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Filters & Sort */}
+              <div className="flex flex-wrap items-center gap-3 mb-6">
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'all', label: 'All' },
+                    { value: '5', label: '5 Stars' },
+                    { value: '4', label: '4 Stars' },
+                    { value: '3', label: '3 Stars' },
+                    { value: '2', label: '2 Stars' },
+                    { value: '1', label: '1 Star' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setReviewFilter(opt.value)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                        reviewFilter === opt.value
+                          ? 'bg-gold text-dark'
+                          : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <select
+                  value={reviewSort}
+                  onChange={(e) => setReviewSort(e.target.value)}
+                  className="ml-auto bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white/70 focus:outline-none focus:border-gold/50"
+                >
+                  <option value="newest">Most Recent</option>
+                  <option value="highest">Highest Rated</option>
+                  <option value="lowest">Lowest Rated</option>
+                </select>
+              </div>
+
+              {/* Review Cards */}
+              {reviewsData && reviewsData.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {reviewsData.map((review) => (
+                    <div key={review.id} className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-6">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-9 h-9 rounded-full bg-gold/15 flex items-center justify-center text-gold text-sm font-bold">
+                          {review.guest?.first_name?.[0] || 'G'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-medium truncate">{review.guest?.first_name || 'Guest'}</p>
+                          {review.is_verified_stay && (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400">
+                              <Shield className="h-3 w-3" /> Verified Stay
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 mb-2">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <Star key={i} className={`h-3.5 w-3.5 ${i < review.rating ? 'text-gold fill-gold' : 'text-white/20'}`} />
+                        ))}
+                      </div>
+                      {review.title && (
+                        <h3 className="text-white font-medium text-sm mb-1">{review.title}</h3>
+                      )}
+                      {review.comment && (
+                        <p className="text-white/50 text-sm leading-relaxed mb-3">{review.comment}</p>
+                      )}
+                      <p className="text-white/20 text-xs mb-3">Stayed {new Date(review.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</p>
+                      {review.admin_response && (
+                        <div className="bg-gold/5 border border-gold/10 rounded-lg p-3 mt-2">
+                          <p className="text-[10px] uppercase tracking-wider text-gold/60 font-medium mb-1">Management Response</p>
+                          <p className="text-white/60 text-xs leading-relaxed">{review.admin_response}</p>
+                          {review.admin_replied_at && (
+                            <p className="text-white/20 text-[10px] mt-1">{new Date(review.admin_replied_at).toLocaleDateString()}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Star className="h-8 w-8 text-white/15 mx-auto mb-3" />
+                  <p className="text-white/40 text-sm">No reviews match this filter.</p>
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-12">
               <Star className="h-8 w-8 text-white/15 mx-auto mb-3" />

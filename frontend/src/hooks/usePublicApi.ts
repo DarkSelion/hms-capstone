@@ -8,7 +8,7 @@ import type {
   PublicRoom,
   PublicReservationsResponse,
   PublicReservation,
-  PublicReview,
+  PublicRoomReviewsResponse,
 } from '@/types'
 
 // Auth
@@ -248,10 +248,16 @@ export function useSubmitReview() {
   })
 }
 
-export function usePublicRoomReviews(slug: string | undefined) {
+export function usePublicRoomReviews(slug: string | undefined, params?: { rating?: number; sort?: string }) {
   return useQuery({
-    queryKey: ['public-room-reviews', slug],
-    queryFn: () => publicApi.get<PublicReview[]>(`/public/rooms/${slug}/reviews`),
+    queryKey: ['public-room-reviews', slug, params],
+    queryFn: () => {
+      const queryParts: string[] = []
+      if (params?.rating) queryParts.push(`rating=${params.rating}`)
+      if (params?.sort) queryParts.push(`sort=${params.sort}`)
+      const qs = queryParts.length ? `?${queryParts.join('&')}` : ''
+      return publicApi.get<PublicRoomReviewsResponse>(`/public/rooms/${slug}/reviews${qs}`)
+    },
     enabled: !!slug,
   })
 }

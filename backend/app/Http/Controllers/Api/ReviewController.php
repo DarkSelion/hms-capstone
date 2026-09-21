@@ -22,7 +22,7 @@ class ReviewController extends Controller
             'comment' => 'nullable|string|max:2000',
         ]);
 
-        $reservation = $reservation = \App\Models\Reservation::findOrFail($data['reservation_id']);
+        $reservation = \App\Models\Reservation::findOrFail($data['reservation_id']);
 
         if ($reservation->guest_id !== $guest->id) {
             return response()->json(['message' => 'Not found.'], 404);
@@ -49,10 +49,9 @@ class ReviewController extends Controller
             'rating' => $data['rating'],
             'title' => isset($data['title']) ? strip_tags($data['title']) : null,
             'comment' => isset($data['comment']) ? strip_tags($data['comment']) : null,
-            'is_approved' => true,
+            'status' => 'pending',
+            'is_verified_stay' => true,
         ]);
-
-        $review->approve();
 
         ActivityLog::create([
             'user_id' => null,
@@ -64,7 +63,7 @@ class ReviewController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Your review has been published!',
+            'message' => 'Your review has been submitted and is pending approval.',
             'review' => $review,
         ], 201);
     }
@@ -85,12 +84,16 @@ class ReviewController extends Controller
     {
         $query = Review::with(['guest', 'roomType', 'reservation']);
 
-        if ($request->filled('approved')) {
-            $query->where('is_approved', $request->boolean('approved'));
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
         if ($request->filled('room_type_id')) {
             $query->where('room_type_id', $request->room_type_id);
+        }
+
+        if ($request->filled('rating')) {
+            $query->where('rating', $request->rating);
         }
 
         if ($request->filled('search')) {
@@ -104,7 +107,35 @@ class ReviewController extends Controller
         $reviews = $query->orderBy('created_at', 'desc')
             ->paginate($request->per_page ?? 20);
 
-        return response()->json($reviews);
+        // Aggregated KPIs
+        $total = Review::count();
+        $pendingCount = Review::where('status', 'pending')->count();
+        $approvedCount = Review::where('status', 'approved')->count();
+        $rejectedCount = Review::where('status', 'rejected')->count();
+
+        $avgRating = Review::where('status', 'approved')->avg('rating');
+        $respondedCount = Review::where('status', 'approved')
+            ->whereNotNull('admin_response')
+            ->count();
+        $responseRate = $approvedCount > 0
+            ? round(($respondedCount / $approvedCount) * 100)
+            : 0;
+
+        return response()->json([
+            'data' => $reviews->items(),
+            'current_page' => $reviews->currentPage(),
+            'last_page' => $reviews->lastPage(),
+            'per_page' => $reviews->perPage(),
+            'total' => $reviews->total(),
+            'kpis' => [
+                'total' => $total,
+                'pending_count' => $pendingCount,
+                'approved_count' => $approvedCount,
+                'rejected_count' => $rejectedCount,
+                'avg_rating' => $avgRating ? round($avgRating, 2) : 0,
+                'response_rate' => $responseRate,
+            ],
+        ]);
     }
 
     public function approve(Request $request, Review $review)
@@ -121,6 +152,22 @@ class ReviewController extends Controller
         ]);
 
         return response()->json(['message' => 'Review approved.', 'review' => $review->fresh()->load(['guest', 'roomType'])]);
+    }
+
+    public function reject(Request $request, Review $review)
+    {
+        $review->reject();
+
+        ActivityLog::create([
+            'user_id' => $request->user()->id,
+            'action' => 'updated',
+            'module' => 'reviews',
+            'model_type' => 'Review',
+            'model_id' => $review->id,
+            'description' => "Rejected review #{$review->id} by " . \App\Helpers\DataMasker::maskName($review->guest->full_name),
+        ]);
+
+        return response()->json(['message' => 'Review rejected.', 'review' => $review->fresh()->load(['guest', 'roomType'])]);
     }
 
     public function destroy(Request $request, Review $review)
@@ -150,7 +197,7 @@ class ReviewController extends Controller
         ]);
 
         $review->update([
-            'admin_reply' => strip_tags($data['reply']),
+            'admin_response' => strip_tags($data['reply']),
             'admin_replied_at' => now(),
         ]);
 
@@ -166,19 +213,49 @@ class ReviewController extends Controller
         return response()->json(['message' => 'Reply saved.', 'review' => $review->fresh()->load(['guest', 'roomType'])]);
     }
 
-    public function publicRoomReviews(string $slug)
+    public function publicRoomReviews(string $slug, Request $request)
     {
         $roomType = RoomType::where('slug', $slug)->firstOrFail();
 
-        $reviews = Review::where('room_type_id', $roomType->id)
-            ->where('is_approved', true)
-            ->with('guest')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $query = Review::where('room_type_id', $roomType->id)
+            ->where('status', 'approved')
+            ->with('guest');
+
+        if ($request->filled('rating')) {
+            $query->where('rating', $request->rating);
+        }
+
+        $sort = $request->get('sort', 'newest');
+        switch ($sort) {
+            case 'highest':
+                $query->orderBy('rating', 'desc');
+                break;
+            case 'lowest':
+                $query->orderBy('rating', 'asc');
+                break;
+            default:
+                $query->orderBy('created_at', 'desc');
+        }
+
+        $reviews = $query->get();
+
+        // Rating breakdown
+        $breakdown = Review::where('room_type_id', $roomType->id)
+            ->where('status', 'approved')
+            ->selectRaw('rating, COUNT(*) as count')
+            ->groupBy('rating')
+            ->pluck('count', 'rating')
+            ->toArray();
+
+        $fullBreakdown = [];
+        for ($i = 5; $i >= 1; $i--) {
+            $fullBreakdown[$i] = $breakdown[$i] ?? 0;
+        }
 
         return response()->json([
             'avg_rating' => $roomType->avg_rating,
             'review_count' => $roomType->review_count,
+            'breakdown' => $fullBreakdown,
             'reviews' => $reviews,
         ]);
     }

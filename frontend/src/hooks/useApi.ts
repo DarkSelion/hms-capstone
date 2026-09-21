@@ -1230,7 +1230,7 @@ export function useSearch(query: string) {
 export function useReviews(params?: Record<string, string | number | undefined>) {
   return useQuery({
     queryKey: ['reviews', params],
-    queryFn: () => api.get<{ data: import('@/types').Review[] }>(`/reviews?${buildQueryString(params)}`),
+    queryFn: () => api.get<{ data: import('@/types').Review[]; kpis: import('@/types').ReviewKPIs }>(`/reviews?${buildQueryString(params)}`),
   })
 }
 
@@ -1238,6 +1238,16 @@ export function useApproveReview() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => api.put(`/reviews/${id}/approve`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reviews'] })
+    },
+  })
+}
+
+export function useRejectReview() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api.put(`/reviews/${id}/reject`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviews'] })
     },
