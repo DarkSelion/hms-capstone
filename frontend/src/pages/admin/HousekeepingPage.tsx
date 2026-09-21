@@ -25,11 +25,8 @@ import { Plus, Search, SprayCan, User, Edit, Trash2, Loader2, BedDouble, UserRou
 
 const TASK_TYPES = [
   { value: 'Daily Cleaning', label: 'Daily Cleaning' },
-  { value: 'Deep Clean', label: 'Deep Clean' },
-  { value: 'Turn Down', label: 'Turn Down' },
-  { value: 'Linen Change', label: 'Linen Change' },
-  { value: 'Restock', label: 'Restock' },
   { value: 'Check-out Cleaning', label: 'Check-out Cleaning' },
+  { value: 'Deep Clean', label: 'Deep Clean' },
 ]
 
 const PRIORITY_OPTIONS = [
