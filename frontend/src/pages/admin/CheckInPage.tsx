@@ -237,6 +237,39 @@ export default function CheckInPage() {
       },
     },
     {
+      key: 'alerts',
+      label: 'Alerts',
+      sortable: false,
+      className: 'whitespace-nowrap',
+      render: (r) => {
+        const hasOverdue = r.is_overdue
+        const isLateArrival = r.status === 'late_arrival'
+        const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
+        if (!hasOverdue && !isLateArrival && !hasRefund) {
+          return <span className="text-slate-300">—</span>
+        }
+        return (
+          <div className="flex items-center gap-1 flex-wrap">
+            {hasOverdue && (
+              <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
+                {r.payment_status === 'paid' || r.payment_status === 'partial' ? 'Late Arrival' : 'Overdue'}
+              </span>
+            )}
+            {isLateArrival && (
+              <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
+                Notified — Hold Active
+              </span>
+            )}
+            {hasRefund && (
+              <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
+                Refund
+              </span>
+            )}
+          </div>
+        )
+      },
+    },
+    {
       key: 'payment_status',
       label: 'Payment',
       sortable: true,
@@ -307,6 +340,7 @@ export default function CheckInPage() {
                     {todayArrivals.map((r) => {
                       const due = Number(r.due_amount ?? 0)
                       const hasOverdue = r.is_overdue
+                      const isLateArrival = r.status === 'late_arrival'
                       const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
                       return (
                       <tr key={r.id} className="bg-amber-50/30 hover:bg-amber-50/60 transition-colors">
@@ -358,13 +392,18 @@ export default function CheckInPage() {
                           </div>
                         </td>
                         <td className="px-2 py-3 whitespace-nowrap">
-                          {!hasOverdue && !hasRefund ? (
+                          {!hasOverdue && !isLateArrival && !hasRefund ? (
                             <span className="text-slate-300">—</span>
                           ) : (
                             <div className="flex items-center gap-1 flex-wrap">
                               {hasOverdue && (
                                 <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
                                   {r.payment_status === 'paid' || r.payment_status === 'partial' ? 'Late Arrival' : 'Overdue'}
+                                </span>
+                              )}
+                              {isLateArrival && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
+                                  Notified — Hold Active
                                 </span>
                               )}
                               {hasRefund && (
