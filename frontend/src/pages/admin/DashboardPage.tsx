@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button'
 import {
   DollarSign, LogIn, LogOut,
   Activity, RefreshCw, Calendar, ArrowRight,
-  AlertTriangle, Users, Clock,
+  BedDouble, Sparkles, DoorOpen,
 } from 'lucide-react'
 import {
   ResponsiveContainer,
@@ -80,8 +80,6 @@ export default function DashboardPage() {
     source: BOOKING_SOURCES.find((b) => b.value === s.source)?.label ?? s.source,
   }))
 
-  const totalDirtyRooms = stats?.dirty_rooms ?? 0
-
   if (hasError) {
     return (
       <div>
@@ -121,8 +119,8 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Hero Stats: Revenue, Check-ins, Check-outs */}
-      <div className="mb-6 grid grid-cols-1 gap-2 sm:grid-cols-3">
+      {/* Row 1 — Daily Operations */}
+      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {initialLoading || !stats ? (
           <>
             <StatCardSkeleton />
@@ -135,76 +133,55 @@ export default function DashboardPage() {
               icon={<DollarSign className="h-4 w-4" />}
               label="Today's Revenue"
               value={formatCurrency(stats.today_revenue)}
-              variant="hero"
+              variant="default"
             />
             <StatCard
               icon={<LogIn className="h-4 w-4" />}
               label="Check-ins Today"
               value={stats.check_ins_today}
-              variant="hero"
+              variant="default"
             />
             <StatCard
               icon={<LogOut className="h-4 w-4" />}
               label="Check-outs Today"
               value={stats.check_outs_today}
-              variant="hero"
+              variant="default"
             />
           </>
         )}
       </div>
 
-      {/* Secondary Metrics: Compact Row */}
-      <div className="mb-8 grid grid-cols-2 gap-2 sm:grid-cols-5">
+      {/* Row 2 — Room Inventory & Status */}
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {initialLoading || !stats ? (
           <>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <StatCardSkeleton key={i} compact />
-            ))}
-          </>
-        ) : (
-          <>
-            <StatCard label="Booked" value={stats.booked_rooms} variant="compact" />
-            <StatCard label="Pending" value={stats.pending_reservations} variant="compact" />
-            <StatCard label="Dirty Rooms" value={totalDirtyRooms} variant="compact" />
-            <StatCard label="Available" value={`${stats.available_rooms}/${stats.total_rooms}`} variant="compact" />
-          </>
-        )}
-      </div>
-
-      {/* Attention Metrics: Overdue / Overstay / Late Arrival */}
-      <div className="mb-8 grid grid-cols-1 gap-2 sm:grid-cols-3">
-        {initialLoading || !stats ? (
-          <>
-            <StatCardSkeleton compact />
-            <StatCardSkeleton compact />
-            <StatCardSkeleton compact />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
           </>
         ) : (
           <>
             <StatCard
-              icon={<AlertTriangle className="h-4 w-4" />}
-              label="Overdue Arrivals"
-              value={stats.overdue_count}
-              variant="compact"
+              icon={<BedDouble className="h-4 w-4" />}
+              label="Booked Rooms"
+              value={stats.booked_rooms}
+              variant="default"
             />
             <StatCard
-              icon={<Users className="h-4 w-4" />}
-              label="Overstaying Guests"
-              value={stats.overstay_count}
-              variant="compact"
+              icon={<Sparkles className="h-4 w-4" />}
+              label="Dirty Rooms"
+              value={stats.dirty_rooms}
+              variant="default"
             />
             <StatCard
-              icon={<Clock className="h-4 w-4" />}
-              label="Late Arrivals"
-              value={stats.late_arrival_count}
-              variant="compact"
+              icon={<DoorOpen className="h-4 w-4" />}
+              label="Available Rooms"
+              value={`${stats.available_rooms}/${stats.total_rooms}`}
+              variant="default"
             />
           </>
         )}
       </div>
-
-      {/* Divider: subtle line signals section boundary */}
-      <div className="mb-8 border-t border-border" />
 
       {/* Charts Section */}
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">

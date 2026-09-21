@@ -184,13 +184,12 @@ describe('DashboardPage', () => {
     expect(screen.getByText('₱15,000.00')).toBeInTheDocument()
   })
 
-  it('renders secondary metrics row', () => {
+  it('renders room inventory row', () => {
     renderDashboard()
 
-    expect(screen.getByText('Booked')).toBeInTheDocument()
-    expect(screen.getByText('Pending')).toBeInTheDocument()
+    expect(screen.getByText('Booked Rooms')).toBeInTheDocument()
     expect(screen.getByText('Dirty Rooms')).toBeInTheDocument()
-    expect(screen.getByText('Available')).toBeInTheDocument()
+    expect(screen.getByText('Available Rooms')).toBeInTheDocument()
   })
 
   it('stat card shows available_rooms as fraction', () => {

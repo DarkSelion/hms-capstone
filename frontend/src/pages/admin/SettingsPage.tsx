@@ -572,6 +572,7 @@ export default function SettingsPage() {
                         value={bookingForm.default_discount}
                         onChange={(e) => setBookingForm((p) => ({ ...p, default_discount: Number(e.target.value) }))}
                       />
+                      <p className="mt-1 text-xs text-muted">Percentage discount applied to new bookings. Guests can override this at checkout if allowed.</p>
                       <div>
                         <label className="mb-1 block text-sm font-medium text-foreground">Cancellation Policy</label>
                         <textarea
@@ -579,6 +580,7 @@ export default function SettingsPage() {
                           value={bookingForm.cancellation_policy}
                           onChange={(e) => setBookingForm((p) => ({ ...p, cancellation_policy: e.target.value }))}
                         />
+                        <p className="mt-1 text-xs text-muted">Shown to guests on the booking page and in confirmation emails. Leave blank to hide.</p>
                       </div>
                     </div>
                   </SectionCard>
@@ -657,6 +659,7 @@ export default function SettingsPage() {
                               <option value="PM">PM</option>
                             </Select>
                           </div>
+                          <p className="text-xs text-muted">Cutoff time for same-day late check-out fee. Departures after this time incur the flat fee above.</p>
                         </div>
                         <div>
                           <Input
@@ -678,7 +681,7 @@ export default function SettingsPage() {
                             value={bookingForm.auto_cancel_grace_hours}
                             onChange={(e) => setBookingForm((p) => ({ ...p, auto_cancel_grace_hours: Number(e.target.value) }))}
                           />
-                          <p className="mt-1 text-xs text-muted">Hours after check-in before unpaid reservations are automatically cancelled.</p>
+                          <p className="mt-1 text-xs text-muted">Hours after check-in before unpaid reservations are automatically cancelled. Minimum 6 hours. Same-day bookings receive an automatic 2-hour buffer.</p>
                         </div>
                         <div>
                           <Input
@@ -688,7 +691,7 @@ export default function SettingsPage() {
                             value={bookingForm.late_arrival_hold_hours}
                             onChange={(e) => setBookingForm((p) => ({ ...p, late_arrival_hold_hours: Number(e.target.value) }))}
                           />
-                          <p className="mt-1 text-xs text-muted">Default hold period when staff records a late arrival notification.</p>
+                          <p className="mt-1 text-xs text-muted">How long to hold a room after staff marks a guest as late arrival. Guest can still check in within this window. Expired holds become No Show.</p>
                         </div>
                       </div>
                       <ToggleRow

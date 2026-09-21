@@ -11,9 +11,11 @@ use App\Models\Room;
 use App\Models\RoomType;
 use App\Models\Setting;
 use App\Models\User;
+use App\Console\Commands\CancelOverdueReservations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use ReflectionClass;
 
 class SettingsWiringTest extends TestCase
 {
@@ -307,5 +309,188 @@ class SettingsWiringTest extends TestCase
 
         $this->assertEquals(2200.0, (float) $reservation->fresh()->total_amount);
         $this->assertDatabaseMissing('invoices', ['reservation_id' => $reservation->id]);
+    }
+
+    // ── Grace Period Minimum Floor ────────────────────────────────────────
+
+    public function test_grace_hours_minimum_is_6(): void
+    {
+        // Setting says 2 hours — command should clamp to 6
+        Setting::create(['key' => 'auto_cancel_grace_hours', 'value' => '2', 'group' => 'booking']);
+
+        $command = new CancelOverdueReservations();
+        $ref = new ReflectionClass($command);
+        $method = $ref->getMethod('getGraceHours');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($command);
+        $this->assertEquals(6, $result);
+    }
+
+    public function test_grace_hours_above_minimum_passes_through(): void
+    {
+        Setting::create(['key' => 'auto_cancel_grace_hours', 'value' => '24', 'group' => 'booking']);
+
+        $command = new CancelOverdueReservations();
+        $ref = new ReflectionClass($command);
+        $method = $ref->getMethod('getGraceHours');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($command);
+        $this->assertEquals(24, $result);
+    }
+
+    public function test_grace_hours_zero_clamps_to_6(): void
+    {
+        Setting::create(['key' => 'auto_cancel_grace_hours', 'value' => '0', 'group' => 'booking']);
+
+        $command = new CancelOverdueReservations();
+        $ref = new ReflectionClass($command);
+        $method = $ref->getMethod('getGraceHours');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($command);
+        $this->assertEquals(6, $result);
+    }
+
+    public function test_grace_hours_negative_clamps_to_6(): void
+    {
+        Setting::create(['key' => 'auto_cancel_grace_hours', 'value' => '-5', 'group' => 'booking']);
+
+        $command = new CancelOverdueReservations();
+        $ref = new ReflectionClass($command);
+        $method = $ref->getMethod('getGraceHours');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($command);
+        $this->assertEquals(6, $result);
+    }
+
+    // ── Late Arrival Expiry Respects Auto-Cancel Toggle ──────────────────
+
+    public function test_late_arrival_expiry_respects_auto_cancel_disabled(): void
+    {
+        Setting::create(['key' => 'auto_cancel_enabled', 'value' => '0', 'group' => 'booking']);
+
+        $guest = $this->guest();
+        $room = $this->room();
+
+        // Create a late_arrival reservation whose deadline has passed
+        $reservation = Reservation::createWithNumber([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'status' => 'late_arrival',
+            'check_in' => now()->subDays(3)->toDateString(),
+            'check_out' => now()->addDays(2)->toDateString(),
+            'adults' => 2,
+            'children' => 0,
+            'price_per_night' => 1000,
+            'total_nights' => 5,
+            'subtotal' => 5000,
+            'total_amount' => 5500,
+            'paid_amount' => 0,
+            'due_amount' => 5500,
+            'payment_status' => 'unpaid',
+            'late_arrival_deadline' => now()->subHours(2),
+            'is_overdue' => false,
+        ]);
+
+        // Call expireLateArrivals directly via reflection
+        $command = new CancelOverdueReservations();
+        $ref = new ReflectionClass($command);
+        $method = $ref->getMethod('expireLateArrivals');
+        $method->setAccessible(true);
+
+        $expired = $method->invoke($command, now());
+        $this->assertEquals(0, $expired);
+
+        // Should NOT be expired — auto_cancel is disabled
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'status' => 'late_arrival',
+        ]);
+    }
+
+    public function test_late_arrival_expiry_runs_when_auto_cancel_enabled(): void
+    {
+        Setting::create(['key' => 'auto_cancel_enabled', 'value' => '1', 'group' => 'booking']);
+
+        $guest = $this->guest();
+        $room = $this->room();
+
+        // Create a late_arrival reservation whose deadline has passed
+        $reservation = Reservation::createWithNumber([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'status' => 'late_arrival',
+            'check_in' => now()->subDays(3)->toDateString(),
+            'check_out' => now()->addDays(2)->toDateString(),
+            'adults' => 2,
+            'children' => 0,
+            'price_per_night' => 1000,
+            'total_nights' => 5,
+            'subtotal' => 5000,
+            'total_amount' => 5500,
+            'paid_amount' => 0,
+            'due_amount' => 5500,
+            'payment_status' => 'unpaid',
+            'late_arrival_deadline' => now()->subHours(2),
+            'is_overdue' => false,
+        ]);
+
+        $command = new CancelOverdueReservations();
+        $ref = new ReflectionClass($command);
+        $method = $ref->getMethod('expireLateArrivals');
+        $method->setAccessible(true);
+
+        $expired = $method->invoke($command, now());
+        $this->assertEquals(1, $expired);
+
+        // Should be expired → no_show
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'status' => 'no_show',
+        ]);
+    }
+
+    public function test_late_arrival_not_expired_when_deadline_future(): void
+    {
+        Setting::create(['key' => 'auto_cancel_enabled', 'value' => '1', 'group' => 'booking']);
+
+        $guest = $this->guest();
+        $room = $this->room();
+
+        // Deadline is 2 hours from now — should NOT expire
+        $reservation = Reservation::createWithNumber([
+            'guest_id' => $guest->id,
+            'room_id' => $room->id,
+            'status' => 'late_arrival',
+            'check_in' => now()->subDays(3)->toDateString(),
+            'check_out' => now()->addDays(2)->toDateString(),
+            'adults' => 2,
+            'children' => 0,
+            'price_per_night' => 1000,
+            'total_nights' => 5,
+            'subtotal' => 5000,
+            'total_amount' => 5500,
+            'paid_amount' => 0,
+            'due_amount' => 5500,
+            'payment_status' => 'unpaid',
+            'late_arrival_deadline' => now()->addHours(2),
+            'is_overdue' => false,
+        ]);
+
+        $command = new CancelOverdueReservations();
+        $ref = new ReflectionClass($command);
+        $method = $ref->getMethod('expireLateArrivals');
+        $method->setAccessible(true);
+
+        $expired = $method->invoke($command, now());
+        $this->assertEquals(0, $expired);
+
+        $this->assertDatabaseHas('reservations', [
+            'id' => $reservation->id,
+            'status' => 'late_arrival',
+        ]);
     }
 }

@@ -423,3 +423,28 @@ eplaceHotelName) used by both PublicHomePage and PublicGalleryPage.
 - Key files to copy: `hotel-v2.pem`, `~/.aws/credentials` (profile `hotel`), `~/.aws/config` (region `us-east-1`, output `json`)
 - **Server PHP `upload_max_filesize`** increased from 2M to 4M in `/etc/php/8.4/fpm/php.ini`
 - `room-types/` directory created under `storage/app/public/` on server for room type image uploads
+
+### Reliable deploy procedure (learned the hard way)
+- **FRONTEND**: Always use `tar` (not zip) to avoid the `sudo` glob expansion bug
+- **`sudo cp -r /tmp/extract/*`** under SSH fails silently — the `*` glob doesn't expand directories in sudo's limited shell → assets/ dir is skipped → white screen
+- **Correct frontend deploy** (PowerShell):
+  ```
+  cd "C:\hotel-management-system_V2\frontend"
+  tar -czf deploy.tar.gz -C dist .
+  scp -i hotel-v2.pem deploy.tar.gz ubuntu@3.80.68.104:/tmp/frontend.tar.gz
+  ssh -i hotel-v2.pem ubuntu@3.80.68.104 "sudo rm -rf /var/www/hotel/frontend/dist/* && sudo tar -xzf /tmp/frontend.tar.gz -C /var/www/hotel/frontend/dist && sudo chown -R www-data:www-data /var/www/hotel/frontend/dist && echo DEPLOYED"
+  ```
+- **Correct backend deploy** (PowerShell):
+  ```
+  cd "C:\hotel-management-system_V2\backend"
+  tar -czf deploy.tar.gz app routes tests
+  scp -i hotel-v2.pem deploy.tar.gz ubuntu@3.80.68.104:/tmp/backend.tar.gz
+  ssh -i hotel-v2.pem ubuntu@3.80.68.104 "cd /tmp && tar -xzf backend.tar.gz && sudo cp -r app/* /var/www/hotel/backend/app/ && sudo cp -r routes/* /var/www/hotel/backend/routes/ && sudo cp -r tests/* /var/www/hotel/backend/tests/ && sudo chown -R ubuntu:ubuntu /var/www/hotel/backend/storage /var/www/hotel/backend/bootstrap && cd /var/www/hotel/backend && php artisan config:clear && php artisan route:clear && sudo chown -R www-data:www-data /var/www/hotel/backend/storage /var/www/hotel/backend/bootstrap && echo DEPLOYED"
+  ```
+- **After deploy**: always verify JS assets load with correct MIME type:
+  ```
+  ssh -i hotel-v2.pem ubuntu@3.80.68.104 "curl -sI https://pampangahomesuites.duckdns.org/assets/index-*.js | head -3"
+  ```
+  - `Content-Type: application/javascript` = good
+  - `Content-Type: text/html` = white screen (assets missing)
+- **Full deploy** (both frontend + backend): `deploy.sh` from project root — uses tar and works correctly

@@ -49,7 +49,7 @@ class CancelOverdueReservations extends Command
         $setting = Setting::where('key', 'auto_cancel_grace_hours')->first();
         $hours = $setting ? (int) $setting->getRawOriginal('value') : 24;
 
-        return max(1, $hours);
+        return max(6, $hours);
     }
 
     private function cancelUnpaidOverdue(\Carbon\Carbon $now, int $graceHours): int
@@ -167,6 +167,10 @@ class CancelOverdueReservations extends Command
 
     private function expireLateArrivals(\Carbon\Carbon $now): int
     {
+        if (! $this->isAutoCancelEnabled()) {
+            return 0;
+        }
+
         $reservations = Reservation::where('status', 'late_arrival')
             ->whereNotNull('late_arrival_deadline')
             ->where('late_arrival_deadline', '<', $now)
