@@ -21,7 +21,7 @@ import { DatePicker } from '@/components/ui/date-picker'
 import { useToast } from '@/components/ui/toast'
 import { useAuthStore } from '@/stores/authStore'
 import { isAdminRole } from '@/lib/permissions'
-import { Plus, Search, SprayCan, User, Edit, Trash2, Loader2, BedDouble, UserRound, MessageSquareText, X, Play, Check, ClipboardCheck } from 'lucide-react'
+import { Plus, Search, SprayCan, User, Edit, Trash2, Loader2, BedDouble, UserRound, MessageSquareText, X, Play, Check, ClipboardCheck, AlertTriangle } from 'lucide-react'
 
 const TASK_TYPES = [
   { value: 'Daily Cleaning', label: 'Daily Cleaning' },
@@ -248,14 +248,26 @@ export default function HousekeepingPage() {
       key: 'scheduled_date',
       label: 'Scheduled',
       className: 'whitespace-nowrap',
-      render: (t) => (
-        <div>
-          <span className="font-medium text-foreground">{t.scheduled_date ? formatDateDisplay(t.scheduled_date) : '—'}</span>
-          {t.scheduled_date && (
-            <span className="block text-xs text-muted">{getTimeSince(t.scheduled_date)}</span>
-          )}
-        </div>
-      ),
+      render: (t) => {
+        const today = new Date().toISOString().split('T')[0]
+        const isOverdue = t.scheduled_date && t.scheduled_date < today && (t.status === 'pending' || t.status === 'in_progress')
+        return (
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-medium text-foreground">{t.scheduled_date ? formatDateDisplay(t.scheduled_date) : '—'}</span>
+              {isOverdue && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200">
+                  <AlertTriangle className="h-2.5 w-2.5" />
+                  Overdue
+                </span>
+              )}
+            </div>
+            {t.scheduled_date && (
+              <span className="block text-xs text-muted">{getTimeSince(t.scheduled_date)}</span>
+            )}
+          </div>
+        )
+      },
     },
     {
       key: 'status',

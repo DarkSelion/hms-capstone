@@ -25,8 +25,21 @@ class HousekeepingController extends Controller
             $query->where('scheduled_date', $date);
         }
 
+        if ($search = $request->search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('task_type', 'like', "%{$search}%")
+                  ->orWhere('notes', 'like', "%{$search}%");
+            });
+        }
+
+        $sortField = $request->sort_field ?? 'created_at';
+        $sortDir = $request->sort_dir ?? 'desc';
+        $allowed = ['priority', 'status', 'scheduled_date', 'created_at'];
+        $sortField = in_array($sortField, $allowed) ? $sortField : 'created_at';
+        $sortDir = in_array(strtolower($sortDir), ['asc', 'desc']) ? $sortDir : 'desc';
+
         return response()->json(
-            $query->orderBy('created_at', 'desc')->paginate($request->per_page ?? 10)
+            $query->orderBy($sortField, $sortDir)->paginate($request->per_page ?? 10)
         );
     }
 

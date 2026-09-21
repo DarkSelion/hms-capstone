@@ -17,13 +17,15 @@ class MaintenanceRequest extends Model
         'assigned_to',
         'title',
         'description',
+        'notes',
         'category',
         'priority',
         'status',
         'estimated_cost',
         'actual_cost',
+        'resolution_notes',
+        'started_at',
         'completed_at',
-        'notes',
     ];
 
     protected function casts(): array
@@ -31,6 +33,7 @@ class MaintenanceRequest extends Model
         return [
             'estimated_cost' => 'decimal:2',
             'actual_cost' => 'decimal:2',
+            'started_at' => 'datetime',
             'completed_at' => 'datetime',
         ];
     }
