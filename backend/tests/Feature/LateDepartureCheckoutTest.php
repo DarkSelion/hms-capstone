@@ -213,7 +213,7 @@ class LateDepartureCheckoutTest extends TestCase
         $this->assertEquals(3300, (float) $fresh->total_amount);
     }
 
-    public function test_actual_check_out_earlier_than_booked_is_rejected(): void
+    public function test_actual_check_out_earlier_than_booked_is_allowed_and_keeps_total(): void
     {
         Sanctum::actingAs($this->admin());
         $this->setTaxRate('10');
@@ -222,14 +222,16 @@ class LateDepartureCheckoutTest extends TestCase
         $this->recordPayment($reservation, 4400);
 
         $earlier = now()->subDays(3)->format('Y-m-d');
+        $originalTotal = $reservation->total_amount;
 
         $this->postJson("/api/reservations/{$reservation->id}/check-out", [
             'actual_check_out' => $earlier,
-        ])->assertStatus(422);
+        ])->assertOk();
 
         $fresh = $reservation->fresh();
-        $this->assertEquals('checked_in', $fresh->status);
-        $this->assertEquals(now()->subDays(2)->format('Y-m-d'), $fresh->check_out->format('Y-m-d'));
+        $this->assertEquals('checked_out', $fresh->status);
+        $this->assertEquals($earlier, $fresh->check_out->format('Y-m-d'));
+        $this->assertEquals($originalTotal, $fresh->total_amount, 'Total should stay the same on early departure');
     }
 
     public function test_checkout_preview_reports_figures_and_room_overlap(): void

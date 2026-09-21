@@ -475,6 +475,13 @@ export default function PublicMyReservationsPage() {
                 </p>
               </div>
             )}
+            <div className="flex items-start gap-2 rounded-lg border border-border bg-bg px-3 py-2.5">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+              <p className="text-xs text-muted leading-relaxed">
+                <span className="text-foreground font-medium">Early departure: </span>
+                If you check out before your booked date, the full booked amount applies. No refund for unused nights.
+              </p>
+            </div>
             {cancelError && (
               <div className="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2.5">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-danger" />

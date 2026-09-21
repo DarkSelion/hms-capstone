@@ -157,20 +157,19 @@ export default function CheckInPage() {
       key: 'reservation_number',
       label: 'Reservation #',
       sortable: true,
-      className: 'w-[14%]',
       render: (r) => <span className="font-medium">{r.reservation_number}</span>,
     },
     {
       key: 'guest',
       label: 'Guest',
       sortable: false,
-      className: 'w-[22%] truncate max-w-[300px]',
+      className: 'max-w-[180px]',
       render: (r) => {
         const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
         const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
         return (
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
               {initials}
             </div>
             <div className="min-w-0">
@@ -185,7 +184,6 @@ export default function CheckInPage() {
       key: 'room',
       label: 'Room',
       sortable: false,
-      className: 'w-[12%]',
       render: (r) => (
         <div className="min-w-0">
           <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
@@ -197,7 +195,7 @@ export default function CheckInPage() {
       key: 'check_in',
       label: 'Arrival',
       sortable: true,
-      className: 'w-[16%] whitespace-nowrap',
+      className: 'whitespace-nowrap',
       render: (r) => (
         <div>
           <div className="flex items-center gap-1.5 whitespace-nowrap">
@@ -212,7 +210,7 @@ export default function CheckInPage() {
       key: 'adults',
       label: 'Guests',
       sortable: false,
-      className: 'w-[10%] whitespace-nowrap',
+      className: 'whitespace-nowrap',
       render: (r) => (
         <span>{r.adults} Adult{r.adults !== 1 ? 's' : ''}{r.children > 0 ? `, ${r.children} Child${r.children !== 1 ? 'ren' : ''}` : ''}</span>
       ),
@@ -221,7 +219,7 @@ export default function CheckInPage() {
       key: 'total_amount',
       label: 'Total',
       sortable: true,
-      className: 'w-[11%] whitespace-nowrap',
+      className: 'whitespace-nowrap',
       render: (r) => {
         const due = Number(r.due_amount ?? 0)
         return (
@@ -235,49 +233,16 @@ export default function CheckInPage() {
       },
     },
     {
-      key: 'alerts',
-      label: 'Alerts',
-      sortable: false,
-      className: 'w-[11%] whitespace-nowrap',
-      render: (r) => {
-        const hasOverdue = r.is_overdue
-        const isLateArrival = r.status === 'late_arrival'
-        const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
-        if (!hasOverdue && !isLateArrival && !hasRefund) {
-          return <span className="text-slate-300">—</span>
-        }
-        return (
-          <div className="flex items-center gap-1 flex-wrap">
-            {hasOverdue && (
-              <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200/60">
-                {r.payment_status === 'paid' || r.payment_status === 'partial' ? 'Late Arrival' : 'Overdue'}
-              </span>
-            )}
-            {isLateArrival && (
-              <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
-                Notified — Hold Active
-              </span>
-            )}
-            {hasRefund && (
-              <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
-                Refund
-              </span>
-            )}
-          </div>
-        )
-      },
-    },
-    {
       key: 'payment_status',
       label: 'Payment',
       sortable: true,
-      className: 'w-[11%] whitespace-nowrap',
+      className: 'whitespace-nowrap',
       render: (r) => <StatusBadge status={r.payment_status} pill />,
     },
     {
       key: 'actions',
       label: 'Actions',
-      className: 'w-[10%] whitespace-nowrap',
+      className: 'whitespace-nowrap align-middle pr-2',
       render: (r) => (
         <ReservationRowActions
           reservation={r}
@@ -320,18 +285,18 @@ export default function CheckInPage() {
                 </span>
               </div>
               <div className="rounded-xl border border-amber-100 bg-amber-50/20 overflow-hidden">
-                <table className="w-full table-fixed border-collapse text-sm">
+                <table className="w-full table-auto border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-amber-200/40 text-left text-xs font-medium uppercase tracking-wider text-amber-600/70">
-                      <th className="w-[14%] px-4 py-2.5">Reservation</th>
-                      <th className="w-[22%] px-4 py-2.5">Guest</th>
-                      <th className="w-[12%] px-4 py-2.5">Room</th>
-                      <th className="w-[16%] px-4 py-2.5">Arrival</th>
-                      <th className="w-[10%] px-4 py-2.5">Guests</th>
-                      <th className="w-[11%] px-4 py-2.5">Total</th>
-                      <th className="w-[11%] px-4 py-2.5">Alerts</th>
-                      <th className="w-[11%] px-4 py-2.5">Payment</th>
-                      <th className="w-[10%] px-4 py-2.5">Actions</th>
+                      <th className="px-2 py-2.5">Reservation</th>
+                      <th className="px-2 py-2.5">Guest</th>
+                      <th className="px-2 py-2.5">Room</th>
+                      <th className="whitespace-nowrap px-2 py-2.5">Arrival</th>
+                      <th className="whitespace-nowrap px-2 py-2.5">Guests</th>
+                      <th className="whitespace-nowrap px-2 py-2.5">Total</th>
+                      <th className="whitespace-nowrap px-2 py-2.5">Alerts</th>
+                      <th className="whitespace-nowrap px-2 py-2.5">Payment</th>
+                      <th className="whitespace-nowrap px-2 py-2.5 pr-2">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-100/60">
@@ -346,7 +311,7 @@ export default function CheckInPage() {
                             {r.reservation_number}
                           </button>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-2 py-3">
                           {(() => {
                             const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
                             const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
@@ -361,23 +326,23 @@ export default function CheckInPage() {
                             )
                           })()}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-2 py-3">
                           <div className="min-w-0">
                             <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
                             <span className="block truncate text-xs text-muted">{r.room?.room_type?.name ?? '\u00A0'}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-2 py-3 whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
                             <span>{formatDateDisplay(r.check_in)}</span>
                             <TodayBadge variant="arrival" />
                           </div>
                           <span className="block text-xs text-muted">departs {formatDateDisplay(r.check_out)}</span>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-2 py-3 whitespace-nowrap">
                           {r.adults} Adult{r.adults !== 1 ? 's' : ''}{r.children > 0 ? `, ${r.children} Child${r.children !== 1 ? 'ren' : ''}` : ''}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-2 py-3 whitespace-nowrap">
                           <div>
                             <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
                             <span className={cn('block text-xs tabular-nums', due > 0 ? 'text-amber-600' : 'text-emerald-600')}>
@@ -385,7 +350,7 @@ export default function CheckInPage() {
                             </span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-2 py-3 whitespace-nowrap">
                           {!hasOverdue && !hasRefund ? (
                             <span className="text-slate-300">—</span>
                           ) : (
@@ -403,10 +368,10 @@ export default function CheckInPage() {
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-2 py-3 whitespace-nowrap">
                           <StatusBadge status={r.payment_status} pill />
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-2 py-3 whitespace-nowrap pr-2">
                           <ReservationRowActions
                             reservation={r}
                             onView={() => openDetailModal(r)}
@@ -432,7 +397,7 @@ export default function CheckInPage() {
             error={error ? 'Failed to load reservations' : null}
             sortBy={sortBy}
             onSort={handleSort}
-            tableClassName="table-fixed border-collapse"
+            tableClassName="table-auto border-collapse"
             emptyState={
               <div className="flex flex-col items-center justify-center py-12">
                 <Luggage className="mb-3 h-10 w-10 text-muted/50" />

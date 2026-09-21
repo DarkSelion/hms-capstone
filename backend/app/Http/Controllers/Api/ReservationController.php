@@ -455,11 +455,7 @@ class ReservationController extends Controller
         }
 
         $data = $request->validate([
-            'actual_check_out' => ['nullable', 'date', function ($attribute, $value, $fail) use ($reservation) {
-                if (now()->parse($value)->lt(now()->parse($reservation->check_out))) {
-                    $fail('Departure date cannot be earlier than the booked check-out.');
-                }
-            }],
+            'actual_check_out' => 'nullable|date',
         ]);
 
         $actualCheckOut = $data['actual_check_out']
@@ -492,7 +488,9 @@ class ReservationController extends Controller
             // blocked check-out leaves the reservation dates/totals untouched.
             $lateFee = $datesChanged ? 0.0 : $reservation->lateCheckoutFee();
             $paid = $reservation->recordedPaid();
-            $currentTotal = $datesChanged
+            // Early departure keeps the full booked amount (no refund for unused nights)
+            $isEarlyDeparture = $datesChanged && $actualCheckOut < $reservation->check_out->toDateString();
+            $currentTotal = ($datesChanged && !$isEarlyDeparture)
                 ? (float) $reservation->computePricing($actualCheckOut)['total_amount']
                 : (float) $reservation->total_amount;
             $currentTotal += $lateFee;
@@ -504,7 +502,11 @@ class ReservationController extends Controller
 
             if ($datesChanged) {
                 $reservation->update(['check_out' => $actualCheckOut]);
-                $this->recalculatePricing($reservation);
+                // Only recalculate pricing for late departures (extra nights);
+                // early departures keep the original total.
+                if (!$isEarlyDeparture) {
+                    $this->recalculatePricing($reservation);
+                }
             }
 
             if ($lateFee > 0) {
@@ -570,11 +572,7 @@ class ReservationController extends Controller
         }
 
         $data = $request->validate([
-            'actual_check_out' => ['nullable', 'date', function ($attribute, $value, $fail) use ($reservation) {
-                if (now()->parse($value)->lt(now()->parse($reservation->check_out))) {
-                    $fail('Departure date cannot be earlier than the booked check-out.');
-                }
-            }],
+            'actual_check_out' => 'nullable|date',
         ]);
 
         $actualCheckOut = $data['actual_check_out']

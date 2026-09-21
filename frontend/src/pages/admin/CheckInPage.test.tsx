@@ -137,12 +137,12 @@ describe('CheckInPage', () => {
     expect(screen.getByText('Due ₱500.00')).toBeInTheDocument()
   })
 
-  it('shows Overdue indicator for overdue reservations', () => {
+  it('shows overdue reservations with unpaid payment status', () => {
     setupMocks({ listData: [reservation({ is_overdue: true, payment_status: 'unpaid' })] })
 
     render(<CheckInPage />)
 
-    expect(screen.getAllByText('Overdue').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Unpaid').length).toBeGreaterThan(0)
   })
 
   it('shows custom empty state when no arrivals match', () => {

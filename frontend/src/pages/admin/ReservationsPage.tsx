@@ -24,7 +24,7 @@ import { Button } from '@/components/ui/button'
 import { DatePicker } from '@/components/ui/date-picker'
 import type { Reservation } from '@/types'
 import {
-  Plus, AlertTriangle, X, CalendarX2, RotateCcw, CalendarDays, Search, Bell,
+  Plus, AlertTriangle, X, CalendarX2, CalendarDays, Search, Bell,
 } from 'lucide-react'
 
 function formatDate(dateStr: string) {
@@ -49,7 +49,6 @@ export default function ReservationsPage() {
   const statusFilter = searchParams.get('status') ?? ''
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
-  const [refundRequestedOnly, setRefundRequestedOnly] = useState(false)
   const [sortBy, setSortBy] = useState('-created_at')
   const [page, setPage] = useState(1)
 
@@ -78,9 +77,8 @@ export default function ReservationsPage() {
     if (statusFilter) params.status = statusFilter
     if (dateFrom) params.date_from = dateFrom
     if (dateTo) params.date_to = dateTo
-    if (refundRequestedOnly) params.refund_requested = '1'
     return params
-  }, [page, sortBy, search, statusFilter, dateFrom, dateTo, refundRequestedOnly])
+  }, [page, sortBy, search, statusFilter, dateFrom, dateTo])
 
   const { data: reservationsData, isLoading, error, refetch } = useReservations(queryParams)
 
@@ -124,7 +122,7 @@ export default function ReservationsPage() {
     })
   }, [setSearchParams])
 
-  const hasActiveFilters = Boolean(search || statusFilter || dateFrom || dateTo || refundRequestedOnly)
+  const hasActiveFilters = Boolean(search || statusFilter || dateFrom || dateTo)
 
   const tableReservations = useMemo(() => {
     let data = reservations
@@ -233,7 +231,6 @@ export default function ReservationsPage() {
       key: 'reservation_number',
       label: 'Reservation #',
       sortable: true,
-      className: 'w-[13%]',
       render: (r) => (
         <button
           onClick={() => openDetailModal(r)}
@@ -247,13 +244,13 @@ export default function ReservationsPage() {
       key: 'guest',
       label: 'Guest',
       sortable: true,
-      className: 'w-[17%] truncate max-w-[300px]',
+      className: 'max-w-[180px]',
       render: (r) => {
         const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
         const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
         return (
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
               {initials}
             </div>
             <div className="min-w-0">
@@ -268,7 +265,6 @@ export default function ReservationsPage() {
       key: 'room',
       label: 'Room',
       sortable: true,
-      className: 'w-[10%]',
       render: (r) => (
         <div className="min-w-0">
           <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
@@ -280,7 +276,7 @@ export default function ReservationsPage() {
       key: 'check_in',
       label: 'Stay',
       sortable: true,
-      className: 'w-[16%] whitespace-nowrap',
+      className: 'whitespace-nowrap',
       render: (r) => {
         const isTodayCheckIn = getDateGroup(r.check_in) === 'today'
         const isTodayCheckOut = getDateGroup(r.check_out) === 'today'
@@ -302,7 +298,7 @@ export default function ReservationsPage() {
       key: 'total_amount',
       label: 'Total',
       sortable: true,
-      className: 'w-[11%] whitespace-nowrap',
+      className: 'whitespace-nowrap',
       render: (r) => {
         const due = Number(r.due_amount ?? 0)
         return (
@@ -319,14 +315,14 @@ export default function ReservationsPage() {
       key: 'status',
       label: 'Status',
       sortable: true,
-      className: 'w-[11%] whitespace-nowrap',
+      className: 'whitespace-nowrap',
       render: (r) => <StatusBadge status={r.status} pill />,
     },
     {
       key: 'alerts',
       label: 'Alerts',
       sortable: false,
-      className: 'w-[11%] whitespace-nowrap',
+      className: 'whitespace-nowrap',
       render: (r) => {
         const hasNoShow = r.status === 'confirmed' && r.is_overdue
         const isLateArrival = r.status === 'late_arrival'
@@ -334,8 +330,7 @@ export default function ReservationsPage() {
         const overstayDays = isOverstay
           ? Math.ceil((new Date(todayStr).getTime() - new Date(r.check_out).getTime()) / 86400000)
           : 0
-        const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
-        if (!hasNoShow && !isLateArrival && !isOverstay && !hasRefund) {
+        if (!hasNoShow && !isLateArrival && !isOverstay) {
           return <span className="text-slate-300">—</span>
         }
         return (
@@ -358,12 +353,6 @@ export default function ReservationsPage() {
                 Overstay ({overstayDays}d)
               </span>
             )}
-            {hasRefund && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
-                <RotateCcw className="h-3 w-3" />
-                Refund
-              </span>
-            )}
           </div>
         )
       },
@@ -372,13 +361,13 @@ export default function ReservationsPage() {
       key: 'payment_status',
       label: 'Payment',
       sortable: true,
-      className: 'w-[7%] whitespace-nowrap',
+      className: 'whitespace-nowrap',
       render: (r) => <StatusBadge status={r.payment_status} pill />,
     },
     {
       key: 'actions',
       label: 'Actions',
-      className: 'w-[14%] whitespace-nowrap',
+      className: 'whitespace-nowrap align-middle pr-2',
       render: (r) => (
         <ReservationRowActions
           reservation={r}
@@ -447,19 +436,6 @@ export default function ReservationsPage() {
               />
             </div>
 
-            {/* Refund Requested Toggle */}
-            <button
-              onClick={() => { setRefundRequestedOnly(v => !v); setPage(1) }}
-              className={`flex items-center gap-1.5 h-11 rounded-lg border px-3.5 text-xs font-medium transition-colors ${
-                refundRequestedOnly
-                  ? 'border-amber-300 bg-amber-50 text-amber-700'
-                  : 'border-slate-200 bg-white text-slate-500 hover:border-amber-300 hover:text-amber-600'
-              }`}
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Refund Requested
-            </button>
-
             {/* Date Pickers */}
             <div className="w-44">
               <DatePicker
@@ -515,14 +491,6 @@ export default function ReservationsPage() {
                   </button>
                 </span>
               )}
-              {refundRequestedOnly && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-xs font-medium text-amber-700">
-                  Refund Requested
-                  <button onClick={() => { setRefundRequestedOnly(false); setPage(1) }} className="hover:text-red-500 transition-colors">
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              )}
               <button
                 onClick={clearAllFilters}
                 className="text-xs font-medium text-slate-400 hover:text-red-500 transition-colors"
@@ -541,18 +509,18 @@ export default function ReservationsPage() {
                 </span>
               </div>
               <div className="rounded-xl border border-amber-100 bg-amber-50/20 overflow-hidden">
-                <table className="w-full table-fixed border-collapse text-sm">
+                <table className="w-full table-auto border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-amber-200/40 text-left text-xs font-medium uppercase tracking-wider text-amber-600/70">
-                      <th className="w-[13%] px-4 h-10">Reservation</th>
-                      <th className="w-[17%] px-4 h-10">Guest</th>
-                      <th className="w-[10%] px-4 h-10">Room</th>
-                      <th className="w-[16%] px-4 h-10">Stay</th>
-                      <th className="w-[11%] px-4 h-10">Total</th>
-                      <th className="w-[11%] px-4 h-10">Status</th>
-                      <th className="w-[11%] px-4 h-10">Alerts</th>
-                      <th className="w-[7%] px-4 h-10">Payment</th>
-                      <th className="w-[14%] px-4 h-10">Actions</th>
+                      <th className="px-2 h-10">Reservation</th>
+                      <th className="px-2 h-10">Guest</th>
+                      <th className="px-2 h-10">Room</th>
+                      <th className="whitespace-nowrap px-2 h-10">Stay</th>
+                      <th className="whitespace-nowrap px-2 h-10">Total</th>
+                      <th className="whitespace-nowrap px-2 h-10">Status</th>
+                      <th className="whitespace-nowrap px-2 h-10">Alerts</th>
+                      <th className="whitespace-nowrap px-2 h-10">Payment</th>
+                      <th className="whitespace-nowrap px-2 h-10 pr-2">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-100/60">
@@ -562,7 +530,7 @@ export default function ReservationsPage() {
                       const due = Number(r.due_amount ?? 0)
                       return (
                         <tr key={r.id} className="h-16 bg-amber-50/30 hover:bg-amber-50/60 transition-colors align-middle">
-                          <td className="px-4">
+                          <td className="px-2">
                             <button
                               onClick={() => openDetailModal(r)}
                               className="block max-w-[160px] truncate text-primary hover:underline font-medium"
@@ -570,7 +538,7 @@ export default function ReservationsPage() {
                               {r.reservation_number}
                             </button>
                           </td>
-                          <td className="px-4">
+                          <td className="px-2">
                             <div className="flex items-center gap-2.5">
                               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                                 {initials}
@@ -581,13 +549,13 @@ export default function ReservationsPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-4">
+                          <td className="px-2">
                             <div className="min-w-0">
                               <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
                               <span className="block truncate text-xs text-muted">{r.room?.room_type?.name ?? '\u00A0'}</span>
                             </div>
                           </td>
-                          <td className="px-4 whitespace-nowrap">
+                          <td className="px-2 whitespace-nowrap">
                             <div className="flex flex-col gap-0.5">
                               <div className="flex items-center gap-1.5 text-sm">
                                 <TodayBadge variant="arrival" />
@@ -596,7 +564,7 @@ export default function ReservationsPage() {
                               <span className="text-xs text-slate-500">Departs {formatDate(r.check_out)}</span>
                             </div>
                           </td>
-                          <td className="px-4 whitespace-nowrap">
+                          <td className="px-2 whitespace-nowrap">
                             <div>
                               <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
                               <span className={cn('block text-xs tabular-nums', due > 0 ? 'text-amber-600' : 'text-emerald-600')}>
@@ -604,18 +572,17 @@ export default function ReservationsPage() {
                               </span>
                             </div>
                           </td>
-                          <td className="px-4 whitespace-nowrap">
+                          <td className="px-2 whitespace-nowrap">
                             <StatusBadge status={r.status} pill />
                           </td>
-                          <td className="px-4 whitespace-nowrap">
+                          <td className="px-2 whitespace-nowrap">
                             {(() => {
                               const hasNoShow = r.status === 'confirmed' && r.is_overdue
                               const isOverstay = r.status === 'checked_in' && r.check_out < todayStr
                               const overstayDays = isOverstay
                                 ? Math.ceil((new Date(todayStr).getTime() - new Date(r.check_out).getTime()) / 86400000)
                                 : 0
-                              const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
-                              if (!hasNoShow && !isOverstay && !hasRefund) {
+                              if (!hasNoShow && !isOverstay) {
                                 return <span className="text-slate-300">—</span>
                               }
                               return (
@@ -632,20 +599,14 @@ export default function ReservationsPage() {
                                       Overstay ({overstayDays}d)
                                     </span>
                                   )}
-                                  {hasRefund && (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
-                                      <RotateCcw className="h-3 w-3" />
-                                      Refund
-                                    </span>
-                                  )}
                                 </div>
                               )
                             })()}
                           </td>
-                          <td className="px-4 whitespace-nowrap">
+                          <td className="px-2 whitespace-nowrap">
                             <StatusBadge status={r.payment_status} pill />
                           </td>
-                           <td className="px-4 whitespace-nowrap">
+                           <td className="px-2 whitespace-nowrap pr-2">
                             <ReservationRowActions
                               reservation={r}
                               onView={() => openDetailModal(r)}
@@ -674,7 +635,7 @@ export default function ReservationsPage() {
             error={error ? 'Failed to load reservations' : null}
             sortBy={sortBy}
             onSort={handleSort}
-            tableClassName="table-fixed border-collapse"
+            tableClassName="table-auto border-collapse"
             renderGroupHeader={(_key, rows) => (
               <div className="flex items-center gap-2 -mx-4 px-4 py-2.5">
                 <CalendarDays className="h-4 w-4 text-muted" />

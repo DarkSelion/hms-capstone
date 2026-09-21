@@ -412,6 +412,15 @@ export function ReservationCheckInOutModal({
               placeholder="Select departure date"
             />
 
+            {departureChanged && actualDeparture < bookedCheckOut && (
+              <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200/60 bg-amber-50 px-3 py-2">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                <p className="text-[12px] leading-relaxed text-amber-700">
+                  Early departure — the full booked amount applies. No refund for unused nights.
+                </p>
+              </div>
+            )}
+
             {departureChanged &&
               (preview.isLoading ? (
                 <p className="mt-2 text-[13px] text-muted">Recalculating…</p>

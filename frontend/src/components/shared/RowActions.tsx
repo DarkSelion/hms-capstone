@@ -18,7 +18,7 @@ interface RowActionsProps {
 
 export function RowActions({ children }: RowActionsProps) {
   return (
-    <div className="inline-flex h-8 items-stretch rounded-lg border border-border divide-x divide-border">
+    <div className="inline-flex h-8 items-center gap-1 flex-nowrap">
       {children}
     </div>
   )
@@ -43,7 +43,7 @@ export function RowActionButton({ tone = 'neutral', title, onClick, icon, label 
       variant="ghost"
       size="sm"
       square={!label}
-      className={cn('rounded-none border-0', label && 'px-2.5 text-xs', TONES[tone])}
+      className={cn('rounded-lg', label && 'px-2.5 text-xs', TONES[tone])}
       title={title}
       aria-label={label || title}
       onClick={onClick}

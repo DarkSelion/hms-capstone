@@ -39,15 +39,19 @@ export function ReservationRowActions({
   }
 
   const overdue = status === 'confirmed' && !!is_overdue && !alwaysAllowCheckIn
-  const showCheckIn = (status === 'pending' || status === 'confirmed') && onCheckIn && reservation.refund_status !== 'approved'
-  const showCheckOut = status === 'checked_in' && onCheckOut && reservation.refund_status !== 'approved'
+  const showCheckIn = (status === 'pending' || status === 'confirmed') && onCheckIn && reservation.refund_status !== 'approved' && reservation.payment_status !== 'refunded'
+  const showCheckOut = status === 'checked_in' && onCheckOut && reservation.refund_status !== 'approved' && reservation.payment_status !== 'refunded'
 
   const buttons: ReactNode[] = [
     <RowActionButton key="view" tone="neutral" title="View" icon={<Eye className="h-4 w-4" />} onClick={onView} />,
     <RowActionButton key="edit" tone="neutral" title="Edit" icon={<Pencil className="h-4 w-4" />} onClick={onEdit} />,
   ]
 
-  if ((status === 'pending' || status === 'confirmed') && onCancel) {
+  const canCancel = (status === 'pending' || status === 'confirmed')
+    && onCancel
+    && reservation.payment_status !== 'paid'
+    && reservation.payment_status !== 'refunded'
+  if (canCancel) {
     buttons.push(<RowActionButton key="cancel" tone="danger" title="Cancel" icon={<XCircle className="h-4 w-4" />} onClick={onCancel} />)
   }
   if (showCheckIn && !overdue) {
@@ -62,7 +66,7 @@ export function ReservationRowActions({
   if (showCheckOut) {
     buttons.push(<RowActionButton key="checkout" tone="info" title="Check Out" icon={<LogOut className="h-4 w-4" />} onClick={onCheckOut} />)
   }
-  if (status === 'checked_in' && onExtendStay && reservation.refund_status !== 'approved') {
+  if (status === 'checked_in' && onExtendStay && reservation.refund_status !== 'approved' && reservation.payment_status !== 'refunded') {
     buttons.push(<RowActionButton key="extend" tone="info" title="Extend Stay" icon={<CalendarClock className="h-4 w-4" />} onClick={onExtendStay} />)
   }
 

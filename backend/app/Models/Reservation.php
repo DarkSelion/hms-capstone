@@ -280,12 +280,16 @@ class Reservation extends Model
             ? now()->toDateString()
             : $this->check_out->toDateString();
 
+        $isEarlyDeparture = $actualCheckOut < $this->check_out->toDateString();
         $lateFee = $actualCheckOut === $this->check_out->toDateString()
             ? $this->lateCheckoutFee()
             : 0.0;
 
         $pricing = $this->computePricing($actualCheckOut);
-        $total = round((float) $pricing['total_amount'] + $lateFee, 2);
+        // Early departure: keep the full booked amount (no refund for unused nights)
+        $total = $isEarlyDeparture
+            ? round((float) $this->total_amount + $lateFee, 2)
+            : round((float) $pricing['total_amount'] + $lateFee, 2);
         $paid = $this->recordedPaid();
 
         return [

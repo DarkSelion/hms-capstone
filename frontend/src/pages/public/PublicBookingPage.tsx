@@ -1038,6 +1038,14 @@ export default function PublicBookingPage() {
                             )}
                           </div>
 
+                          {/* Early departure policy */}
+                          <div className="mt-2 rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
+                            <p className="text-[11px] leading-relaxed text-white/40">
+                              <span className="text-gold/70 font-medium">Early departure: </span>
+                              Early departures are non-refundable and subject to the full booked stay rate.
+                            </p>
+                          </div>
+
                           {/* Confirm button — richer gold + glow */}
                           <button
                             onClick={handleConfirm}
