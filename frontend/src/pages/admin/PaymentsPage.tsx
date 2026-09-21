@@ -436,7 +436,7 @@ const [showFormModal, setShowFormModal] = useState(false)
               />
             </div>
             <div className="w-44">
-              <Select value={methodFilter} onChange={(e) => { setMethodFilter(e.target.value); setPage(1) }}>
+              <Select id="payment-method-filter" name="methodFilter" aria-label="Filter by payment method" value={methodFilter} onChange={(e) => { setMethodFilter(e.target.value); setPage(1) }}>
                 <option value="">All Methods</option>
                 {PAYMENT_METHODS.map(m => (
                   <option key={m.value} value={m.value}>{m.label}</option>
@@ -444,7 +444,7 @@ const [showFormModal, setShowFormModal] = useState(false)
               </Select>
             </div>
             <div className="w-44">
-              <Select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}>
+              <Select id="payment-status-filter" name="statusFilter" aria-label="Filter by payment status" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}>
                 {PAYMENT_STATUS_OPTIONS.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}

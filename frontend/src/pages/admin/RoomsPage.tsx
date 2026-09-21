@@ -317,6 +317,9 @@ export default function RoomsPage() {
             <div className="relative flex-1 min-w-[200px] max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
               <input
+                id="room-search"
+                name="roomSearch"
+                aria-label="Search room number or floor"
                 type="text"
                 placeholder="Search room number or floor..."
                 value={search}
@@ -329,6 +332,9 @@ export default function RoomsPage() {
             <div className="relative">
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
               <select
+                id="room-floor-filter"
+                name="floorFilter"
+                aria-label="Filter by floor"
                 value={floorFilter}
                 onChange={(e) => { setFloorFilter(e.target.value); setCurrentPage(1) }}
                 className="h-11 pl-9 pr-10 rounded-lg border border-slate-200 bg-white text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
@@ -345,6 +351,9 @@ export default function RoomsPage() {
               <div className="relative">
                 <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                 <select
+                  id="room-type-filter"
+                  name="roomTypeFilter"
+                  aria-label="Filter by room type"
                   value={roomTypeFilter}
                   onChange={(e) => { setRoomTypeFilter(e.target.value); setCurrentPage(1) }}
                   className="h-11 pl-9 pr-10 rounded-lg border border-slate-200 bg-white text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"

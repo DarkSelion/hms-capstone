@@ -658,6 +658,9 @@ export default function StaffPage() {
               <div className="relative flex-1 min-w-[200px] max-w-md">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                 <input
+                  id="staff-search"
+                  name="staffSearch"
+                  aria-label="Search staff by name, email, or role"
                   type="text"
                   placeholder="Search staff by name, email, or role..."
                   value={search}
@@ -669,6 +672,9 @@ export default function StaffPage() {
               <div className="relative">
                 <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                 <select
+                  id="staff-role-filter"
+                  name="roleFilter"
+                  aria-label="Filter by role"
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value)}
                   className="h-11 pl-9 pr-10 rounded-lg border border-slate-200 bg-white text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"
@@ -773,6 +779,9 @@ export default function StaffPage() {
               <div className="relative">
                 <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                 <select
+                  id="schedule-staff-filter"
+                  name="scheduleStaffFilter"
+                  aria-label="Filter schedule by staff member"
                   value={scheduleStaffFilter}
                   onChange={(e) => setScheduleStaffFilter(e.target.value)}
                   className="h-11 pl-9 pr-10 rounded-lg border border-slate-200 bg-white text-sm text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 transition-colors"

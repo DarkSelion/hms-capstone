@@ -799,6 +799,9 @@ function BookingWidget({
             <div>
               <label className="text-[10px] text-gray-500 uppercase tracking-[0.12em] font-semibold block mb-1.5">Adults</label>
               <select
+                id="room-detail-adults"
+                name="adults"
+                aria-label="Number of adults"
                 value={adults}
                 onChange={(e) => setAdults(e.target.value)}
                 className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-dark text-sm focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/20 transition-colors appearance-none cursor-pointer"
@@ -818,6 +821,9 @@ function BookingWidget({
             <div>
               <label className="text-[10px] text-gray-500 uppercase tracking-[0.12em] font-semibold block mb-1.5">Children</label>
               <select
+                id="room-detail-children"
+                name="children"
+                aria-label="Number of children"
                 value={children}
                 onChange={(e) => setChildren(e.target.value)}
                 className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-dark text-sm focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/20 transition-colors appearance-none cursor-pointer"

@@ -97,16 +97,16 @@ export default function PublicRegisterPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="reg_first_name" className="text-xs font-semibold uppercase tracking-wider text-gold-highlight block mb-2">First Name</label>
-                    <input id="reg_first_name" type="text" value={form.first_name} onChange={(e) => update('first_name', e.target.value)} required className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full" />
+                    <input id="reg_first_name" name="first_name" aria-label="First name" type="text" value={form.first_name} onChange={(e) => update('first_name', e.target.value)} required className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full" />
                   </div>
                   <div>
                     <label htmlFor="reg_last_name" className="text-xs font-semibold uppercase tracking-wider text-gold-highlight block mb-2">Last Name</label>
-                    <input id="reg_last_name" type="text" value={form.last_name} onChange={(e) => update('last_name', e.target.value)} required className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full" />
+                    <input id="reg_last_name" name="last_name" aria-label="Last name" type="text" value={form.last_name} onChange={(e) => update('last_name', e.target.value)} required className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full" />
                   </div>
                 </div>
                 <div>
                   <label htmlFor="reg_email" className="text-xs font-semibold uppercase tracking-wider text-gold-highlight block mb-2">Email</label>
-                  <input id="reg_email" type="email" value={form.email} onChange={(e) => update('email', e.target.value)} required className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full" placeholder="you@email.com" />
+                  <input id="reg_email" name="email" aria-label="Email address" type="email" value={form.email} onChange={(e) => update('email', e.target.value)} required className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full" placeholder="you@email.com" />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -130,7 +130,7 @@ export default function PublicRegisterPage() {
                   </div>
                   <div>
                     <label htmlFor="reg_gender" className="text-xs font-semibold uppercase tracking-wider text-gold-highlight block mb-2">Gender <span className="text-slate-500/50">(optional)</span></label>
-                    <select id="reg_gender" value={form.gender} onChange={(e) => update('gender', e.target.value)} className="bg-canvas/90 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full appearance-none cursor-pointer">
+                    <select id="reg_gender" name="gender" aria-label="Gender" value={form.gender} onChange={(e) => update('gender', e.target.value)} className="bg-canvas/90 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full appearance-none cursor-pointer">
                       <option value="">Prefer not to say</option>
                       <option value="male">Male</option>
                       <option value="female">Female</option>
@@ -141,7 +141,7 @@ export default function PublicRegisterPage() {
                 <div>
                   <label htmlFor="reg_password" className="text-xs font-semibold uppercase tracking-wider text-gold-highlight block mb-2">Password</label>
                   <div className="relative">
-                    <input id="reg_password" type={showPassword ? 'text' : 'password'} value={form.password} onChange={(e) => update('password', e.target.value)} required minLength={8} className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 pr-10 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full" placeholder="Enter your password" />
+                    <input id="reg_password" name="password" aria-label="Password" type={showPassword ? 'text' : 'password'} value={form.password} onChange={(e) => update('password', e.target.value)} required minLength={8} className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 pr-10 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full" placeholder="Enter your password" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -162,7 +162,7 @@ export default function PublicRegisterPage() {
                 <div>
                   <label htmlFor="reg_password_confirm" className="text-xs font-semibold uppercase tracking-wider text-gold-highlight block mb-2">Confirm Password</label>
                   <div className="relative">
-                    <input id="reg_password_confirm" type={showConfirmPassword ? 'text' : 'password'} value={form.password_confirmation} onChange={(e) => update('password_confirmation', e.target.value)} required className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 pr-10 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full" placeholder="Re-enter your password" />
+                    <input id="reg_password_confirm" name="password_confirmation" aria-label="Confirm password" type={showConfirmPassword ? 'text' : 'password'} value={form.password_confirmation} onChange={(e) => update('password_confirmation', e.target.value)} required className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 pr-10 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full" placeholder="Re-enter your password" />
                     <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>

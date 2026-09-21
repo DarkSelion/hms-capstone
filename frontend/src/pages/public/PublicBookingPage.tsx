@@ -365,13 +365,13 @@ export default function PublicBookingPage() {
                 </div>
                 <div>
                   <label htmlFor="booking_adults" className="text-xs font-semibold tracking-widest text-white/40 uppercase mb-2 block">Adults</label>
-                  <select id="booking_adults" value={adultsSafe} onChange={(e) => setAdults(Number(e.target.value))} className="w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm color-scheme-dark">
+                  <select id="booking_adults" name="adults" aria-label="Number of adults" value={adultsSafe} onChange={(e) => setAdults(Number(e.target.value))} className="w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm color-scheme-dark">
                     {Array.from({ length: maxAdults }, (_, i) => i + 1).map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
                 <div>
                   <label htmlFor="booking_children" className="text-xs font-semibold tracking-widest text-white/40 uppercase mb-2 block">Children</label>
-                  <select id="booking_children" value={childrenSafe} onChange={(e) => setChildrenCount(Number(e.target.value))} className="w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm color-scheme-dark">
+                  <select id="booking_children" name="children" aria-label="Number of children" value={childrenSafe} onChange={(e) => setChildrenCount(Number(e.target.value))} className="w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm color-scheme-dark">
                     {Array.from({ length: Math.max(0, maxAdults - adultsSafe) + 1 }, (_, i) => i).map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>

@@ -340,7 +340,7 @@ export default function ExpensesPage() {
               />
             </div>
             <div className="w-44">
-              <Select value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setPage(1) }}>
+              <Select id="expense-category-filter" name="categoryFilter" aria-label="Filter by expense category" value={categoryFilter} onChange={(e) => { setCategoryFilter(e.target.value); setPage(1) }}>
                 <option value="">All Categories</option>
                 {CATEGORIES.map(c => (
                   <option key={c.value} value={c.value}>{c.label}</option>

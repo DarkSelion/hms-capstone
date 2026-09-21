@@ -69,12 +69,12 @@ export default function PublicLoginPage() {
                 )}
                 <div>
                   <label htmlFor="login_email" className="text-xs font-semibold uppercase tracking-wider text-gold-highlight block mb-2">Email</label>
-                  <input id="login_email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full" placeholder="you@email.com" />
+                  <input id="login_email" name="email" aria-label="Email address" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full" placeholder="you@email.com" />
                 </div>
                 <div>
                   <label htmlFor="login_password" className="text-xs font-semibold uppercase tracking-wider text-gold-highlight block mb-2">Password</label>
                   <div className="relative">
-                    <input id="login_password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} required className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 pr-10 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full" placeholder="Enter your password" />
+                    <input id="login_password" name="password" aria-label="Password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} required className="bg-canvas/90 border border-slate-700 text-white placeholder-slate-500 rounded-xl px-4 py-3 pr-10 text-sm focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-colors w-full" placeholder="Enter your password" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} tabIndex={-1} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>

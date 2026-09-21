@@ -90,6 +90,8 @@ export default function PublicForgotPasswordPage() {
                     <label htmlFor="fp_email" className="text-xs font-semibold uppercase tracking-wider text-gold-highlight block mb-2">Email</label>
                     <input
                       id="fp_email"
+                      name="email"
+                      aria-label="Email address"
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}

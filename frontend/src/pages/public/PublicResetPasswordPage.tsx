@@ -173,6 +173,8 @@ export default function PublicResetPasswordPage() {
                       <label htmlFor="rp_email" className="text-xs font-semibold uppercase tracking-wider text-gold-highlight block mb-2">Email</label>
                       <input
                         id="rp_email"
+                        name="email"
+                        aria-label="Email address"
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -236,6 +238,8 @@ export default function PublicResetPasswordPage() {
                         <div className="relative">
                           <input
                             id="rp_password"
+                            name="password"
+                            aria-label="New password"
                             type={showPassword ? 'text' : 'password'}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
@@ -266,6 +270,8 @@ export default function PublicResetPasswordPage() {
                         <div className="relative">
                           <input
                             id="rp_password_confirmation"
+                            name="password_confirmation"
+                            aria-label="Confirm new password"
                             type={showConfirmPassword ? 'text' : 'password'}
                             value={passwordConfirmation}
                             onChange={(e) => setPasswordConfirmation(e.target.value)}

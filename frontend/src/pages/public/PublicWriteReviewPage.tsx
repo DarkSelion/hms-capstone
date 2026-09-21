@@ -207,6 +207,9 @@ export default function PublicWriteReviewPage() {
               <div className="relative">
                 <Quote className="absolute left-3 top-3 h-4 w-4 text-white/20" />
                 <input
+                  id="review_title"
+                  name="title"
+                  aria-label="Review title"
                   type="text"
                   placeholder="Sum up your experience"
                   value={title}
@@ -225,6 +228,9 @@ export default function PublicWriteReviewPage() {
                 Your Review <span className="text-white/20">(optional)</span>
               </label>
               <textarea
+                id="review_comment"
+                name="comment"
+                aria-label="Your review"
                 rows={4}
                 placeholder="Tell other guests about your experience..."
                 value={comment}

@@ -380,18 +380,20 @@ export default function HousekeepingPage() {
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <div className="relative max-w-[200px] flex-1">
               <Input
+                name="housekeepingSearch"
+                aria-label="Search housekeeping tasks by room"
                 placeholder="Search room..."
                 icon={<Search className="h-4 w-4" />}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-[140px]">
+            <Select id="housekeeping-status-filter" name="statusFilter" aria-label="Filter by status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-[140px]">
               {STATUS_OPTIONS.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </Select>
-            <Select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className="w-[130px]">
+            <Select id="housekeeping-priority-filter" name="priorityFilter" aria-label="Filter by priority" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className="w-[130px]">
               {PRIORITY_OPTIONS.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}

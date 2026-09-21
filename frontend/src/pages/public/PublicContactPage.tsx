@@ -166,23 +166,23 @@ export default function PublicContactPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-gold-light mb-2">Your Name</label>
-                      <input type="text" required value={form.name} onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Juan Dela Cruz" className="w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm" />
+                      <input id="contact_name" name="name" aria-label="Your name" type="text" required value={form.name} onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Juan Dela Cruz" className="w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm" />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-gold-light mb-2">Email Address</label>
-                      <input type="email" required value={form.email} onChange={(e) => setForm(p => ({ ...p, email: e.target.value }))} placeholder="juan@example.com" className="w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm" />
+                      <input id="contact_email" name="email" aria-label="Your email address" type="email" required value={form.email} onChange={(e) => setForm(p => ({ ...p, email: e.target.value }))} placeholder="juan@example.com" className="w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm" />
                     </div>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold uppercase tracking-wider text-gold-light mb-2">Subject</label>
-                    <select required value={form.subject} onChange={(e) => setForm(p => ({ ...p, subject: e.target.value }))} className="w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm">
+                    <select id="contact_subject" name="subject" aria-label="Subject" required value={form.subject} onChange={(e) => setForm(p => ({ ...p, subject: e.target.value }))} className="w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm">
                       <option value="" disabled>Select a subject</option>
                       {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold uppercase tracking-wider text-gold-light mb-2">Message</label>
-                    <textarea required rows={5} value={form.message} onChange={(e) => setForm(p => ({ ...p, message: e.target.value }))} placeholder="Tell us how we can help..." className="w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm resize-none" />
+                    <textarea id="contact_message" name="message" aria-label="Your message" required rows={5} value={form.message} onChange={(e) => setForm(p => ({ ...p, message: e.target.value }))} placeholder="Tell us how we can help..." className="w-full bg-[#0B132B]/80 border border-slate-700 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-3 focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold transition-all text-sm resize-none" />
                   </div>
                   <button
                     type="submit"

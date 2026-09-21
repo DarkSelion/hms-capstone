@@ -167,7 +167,7 @@ export default function ReviewsPage() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <Input placeholder="Search reviews..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
-          <Select value={ratingFilter} onChange={(e) => setRatingFilter(e.target.value)}>
+          <Select id="review-rating-filter" name="ratingFilter" aria-label="Filter by rating" value={ratingFilter} onChange={(e) => setRatingFilter(e.target.value)}>
             <option value="">All Ratings</option>
             <option value="5">5 Stars</option>
             <option value="4">4 Stars</option>

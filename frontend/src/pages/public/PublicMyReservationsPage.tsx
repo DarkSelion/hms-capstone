@@ -395,6 +395,9 @@ export default function PublicMyReservationsPage() {
                   <div className="relative w-full sm:w-72">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30 pointer-events-none" />
                     <input
+                      id="my-res-search"
+                      name="search"
+                      aria-label="Search reservations by booking number or room"
                       type="text"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
@@ -520,6 +523,9 @@ export default function PublicMyReservationsPage() {
             <div>
               <label className="text-xs font-medium text-foreground block mb-1.5">Reason for refund</label>
               <textarea
+                id="refund-reason"
+                name="refundReason"
+                aria-label="Reason for refund"
                 value={refundReason}
                 onChange={(e) => setRefundReason(e.target.value)}
                 placeholder="Please explain why you need a refund..."

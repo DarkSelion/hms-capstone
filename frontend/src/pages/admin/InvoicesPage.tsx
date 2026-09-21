@@ -417,7 +417,7 @@ export default function InvoicesPage() {
               />
             </div>
             <div className="w-44">
-              <Select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}>
+              <Select id="invoice-status-filter" name="statusFilter" aria-label="Filter by invoice status" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}>
                 {STATUS_OPTIONS.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}

@@ -185,6 +185,9 @@ export function Navbar({ onToggleSidebar, title }: NavbarProps) {
         <div ref={searchRef} className="hidden md:relative md:flex md:items-center">
           <Search className="absolute left-3 h-4 w-4 text-muted pointer-events-none" />
           <input
+            id="header-search"
+            name="search"
+            aria-label="Search guests, rooms, reservations"
             type="text"
             placeholder="Search guests, rooms, reservations..."
             value={searchQuery}
@@ -255,6 +258,9 @@ export function Navbar({ onToggleSidebar, title }: NavbarProps) {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
               <input
+                id="header-search-mobile"
+                name="search"
+                aria-label="Search guests, rooms, reservations"
                 type="text"
                 placeholder="Search..."
                 autoFocus
