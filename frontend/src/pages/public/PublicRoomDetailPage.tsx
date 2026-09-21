@@ -280,6 +280,7 @@ export default function PublicRoomDetailPage() {
               description={roomType.description || ''}
               sizeSqm={roomType.size_sqm}
               maxAdults={roomType.max_adults}
+              maxChildren={roomType.max_children ?? 0}
               bedType={bedTypeDisplay}
               category={category}
             />
@@ -499,18 +500,19 @@ export default function PublicRoomDetailPage() {
    ABOUT SECTION
    ═══════════════════════════════════════════════════════════════ */
 function AboutSection({
-  description, sizeSqm, maxAdults, bedType, category,
+  description, sizeSqm, maxAdults, maxChildren, bedType, category,
 }: {
   description: string
   sizeSqm?: number
   maxAdults: number
+  maxChildren: number
   bedType: string
   category: string
 }) {
   const reveal = useScrollReveal(0.1)
   const specs = [
     { icon: Maximize, label: 'Room Size', value: sizeSqm ? `${sizeSqm} m²` : '—' },
-    { icon: Users, label: 'Max Guests', value: `${maxAdults} Adults` },
+    { icon: Users, label: 'Max Guests', value: `Up to ${maxAdults + maxChildren} Guests` },
     { icon: BedDouble, label: 'Bed Type', value: bedType },
     { icon: Home, label: 'Category', value: category },
   ].filter((s) => s.value !== '—' || s.label === 'Room Size')
