@@ -210,9 +210,13 @@ export default function CheckInPage() {
       key: 'adults',
       label: 'Guests',
       sortable: false,
-      className: 'whitespace-nowrap',
       render: (r) => (
-        <span>{r.adults} Adult{r.adults !== 1 ? 's' : ''}{r.children > 0 ? `, ${r.children} Child${r.children !== 1 ? 'ren' : ''}` : ''}</span>
+        <div>
+          <div className="font-medium text-foreground">{r.adults} {r.adults === 1 ? 'Adult' : 'Adults'}</div>
+          {r.children > 0 && (
+            <div className="text-xs text-muted">{r.children} {r.children === 1 ? 'Child' : 'Children'}</div>
+          )}
+        </div>
       ),
     },
     {
@@ -340,7 +344,10 @@ export default function CheckInPage() {
                           <span className="block text-xs text-muted">departs {formatDateDisplay(r.check_out)}</span>
                         </td>
                         <td className="px-2 py-3 whitespace-nowrap">
-                          {r.adults} Adult{r.adults !== 1 ? 's' : ''}{r.children > 0 ? `, ${r.children} Child${r.children !== 1 ? 'ren' : ''}` : ''}
+                          <div className="font-medium text-foreground">{r.adults} {r.adults === 1 ? 'Adult' : 'Adults'}</div>
+                          {r.children > 0 && (
+                            <div className="text-xs text-muted">{r.children} {r.children === 1 ? 'Child' : 'Children'}</div>
+                          )}
                         </td>
                         <td className="px-2 py-3 whitespace-nowrap">
                           <div>
