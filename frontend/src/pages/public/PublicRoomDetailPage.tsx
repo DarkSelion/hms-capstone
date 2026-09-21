@@ -96,15 +96,6 @@ export default function PublicRoomDetailPage() {
   const [adults, setAdults] = useState(initialAdults)
   const [children, setChildren] = useState(initialChildren)
 
-  useEffect(() => {
-    if (!checkIn && !checkOut) {
-      const ci = addDays(today, 7)
-      const co = addDays(today, 9)
-      setCheckIn(ci)
-      setCheckOut(co)
-    }
-  }, [today, checkIn, checkOut])
-
   const nights = useMemo(() => {
     if (!checkIn || !checkOut) return 0
     const [cy, cm, cd] = checkIn.split('-').map(Number)
