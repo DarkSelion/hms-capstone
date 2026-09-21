@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { usePublicReservation, useSubmitReview } from '@/hooks/usePublicApi'
 import { Button } from '@/components/ui/button'
-import { Star, Loader2, CheckCircle, ArrowLeft, Quote } from 'lucide-react'
+import { Star, Loader2, CheckCircle, ArrowLeft, Quote, Shield, Calendar, Users, BedDouble } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 
 const RATING_LABELS: Record<number, string> = {
@@ -94,6 +94,14 @@ export default function PublicWriteReviewPage() {
 
   const roomImage = reservation.room?.image_url || reservation.room?.room_type?.image_url
 
+  const nights = (() => {
+    const ci = new Date(reservation.check_in)
+    const co = new Date(reservation.check_out)
+    return Math.max(1, Math.round((co.getTime() - ci.getTime()) / 86400000))
+  })()
+
+  const guestCount = (reservation.adults || 0) + (reservation.children || 0)
+
   return (
     <div className="min-h-screen bg-dark">
       {/* Header */}
@@ -109,24 +117,52 @@ export default function PublicWriteReviewPage() {
         {/* Floating Card */}
         <div className="bg-white/[0.06] border border-amber-500/20 shadow-2xl backdrop-blur-md rounded-2xl overflow-hidden">
 
-          {/* Booking Summary Header */}
-          <div className="flex items-center gap-4 p-5 border-b border-white/[0.06]">
-            {roomImage && (
-              <img
-                src={roomImage}
-                alt={reservation.room?.room_type?.name || 'Room'}
-                className="w-16 h-16 rounded-xl object-cover border border-white/10"
-              />
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-white font-medium text-sm truncate">{reservation.room?.room_type?.name}</p>
-              <p className="text-white/40 text-xs mt-0.5">
-                Stayed {formatDate(reservation.check_in)} — {formatDate(reservation.check_out)}
-              </p>
+          {/* Hero Stay Info Card */}
+          <div className="bg-slate-900/80 border-b border-amber-500/20 p-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              {/* Room Thumbnail */}
+              {roomImage && (
+                <img
+                  src={roomImage}
+                  alt={reservation.room?.room_type?.name || 'Room'}
+                  className="w-28 h-20 md:w-36 md:h-24 object-cover rounded-lg border border-amber-500/20 shrink-0"
+                />
+              )}
+
+              {/* Center Details */}
+              <div className="flex-1 min-w-0">
+                <h2 className="font-serif text-lg text-white truncate">{reservation.room?.room_type?.name}</h2>
+                <div className="flex items-center gap-1.5 mt-1.5 text-amber-400/70">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span className="text-xs">
+                    {formatDate(reservation.check_in)} — {formatDate(reservation.check_out)}
+                    <span className="text-white/30 ml-1.5">({nights} Night{nights !== 1 ? 's' : ''})</span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+                  {guestCount > 0 && (
+                    <span className="inline-flex items-center gap-1 bg-white/5 rounded-full px-2.5 py-0.5 text-[11px] text-white/50">
+                      <Users className="h-3 w-3" /> {guestCount} Guest{guestCount !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {reservation.room?.bed_type && (
+                    <span className="inline-flex items-center gap-1 bg-white/5 rounded-full px-2.5 py-0.5 text-[11px] text-white/50">
+                      <BedDouble className="h-3 w-3" /> {reservation.room.bed_type}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Right: Booking Ref + Verified */}
+              <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 shrink-0">
+                <span className="text-[10px] uppercase tracking-wider text-white/30 font-medium bg-white/5 rounded-lg px-2.5 py-1">
+                  #{reservation.reservation_number}
+                </span>
+                <span className="inline-flex items-center gap-1 text-emerald-400 text-[11px] font-medium">
+                  <Shield className="h-3.5 w-3.5" /> Verified Stay
+                </span>
+              </div>
             </div>
-            <span className="text-[10px] uppercase tracking-wider text-white/30 font-medium bg-white/5 rounded-lg px-2.5 py-1 shrink-0">
-              #{reservation.reservation_number}
-            </span>
           </div>
 
           {/* Star Rating */}
