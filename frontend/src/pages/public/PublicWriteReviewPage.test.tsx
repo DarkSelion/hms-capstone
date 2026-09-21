@@ -13,6 +13,11 @@ const { mockUsePublicReservation, mockUseSubmitReview, mockAddToast } =
 vi.mock('@/hooks/usePublicApi', () => ({
   usePublicReservation: (...args: unknown[]) => mockUsePublicReservation(...args),
   useSubmitReview: () => mockUseSubmitReview(),
+  usePortalCurrency: () => 'PHP',
+}))
+
+vi.mock('@/lib/format', () => ({
+  formatCurrencyWith: (amount: number) => `₱${amount.toLocaleString()}`,
 }))
 
 vi.mock('@/components/ui/toast', () => ({
@@ -31,7 +36,12 @@ function renderPage(reservationOverride?: Record<string, unknown>) {
     id: 42,
     status: 'checked_out',
     reservation_number: 'BK-2026-0042',
-    room: { room_type: { name: 'Deluxe Room' } },
+    check_in: '2026-09-15',
+    check_out: '2026-09-17',
+    room: {
+      room_type: { name: 'Deluxe Room' },
+      image_url: 'https://example.com/room.jpg',
+    },
     ...reservationOverride,
   }
   mockUsePublicReservation.mockReturnValue({ data: reservation, isLoading: false, error: null })
@@ -56,7 +66,12 @@ describe('PublicWriteReviewPage', () => {
     expect(screen.getByText(/BK-2026-0042/)).toBeInTheDocument()
   })
 
-  it('shows loading skeleton', () => {
+  it('shows booking summary with stay dates', () => {
+    renderPage()
+    expect(screen.getByText(/Sep 15.*Sep 17/)).toBeInTheDocument()
+  })
+
+  it('shows loading spinner', () => {
     mockUsePublicReservation.mockReturnValue({ data: undefined, isLoading: true, error: null })
     const { container } = render(
       <MemoryRouter initialEntries={['/public/write-review/42']}>
@@ -65,7 +80,7 @@ describe('PublicWriteReviewPage', () => {
         </Routes>
       </MemoryRouter>,
     )
-    expect(container.querySelector('.animate-pulse')).toBeInTheDocument()
+    expect(container.querySelector('.animate-spin')).toBeInTheDocument()
   })
 
   it('shows not eligible when reservation is not checked_out', () => {
@@ -73,15 +88,25 @@ describe('PublicWriteReviewPage', () => {
     expect(screen.getByText(/not eligible for a review/i)).toBeInTheDocument()
   })
 
+  it('shows character counters', () => {
+    renderPage()
+    expect(screen.getByText('0/100')).toBeInTheDocument()
+    expect(screen.getByText('0/1000')).toBeInTheDocument()
+  })
+
+  it('shows trust note about verification', () => {
+    renderPage()
+    expect(screen.getByText(/submitted for verification by Pampanga Home Suites management/i)).toBeInTheDocument()
+  })
+
   it('submits review with rating', async () => {
     const mockMutate = vi.fn((_data, opts) => opts.onSuccess())
     mockUseSubmitReview.mockReturnValue({ mutate: mockMutate, isPending: false })
     renderPage()
 
-    // Click the 4th star (stars are just icon buttons with no text)
     const starButtons = screen.getAllByRole('button')
-    // Filter to only the 5 star buttons (first 5 buttons in the rating section)
-    const ratingStars = starButtons.filter(btn => btn.querySelector('svg'))
+    // Star buttons have no text content (only SVGs), unlike Back/Submit which have text
+    const ratingStars = starButtons.filter(btn => !btn.textContent?.trim() && btn.querySelector('svg'))
     fireEvent.click(ratingStars[3])
 
     fireEvent.change(screen.getByPlaceholderText(/sum up your experience/i), { target: { value: 'Great hotel!' } })
