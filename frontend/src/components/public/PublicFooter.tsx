@@ -118,7 +118,7 @@ export function PublicFooter() {
                 </div>
               )}
               <div>
-                <h3 className="font-serif text-gold text-2xl font-medium leading-none">{hotelName}</h3>
+                <h3 className="font-serif text-gold text-xl sm:text-2xl font-medium leading-none truncate">{hotelName}</h3>
                 <p className="text-[10px] uppercase tracking-[0.25em] text-gold/60 mt-1.5">Home Suites</p>
               </div>
             </Link>

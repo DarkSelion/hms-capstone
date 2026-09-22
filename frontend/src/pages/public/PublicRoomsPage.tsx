@@ -176,7 +176,7 @@ export default function PublicRoomsPage() {
           {/* Date banner */}
           {checkIn && checkOut && (
             <div className="py-3 border-b border-cream-warm/30">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center">
                     <Calendar className="h-3.5 w-3.5 text-gold" />
@@ -199,14 +199,14 @@ export default function PublicRoomsPage() {
           )}
 
           {/* Tabs */}
-          <div className="flex items-center justify-center gap-1 py-3">
+          <div className="flex items-center justify-center gap-1 py-3 overflow-x-auto">
             {TABS.map((tab) => {
               const count = tabCounts[tab.value as keyof typeof tabCounts]
               return (
                 <button
                   key={tab.value}
                   onClick={() => setFilter(tab.value)}
-                  className={`relative flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-[0.12em] whitespace-nowrap transition-all duration-300 ${
+                  className={`relative flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-[0.12em] whitespace-nowrap transition-all duration-300 ${
                     filter === tab.value
                       ? 'bg-dark text-gold shadow-md shadow-dark/10'
                       : 'text-dark/40 hover:text-dark/70 hover:bg-white/60'
@@ -375,7 +375,7 @@ function RoomCard({
           </div>
 
           {/* Info */}
-          <div className="p-8 flex flex-col justify-center">
+          <div className="p-5 sm:p-6 lg:p-8 flex flex-col justify-center">
             <div className="mb-1">
               <span className="text-[10px] uppercase tracking-[0.15em] text-gold/60 font-semibold">Room Type</span>
             </div>
@@ -387,7 +387,7 @@ function RoomCard({
             </p>
 
             {/* Meta */}
-            <div className="flex items-center gap-2 text-xs text-dark/40 mb-5">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-dark/40 mb-5">
               <span className="flex items-center gap-1.5 bg-bg px-3 py-1.5 rounded-full">
                 <Users className="h-3 w-3 text-gold/60" /> {room.min_capacity !== room.max_capacity ? `${room.min_capacity}–${room.max_capacity}` : room.max_capacity ?? room.max_adults} guests
               </span>
@@ -408,14 +408,14 @@ function RoomCard({
             </div>
 
             {/* Price + CTA */}
-            <div className="flex items-center justify-between border-t border-gray-100 pt-5">
+            <div className="flex items-center justify-between lg:justify-between pt-5 border-t border-gray-100">
               <div className="hidden lg:block">
                 <span className="text-3xl font-light text-gold">{fmt(price)}</span>
                 <span className="text-dark/30 text-sm ml-1">/ night</span>
               </div>
               <button
                 onClick={(e) => { e.stopPropagation(); onClick() }}
-                className="px-6 py-2.5 bg-gold text-dark text-xs font-semibold uppercase tracking-[0.12em] rounded-full hover:bg-gold-light hover:shadow-lg hover:shadow-gold/20 transition-all duration-300 flex items-center gap-1.5"
+                className="px-6 py-2.5 bg-gold text-dark text-xs font-semibold uppercase tracking-[0.12em] rounded-full hover:bg-gold-light hover:shadow-lg hover:shadow-gold/20 transition-all duration-300 flex items-center gap-1.5 ml-auto lg:ml-0"
               >
                 View Details <ArrowRight className="h-3 w-3" />
               </button>
@@ -471,7 +471,7 @@ function RoomCard({
         </p>
 
         {/* Meta */}
-        <div className="flex items-center gap-2 text-xs text-dark/40 mb-3">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-dark/40 mb-3">
           <span className="flex items-center gap-1.5 bg-bg px-2.5 py-1 rounded-full">
             <Users className="h-3 w-3 text-gold/60" /> {room.min_capacity !== room.max_capacity ? `${room.min_capacity}–${room.max_capacity}` : room.max_capacity ?? room.max_adults} guests
           </span>

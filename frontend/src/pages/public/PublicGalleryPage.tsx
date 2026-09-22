@@ -129,7 +129,7 @@ export default function PublicGalleryPage() {
           ═══════════════════════════════════════════════════════════════ */}
       <div className="sticky top-20 z-30 bg-cream/95 backdrop-blur-xl border-b border-cream-warm/50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-center gap-1 py-4">
+          <div className="flex items-center justify-center gap-1 py-4 overflow-x-auto">
             {CATEGORIES.map((tab) => {
               const Icon = tab.icon
               const isActive = activeCategory === tab.value
@@ -138,7 +138,7 @@ export default function PublicGalleryPage() {
                 <button
                   key={tab.value}
                   onClick={() => setActiveCategory(tab.value)}
-                  className={`relative flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-[0.12em] whitespace-nowrap transition-all duration-300 ${
+                  className={`relative flex items-center gap-2 px-3 sm:px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-[0.12em] whitespace-nowrap transition-all duration-300 ${
                     isActive
                       ? 'bg-dark text-gold shadow-md shadow-dark/10'
                       : 'text-dark/40 hover:text-dark/70 hover:bg-white/60'
@@ -240,13 +240,13 @@ export default function PublicGalleryPage() {
           {/* Prev */}
           <button
             onClick={(e) => { e.stopPropagation(); prevPhoto() }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all duration-200 z-10"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all duration-200 z-10"
           >
             <ChevronLeft className="h-6 w-6 text-white" />
           </button>
 
           {/* Image */}
-          <div className="max-w-6xl max-h-[85vh] mx-16 relative" onClick={(e) => e.stopPropagation()}>
+          <div className="max-w-6xl max-h-[85vh] mx-4 sm:mx-8 lg:mx-16 relative" onClick={(e) => e.stopPropagation()}>
             <img
               key={lightboxPhoto.id}
               src={lightboxPhoto.src}
@@ -254,7 +254,7 @@ export default function PublicGalleryPage() {
               className="max-w-full max-h-[78vh] object-contain rounded-lg animate-fade-in"
             />
             {/* Title overlay */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6 rounded-b-lg">
+            <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 sm:p-6 rounded-b-lg">
               <span className="text-[10px] uppercase tracking-[0.15em] text-gold font-semibold">{lightboxPhoto.category}</span>
               <p className="text-white text-base font-light mt-1">{lightboxPhoto.title}</p>
             </div>
@@ -263,7 +263,7 @@ export default function PublicGalleryPage() {
           {/* Next */}
           <button
             onClick={(e) => { e.stopPropagation(); nextPhoto() }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all duration-200 z-10"
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm flex items-center justify-center transition-all duration-200 z-10"
           >
             <ChevronRight className="h-6 w-6 text-white" />
           </button>
@@ -328,13 +328,13 @@ function GalleryCard({
           onLoad={() => onLoad(photo.id)}
         />
         {!loaded && <div className="absolute inset-0 bg-dark/5 animate-pulse" />}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-all duration-300" />
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-300">
           <div className="w-7 h-7 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
             <Camera className="h-3 w-3 text-white" />
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+        <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 group-active:translate-y-0 group-active:opacity-100 transition-all duration-300">
           <span className="text-[9px] uppercase tracking-[0.12em] text-gold font-medium">{photo.category}</span>
           <p className="text-white text-xs font-medium mt-0.5 line-clamp-1">{photo.title}</p>
         </div>
@@ -357,13 +357,13 @@ function GalleryCard({
         onLoad={() => onLoad(photo.id)}
       />
       {!loaded && <div className="absolute inset-0 bg-dark/5 animate-pulse" />}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent opacity-0 group-hover:opacity-100 backdrop-blur-[2px] transition-all duration-300" />
-      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent opacity-0 group-hover:opacity-100 group-active:opacity-100 backdrop-blur-[2px] transition-all duration-300" />
+      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-300">
         <div className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center border border-white/10">
           <Camera className="h-3.5 w-3.5 text-white" />
         </div>
       </div>
-      <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+      <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 group-active:translate-y-0 group-active:opacity-100 transition-all duration-300">
         <div className="flex items-center gap-2 mb-1">
           <span className="w-1.5 h-1.5 rounded-full bg-gold" />
           <span className="text-[10px] uppercase tracking-[0.12em] text-gold font-semibold">{photo.category}</span>

@@ -142,7 +142,7 @@ export function PublicNavbar() {
           </div>
 
           {/* Mobile hamburger */}
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden text-white/60 hover:text-gold transition-colors">
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2.5 text-white/60 hover:text-gold transition-colors">
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
@@ -150,7 +150,7 @@ export function PublicNavbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-dark/98 backdrop-blur-xl border-t border-white/5 px-6 py-6 space-y-1 animate-fade-in">
+        <div className="md:hidden bg-dark/98 backdrop-blur-xl border-t border-white/5 px-6 py-6 space-y-1 animate-fade-in max-h-[calc(100vh-80px)] overflow-y-auto">
           {/* Book Now CTA — top of mobile drawer */}
           <Link
             to={token ? '/public/book' : '/public/rooms'}
