@@ -40,6 +40,10 @@ class ReservationController extends Controller
         if ($status = $request->status) {
             $statuses = array_map('trim', explode(',', $status));
             $query->whereIn('status', $statuses);
+            $query->where(function ($q) {
+                $q->where('payment_status', '!=', 'refunded')
+                  ->orWhereNull('payment_status');
+            });
         }
 
         if ($from = $request->date_from) {
