@@ -126,6 +126,11 @@ class Reservation extends Model
         return $this->belongsTo(User::class, 'late_arrival_notified_by');
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
     public function scopeActive(Builder $query)
     {
         $query->whereNotIn('status', ['cancelled', 'checked_out', 'no_show']);
