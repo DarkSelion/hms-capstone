@@ -172,6 +172,7 @@ class ReservationController extends Controller
 
         $reservations = Reservation::where('guest_id', $guest->id)
             ->with(['room.images', 'room.roomType.typeImages'])
+            ->withCount(['reviews as has_review' => fn($q) => $q->where('guest_id', $guest->id)])
             ->orderBy('created_at', 'desc')
             ->paginate($request->per_page ?? 10);
 

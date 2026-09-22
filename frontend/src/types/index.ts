@@ -456,6 +456,7 @@ payment_status: string
   refund_reason?: string
   refund_rejection_reason?: string
   cancellation_tier?: 'flexible' | 'non_refundable'
+  has_review?: boolean
   created_at: string
 }
 
