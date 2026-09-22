@@ -116,7 +116,7 @@ export default function ReservationsPage() {
 
   const todayArrivals = useMemo(() => {
     const all = (todayArrivalsData?.data ?? []) as Reservation[]
-    return all.filter((r) => r.check_in === todayStr && r.status !== 'cancelled' && r.status !== 'no_show')
+    return all.filter((r) => r.check_in === todayStr && !['cancelled', 'no_show', 'checked_out'].includes(r.status) && r.payment_status !== 'refunded')
   }, [todayArrivalsData, todayStr])
 
   const todayArrivalIds = useMemo(() => new Set(todayArrivals.map((r) => r.id)), [todayArrivals])

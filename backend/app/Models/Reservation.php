@@ -193,6 +193,13 @@ class Reservation extends Model
                     : ($paid >= (float) $this->total_amount ? 'paid' : 'partial')),
             'due_amount' => $hasRefunds ? 0 : max(0, (float) $this->total_amount - $paid),
         ]);
+
+        if ($hasRefunds && $this->status !== 'cancelled') {
+            $this->update(['status' => 'cancelled']);
+            if ($this->room) {
+                $this->room->reconcileStatus();
+            }
+        }
     }
 
     public function hasRecordedPayment(): bool
