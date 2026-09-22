@@ -758,6 +758,10 @@ function BookingWidget({
 }) {
   const checkOutMin = useMemo(() => (checkIn ? addDays(checkIn, 1) : addDays(today, 1)), [checkIn, today])
 
+  const numAdults = Math.max(1, Number(adults) || 1)
+  const maxChildrenForSelection = Math.max(0, maxAdults - numAdults)
+  const clampedChildren = Math.min(Number(children) || 0, maxChildrenForSelection)
+
   return (
     <div className="lg:sticky lg:top-24">
       <div className="bg-white rounded-2xl shadow-2xl shadow-black/40 border border-gray-100 overflow-hidden">
@@ -803,7 +807,13 @@ function BookingWidget({
                 name="adults"
                 aria-label="Number of adults"
                 value={adults}
-                onChange={(e) => setAdults(e.target.value)}
+                onChange={(e) => {
+                  const newAdults = Number(e.target.value)
+                  setAdults(e.target.value)
+                  const newMaxChildren = Math.max(0, maxAdults - newAdults)
+                  const currentChildren = Number(children) || 0
+                  setChildren(String(Math.min(currentChildren, newMaxChildren)))
+                }}
                 className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-dark text-sm focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/20 transition-colors appearance-none cursor-pointer"
                 style={{
                   backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%239CA3AF'%3e%3cpath fill-rule='evenodd' d='M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z'/%3e%3c/svg%3e")`,
@@ -824,7 +834,7 @@ function BookingWidget({
                 id="room-detail-children"
                 name="children"
                 aria-label="Number of children"
-                value={children}
+                value={clampedChildren}
                 onChange={(e) => setChildren(e.target.value)}
                 className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-dark text-sm focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/20 transition-colors appearance-none cursor-pointer"
                 style={{
@@ -835,7 +845,7 @@ function BookingWidget({
                   paddingRight: '36px',
                 }}
               >
-                {Array.from({ length: maxChildren + 1 }, (_, i) => i).map((n) => (
+                {Array.from({ length: maxChildrenForSelection + 1 }, (_, i) => i).map((n) => (
                   <option key={n} value={n}>{n} {n === 1 ? 'Child' : 'Children'}</option>
                 ))}
               </select>
