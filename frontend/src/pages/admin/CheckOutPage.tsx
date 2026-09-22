@@ -7,6 +7,8 @@ import { formatCurrency, formatDateDisplay } from '@/lib/format'
 import { getDateGroup, formatTodayLabel, toLocalDateStr } from '@/lib/date-group'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { DataTable, type Column } from '@/components/shared/DataTable'
+import { DailyHighlightTable, type HighlightColumn } from '@/components/shared/DailyHighlightTable'
+import { COLUMN_WIDTHS } from '@/components/shared/column-widths'
 import { TodayBadge } from '@/components/shared/TodayBadge'
 import { ReservationRowActions } from '@/components/shared/ReservationRowActions'
 import { StatusBadge } from '@/components/shared/StatusBadge'
@@ -132,13 +134,14 @@ export default function CheckOutPage() {
       key: 'reservation_number',
       label: 'Reservation #',
       sortable: true,
+      colWidth: COLUMN_WIDTHS.reservation_number,
       render: (r) => <span className="font-medium">{r.reservation_number}</span>,
     },
     {
       key: 'guest',
       label: 'Guest',
       sortable: false,
-      className: 'max-w-[180px]',
+      colWidth: COLUMN_WIDTHS.guest,
       render: (r) => {
         const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
         const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
@@ -159,6 +162,7 @@ export default function CheckOutPage() {
       key: 'room',
       label: 'Room',
       sortable: false,
+      colWidth: COLUMN_WIDTHS.room,
       render: (r) => (
         <div className="min-w-0">
           <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
@@ -171,6 +175,7 @@ export default function CheckOutPage() {
       label: 'Departure',
       sortable: true,
       className: 'whitespace-nowrap',
+      colWidth: COLUMN_WIDTHS.check_out,
       render: (r) => {
         const nights = nightsBetween(r.check_in, r.check_out)
         return (
@@ -191,6 +196,7 @@ export default function CheckOutPage() {
       label: 'Total',
       sortable: true,
       className: 'whitespace-nowrap',
+      colWidth: COLUMN_WIDTHS.total_amount,
       render: (r) => {
         const due = Number(r.due_amount ?? 0)
         return (
@@ -214,6 +220,7 @@ export default function CheckOutPage() {
       label: 'Alerts',
       sortable: false,
       className: 'whitespace-nowrap',
+      colWidth: COLUMN_WIDTHS.alerts,
       render: (r) => {
         const isOverstay = r.status === 'checked_in' && r.check_out < todayStr
         const overstayDays = isOverstay
@@ -245,12 +252,14 @@ export default function CheckOutPage() {
       label: 'Payment',
       sortable: true,
       className: 'whitespace-nowrap',
+      colWidth: COLUMN_WIDTHS.payment_status,
       render: (r) => <StatusBadge status={r.payment_status} pill />,
     },
     {
       key: 'actions',
       label: 'Actions',
       className: 'whitespace-nowrap align-middle pr-2',
+      colWidth: COLUMN_WIDTHS.actions,
       render: (r) => (
         <ReservationRowActions
           reservation={r}
@@ -290,113 +299,129 @@ export default function CheckOutPage() {
                   Today — {formatTodayLabel()} ({todayDepartures.length} departure{todayDepartures.length !== 1 ? 's' : ''})
                 </span>
               </div>
-              <div className="rounded-xl border border-amber-100 bg-amber-50/20 overflow-hidden">
-                <table className="w-full table-auto border-collapse text-sm">
-                  <thead>
-                    <tr className="border-b border-amber-200/40 text-left text-xs font-medium uppercase tracking-wider text-amber-600/70">
-                      <th className="px-2 py-2.5">Reservation</th>
-                      <th className="px-2 py-2.5">Guest</th>
-                      <th className="px-2 py-2.5">Room</th>
-                      <th className="whitespace-nowrap px-2 py-2.5">Departure</th>
-                      <th className="whitespace-nowrap px-2 py-2.5">Total</th>
-                      <th className="whitespace-nowrap px-2 py-2.5">Alerts</th>
-                      <th className="whitespace-nowrap px-2 py-2.5">Payment</th>
-                      <th className="whitespace-nowrap px-2 py-2.5 pr-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-amber-100/60">
-                    {todayDepartures.map((r) => {
+              <DailyHighlightTable
+                data={todayDepartures}
+                rowKey={(r) => r.id}
+                columns={[
+                  {
+                    key: 'reservation_number',
+                    label: 'Reservation',
+                    render: (r) => (
+                      <button onClick={() => openDetailModal(r)} className="font-medium text-primary hover:underline">
+                        {r.reservation_number}
+                      </button>
+                    ),
+                  },
+                  {
+                    key: 'guest',
+                    label: 'Guest',
+                    render: (r) => {
+                      const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
+                      const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
+                      return (
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{initials}</div>
+                          <div className="min-w-0">
+                            <span className="block truncate text-sm font-medium text-foreground">{name}</span>
+                            <span className="block truncate text-xs text-muted">{r.guest?.email}</span>
+                          </div>
+                        </div>
+                      )
+                    },
+                  },
+                  {
+                    key: 'room',
+                    label: 'Room',
+                    render: (r) => (
+                      <div className="min-w-0">
+                        <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
+                        <span className="block truncate text-xs text-muted">{r.room?.room_type?.name ?? '\u00A0'}</span>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'check_out',
+                    label: 'Departure',
+                    render: (r) => (
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span>{formatDateDisplay(r.check_out)}</span>
+                          <TodayBadge variant="departure" />
+                        </div>
+                        <span className="block text-xs text-muted">arrived {formatDateDisplay(r.check_in)}</span>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'total_amount',
+                    label: 'Total',
+                    render: (r) => {
                       const due = Number(r.due_amount ?? 0)
+                      return (
+                        <div>
+                          <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
+                          {due > 0 ? (
+                            <span className="block text-xs font-semibold tabular-nums text-danger">
+                              Due {formatCurrency(due)}
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-xs font-medium text-success">
+                              <CheckCircle2 className="h-3 w-3" /> Settled
+                            </span>
+                          )}
+                        </div>
+                      )
+                    },
+                  },
+                  {
+                    key: 'alerts',
+                    label: 'Alerts',
+                    render: (r) => {
                       const isOverstay = r.status === 'checked_in' && r.check_out < todayStr
                       const overstayDays = isOverstay
                         ? Math.ceil((new Date(todayStr).getTime() - new Date(r.check_out).getTime()) / 86400000)
                         : 0
                       const hasRefund = r.refund_requested_at && r.payment_status !== 'refunded'
+                      if (!isOverstay && !hasRefund) {
+                        return <span className="text-slate-300">—</span>
+                      }
                       return (
-                      <tr key={r.id} className="bg-amber-50/30 hover:bg-amber-50/60 transition-colors">
-                        <td className="px-2 py-3">
-                          <button onClick={() => openDetailModal(r)} className="font-medium text-primary hover:underline">
-                            {r.reservation_number}
-                          </button>
-                        </td>
-                        <td className="px-2 py-3">
-                          {(() => {
-                            const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
-                            const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
-                            return (
-                              <div className="flex items-center gap-2.5">
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{initials}</div>
-                                <div className="min-w-0">
-                                  <span className="block truncate text-sm font-medium text-foreground">{name}</span>
-                                  <span className="block truncate text-xs text-muted">{r.guest?.email}</span>
-                                </div>
-                              </div>
-                            )
-                          })()}
-                        </td>
-                        <td className="px-2 py-3">
-                          <div className="min-w-0">
-                            <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
-                            <span className="block truncate text-xs text-muted">{r.room?.room_type?.name ?? '\u00A0'}</span>
-                          </div>
-                        </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            <span>{formatDateDisplay(r.check_out)}</span>
-                            <TodayBadge variant="departure" />
-                          </div>
-                          <span className="block text-xs text-muted">arrived {formatDateDisplay(r.check_in)}</span>
-                        </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <div>
-                            <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
-                            {due > 0 ? (
-                              <span className="block text-xs font-semibold tabular-nums text-danger">
-                                Due {formatCurrency(due)}
-                              </span>
-                            ) : (
-                              <span className="flex items-center gap-1 text-xs font-medium text-success">
-                                <CheckCircle2 className="h-3 w-3" /> Settled
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          {!isOverstay && !hasRefund ? (
-                            <span className="text-slate-300">—</span>
-                          ) : (
-                            <div className="flex items-center gap-1 flex-wrap">
-                              {isOverstay && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-orange-50 text-orange-700 border border-orange-200/60">
-                                  <AlertTriangle className="h-3 w-3" />
-                                  Overstay ({overstayDays}d)
-                                </span>
-                              )}
-                              {hasRefund && (
-                                <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
-                                  Refund
-                                </span>
-                              )}
-                            </div>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {isOverstay && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-orange-50 text-orange-700 border border-orange-200/60">
+                              <AlertTriangle className="h-3 w-3" />
+                              Overstay ({overstayDays}d)
+                            </span>
                           )}
-                        </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <StatusBadge status={r.payment_status} pill />
-                        </td>
-                        <td className="px-2 py-3 whitespace-nowrap pr-2">
-                          <ReservationRowActions
-                            reservation={r}
-                            onView={() => openDetailModal(r)}
-                            onEdit={() => openEditForm(r)}
-                            onCheckOut={() => openCheckOut(r)}
-                            onExtendStay={() => openExtendStay(r)}
-                          />
-                        </td>
-                      </tr>
-                    )})}
-                  </tbody>
-                </table>
-              </div>
+                          {hasRefund && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
+                              Refund
+                            </span>
+                          )}
+                        </div>
+                      )
+                    },
+                  },
+                  {
+                    key: 'payment_status',
+                    label: 'Payment',
+                    render: (r) => <StatusBadge status={r.payment_status} pill />,
+                  },
+                  {
+                    key: 'actions',
+                    label: 'Actions',
+                    render: (r) => (
+                      <ReservationRowActions
+                        reservation={r}
+                        onView={() => openDetailModal(r)}
+                        onEdit={() => openEditForm(r)}
+                        onCheckOut={() => openCheckOut(r)}
+                        onExtendStay={() => openExtendStay(r)}
+                      />
+                    ),
+                  },
+                ] as HighlightColumn<Reservation>[]}
+              />
             </div>
           )}
 
@@ -407,7 +432,7 @@ export default function CheckOutPage() {
             error={error ? 'Failed to load reservations' : null}
             sortBy={sortBy}
             onSort={handleSort}
-            tableClassName="table-auto border-collapse"
+            tableClassName="table-fixed border-collapse"
             emptyState={
               <div className="flex flex-col items-center justify-center py-12">
                 <DoorOpen className="mb-3 h-10 w-10 text-muted/50" />

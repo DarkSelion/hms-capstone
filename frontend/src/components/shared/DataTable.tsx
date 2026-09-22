@@ -13,6 +13,7 @@ export interface Column<T> {
   sortable?: boolean
   render: (row: T) => React.ReactNode
   className?: string
+  colWidth?: string
 }
 
 interface DataTableProps<T> {
@@ -123,6 +124,13 @@ export function DataTable<T>({
 
       <TableContainer>
         <Table className={tableClassName}>
+          {columns.some((col) => col.colWidth) && (
+            <colgroup>
+              {columns.map((col) => (
+                <col key={col.key} className={col.colWidth ?? 'auto'} />
+              ))}
+            </colgroup>
+          )}
           <TableHeader>
             <TableRow>
               {columns.map((col) => (
