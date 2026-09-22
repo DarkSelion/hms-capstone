@@ -247,6 +247,7 @@ export default function ReservationsPage() {
       key: 'reservation_number',
       label: 'Reservation #',
       sortable: true,
+      className: 'w-[140px]',
       render: (r) => (
         <button
           onClick={() => openDetailModal(r)}
@@ -260,7 +261,7 @@ export default function ReservationsPage() {
       key: 'guest',
       label: 'Guest',
       sortable: true,
-      className: 'max-w-[180px]',
+      className: 'w-[180px]',
       render: (r) => {
         const name = `${r.guest?.first_name ?? ''} ${r.guest?.last_name ?? ''}`.trim() || '-'
         const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase()
@@ -281,6 +282,7 @@ export default function ReservationsPage() {
       key: 'room',
       label: 'Room',
       sortable: true,
+      className: 'w-[120px]',
       render: (r) => (
         <div className="min-w-0">
           <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
@@ -292,7 +294,7 @@ export default function ReservationsPage() {
       key: 'check_in',
       label: 'Stay',
       sortable: true,
-      className: 'whitespace-nowrap',
+      className: 'whitespace-nowrap w-[160px]',
       render: (r) => {
         const isTodayCheckIn = getDateGroup(r.check_in) === 'today'
         const isTodayCheckOut = getDateGroup(r.check_out) === 'today'
@@ -314,7 +316,7 @@ export default function ReservationsPage() {
       key: 'total_amount',
       label: 'Total',
       sortable: true,
-      className: 'whitespace-nowrap',
+      className: 'whitespace-nowrap w-[100px]',
       render: (r) => {
         const due = Number(r.due_amount ?? 0)
         return (
@@ -331,14 +333,14 @@ export default function ReservationsPage() {
       key: 'status',
       label: 'Status',
       sortable: true,
-      className: 'whitespace-nowrap',
+      className: 'whitespace-nowrap w-[100px]',
       render: (r) => <StatusBadge status={r.status} pill />,
     },
     {
       key: 'alerts',
       label: 'Alerts',
       sortable: false,
-      className: 'whitespace-nowrap',
+      className: 'whitespace-nowrap w-[80px]',
       render: (r) => {
         const hasNoShow = r.status === 'confirmed' && r.is_overdue
         const isLateArrival = r.status === 'late_arrival'
@@ -377,13 +379,13 @@ export default function ReservationsPage() {
       key: 'payment_status',
       label: 'Payment',
       sortable: true,
-      className: 'whitespace-nowrap',
+      className: 'whitespace-nowrap w-[100px]',
       render: (r) => <StatusBadge status={r.payment_status} pill />,
     },
     {
       key: 'actions',
       label: 'Actions',
-      className: 'whitespace-nowrap align-middle pr-2',
+      className: 'whitespace-nowrap align-middle pr-2 w-[140px]',
       render: (r) => (
         <ReservationRowActions
           reservation={r}
@@ -531,15 +533,15 @@ export default function ReservationsPage() {
                 <table className="w-full table-auto border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-amber-200/40 text-left text-xs font-medium uppercase tracking-wider text-amber-600/70">
-                      <th className="px-2 h-10">Reservation</th>
-                      <th className="px-2 h-10">Guest</th>
-                      <th className="px-2 h-10">Room</th>
-                      <th className="whitespace-nowrap px-2 h-10">Stay</th>
-                      <th className="whitespace-nowrap px-2 h-10">Total</th>
-                      <th className="whitespace-nowrap px-2 h-10">Status</th>
-                      <th className="whitespace-nowrap px-2 h-10">Alerts</th>
-                      <th className="whitespace-nowrap px-2 h-10">Payment</th>
-                      <th className="whitespace-nowrap px-2 h-10 pr-2">Actions</th>
+                      <th className="px-2 h-10 w-[140px]">Reservation</th>
+                      <th className="px-2 h-10 w-[180px]">Guest</th>
+                      <th className="px-2 h-10 w-[120px]">Room</th>
+                      <th className="whitespace-nowrap px-2 h-10 w-[160px]">Stay</th>
+                      <th className="whitespace-nowrap px-2 h-10 w-[100px]">Total</th>
+                      <th className="whitespace-nowrap px-2 h-10 w-[100px]">Status</th>
+                      <th className="whitespace-nowrap px-2 h-10 w-[80px]">Alerts</th>
+                      <th className="whitespace-nowrap px-2 h-10 w-[100px]">Payment</th>
+                      <th className="whitespace-nowrap px-2 h-10 pr-2 w-[140px]">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-100/60">
@@ -549,7 +551,7 @@ export default function ReservationsPage() {
                       const due = Number(r.due_amount ?? 0)
                       return (
                         <tr key={r.id} className="h-16 bg-amber-50/30 hover:bg-amber-50/60 transition-colors align-middle">
-                          <td className="px-2">
+                          <td className="px-2 w-[140px]">
                             <button
                               onClick={() => openDetailModal(r)}
                               className="block max-w-[160px] truncate text-primary hover:underline font-medium"
@@ -557,7 +559,7 @@ export default function ReservationsPage() {
                               {r.reservation_number}
                             </button>
                           </td>
-                          <td className="px-2">
+                          <td className="px-2 w-[180px]">
                             <div className="flex items-center gap-2.5">
                               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                                 {initials}
@@ -568,13 +570,13 @@ export default function ReservationsPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-2">
+                          <td className="px-2 w-[120px]">
                             <div className="min-w-0">
                               <span className="font-semibold text-foreground">{r.room?.room_number ?? '-'}</span>
                               <span className="block truncate text-xs text-muted">{r.room?.room_type?.name ?? '\u00A0'}</span>
                             </div>
                           </td>
-                          <td className="px-2 whitespace-nowrap">
+                          <td className="px-2 whitespace-nowrap w-[160px]">
                             <div className="flex flex-col gap-0.5">
                               <div className="flex items-center gap-1.5 text-sm">
                                 <TodayBadge variant="arrival" />
@@ -583,7 +585,7 @@ export default function ReservationsPage() {
                               <span className="text-xs text-slate-500">Departs {formatDate(r.check_out)}</span>
                             </div>
                           </td>
-                          <td className="px-2 whitespace-nowrap">
+                          <td className="px-2 whitespace-nowrap w-[100px]">
                             <div>
                               <span className="font-semibold tabular-nums text-foreground">{formatCurrency(r.total_amount)}</span>
                               <span className={cn('block text-xs tabular-nums', due > 0 ? 'text-amber-600' : 'text-emerald-600')}>
@@ -591,10 +593,10 @@ export default function ReservationsPage() {
                               </span>
                             </div>
                           </td>
-                          <td className="px-2 whitespace-nowrap">
+                          <td className="px-2 whitespace-nowrap w-[100px]">
                             <StatusBadge status={r.status} pill />
                           </td>
-                          <td className="px-2 whitespace-nowrap">
+                          <td className="px-2 whitespace-nowrap w-[80px]">
                             {(() => {
                               const hasNoShow = r.status === 'confirmed' && r.is_overdue
                               const isOverstay = r.status === 'checked_in' && r.check_out < todayStr
@@ -622,10 +624,10 @@ export default function ReservationsPage() {
                               )
                             })()}
                           </td>
-                          <td className="px-2 whitespace-nowrap">
+                          <td className="px-2 whitespace-nowrap w-[100px]">
                             <StatusBadge status={r.payment_status} pill />
                           </td>
-                           <td className="px-2 whitespace-nowrap pr-2">
+                           <td className="px-2 whitespace-nowrap pr-2 w-[140px]">
                             <ReservationRowActions
                               reservation={r}
                               onView={() => openDetailModal(r)}
